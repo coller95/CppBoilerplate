@@ -1,0 +1,17 @@
+#!/bin/bash
+# Simple configure script for stringutils
+
+prefix="/usr/local"
+
+for arg in "$@"; do
+  case $arg in
+    --prefix=*)
+      prefix="${arg#*=}"
+      ;;
+  esac
+done
+
+echo "PREFIX = $prefix" > config.mk
+chmod 644 config.mk
+
+echo "Configured stringutils with prefix: $prefix"

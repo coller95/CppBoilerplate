@@ -1,0 +1,7 @@
+# Ignore build artifacts
+libmathlib.so
+obj/
+config.mk
+*.o
+*.so
+*.a
