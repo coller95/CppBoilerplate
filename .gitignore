@@ -9,7 +9,6 @@ bin/
 *.swp
 *~
 .DS_Store
-.vscode/
 
 # Libraries
 lib/*.a
