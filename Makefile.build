@@ -22,16 +22,3 @@ VENDOR := native
 endif
 
 BUILD_NAME = $(ARCH)-$(VENDOR)
-
-CXXFLAGS_debug   = -g -O0 -DDEBUG -MMD -MP -Iinclude
-CXXFLAGS_release = -O2 -DNDEBUG -MMD -MP -Iinclude
-
-BIN_DIR_debug   = bin/$(BUILD_NAME)/debug
-BIN_DIR_release = bin/$(BUILD_NAME)/release
-SRCFILES = $(wildcard src/*.cpp)
-OBJECTS_debug   = $(patsubst src/%.cpp,$(BIN_DIR_debug)/%.o,$(SRCFILES))
-OBJECTS_release = $(patsubst src/%.cpp,$(BIN_DIR_release)/%.o,$(SRCFILES))
-
-# Include dependency files if they exist
--include $(OBJECTS_debug:.o=.d)
--include $(OBJECTS_release:.o=.d)
