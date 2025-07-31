@@ -52,11 +52,28 @@ After building, run the executable (replace `<arch-vendor>` with your detected a
 - Place third-party headers in `lib/include/<libname>/`.
 - Update the `Makefile` to link against new libraries as needed.
 
-## Example Code
 
-- `main.cpp` calls the `printHello()` function.
-- `printHello.cpp` implements the function, printing a message to the console.
-- `printHello.h` declares the function.
+## Debugging with VS Code
+
+This project includes pre-configured VS Code settings for building and debugging:
+
+- `.vscode/launch.json` for debugging with GDB
+- `.vscode/tasks.json` for building with `make debug`
+
+### How to Debug
+
+1. Open this project in VS Code.
+2. Press `F5` or go to the Run & Debug panel and select **(gdb) Launch Debug**.
+3. The project will be built in debug mode and the debugger will start.
+4. You can set breakpoints, step through code, and inspect variables.
+
+The debug binary is expected at:
+
+```bash
+./bin/x86_64-native/debug/hello_world
+```
+
+If your architecture is different, adjust the path in `.vscode/launch.json` accordingly.
 
 ---
 
