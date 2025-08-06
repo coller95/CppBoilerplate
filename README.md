@@ -1,4 +1,3 @@
-
 # CppBoilerplate
 
 A minimal, modern C++ project template with a simple Makefile-based build system. This boilerplate demonstrates a clean structure for C++ projects, including support for external and third-party libraries, and is ready for use with Visual Studio Code.
@@ -186,6 +185,51 @@ Debug binary default path:
 ```
 
 If your architecture differs, update `.vscode/launch.json` accordingly.
+
+---
+
+## 🧪 Unit Testing
+
+This project uses [Google Test](https://github.com/google/googletest) for C++ unit testing. Unit tests are organized by module in the `tests/` directory, with each module having its own subfolder, object files in `obj/`, and test executables in `bin/`.
+
+**Example test structure:**
+```
+tests/
+  printHello/
+    Makefile
+    printHelloTest.cpp
+    test_main.cpp
+    obj/
+      printHelloTest.o
+      test_main.o
+      printHello.o
+    bin/
+      printHelloTest
+  logger/
+    ...
+  ...
+```
+
+### Build and Run All Tests
+
+From the `tests/` directory:
+
+```sh
+make test
+```
+
+This will build and run all unit tests in all subfolders. Each test module's executable is placed in its own `bin/` directory.
+
+### Add a New Test Module
+1. Create a new subfolder in `tests/` (e.g., `logger/`).
+2. Add your test source files and a `Makefile` (copy from `printHello/` as a template).
+3. Add the subfolder name to the `SUBDIRS` variable in `tests/Makefile`.
+4. Implement your tests using Google Test.
+
+### Best Practices
+- Keep all object files in `obj/` and executables in `bin/` within each test module.
+- Use one test executable per module for clarity and modularity.
+- Use the main `tests/Makefile` to automate building and running all tests.
 
 ---
 
