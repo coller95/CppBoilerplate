@@ -1,6 +1,6 @@
 # Main Makefile for running all unit tests in subdirectories
 
-SUBDIRS := printHello
+SUBDIRS := printHello logger
 
 .PHONY: all clean test $(SUBDIRS)
 
@@ -20,5 +20,9 @@ test: all
 	  if [ -x $$dir/bin/printHelloTest ]; then \
 		 echo "Running $$dir/bin/printHelloTest"; \
 		 ./$$dir/bin/printHelloTest; \
+	  fi; \
+	  if [ -x $$dir/bin/loggerTest ]; then \
+		 echo "Running $$dir/bin/loggerTest"; \
+		 ./$$dir/bin/loggerTest; \
 	  fi; \
 	done
