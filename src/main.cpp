@@ -3,7 +3,7 @@
 #include <foo_c.h>
 #include <iostream>
 #include <printHello.h>
-#include <logger.h>
+#include <Logger.h>
 
 #include <chrono>
 #include <thread>
