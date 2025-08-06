@@ -1,0 +1,25 @@
+# Build system logic for arch, vendor, bin, and object files
+CROSS_COMPILE_PREFIX ?=
+CXX = $(CROSS_COMPILE_PREFIX)g++
+CC = $(CROSS_COMPILE_PREFIX)gcc
+
+ifeq ($(findstring aarch64,$(CROSS_COMPILE_PREFIX)),aarch64)
+ARCH := aarch64
+else ifneq ($(filter arm,$(CROSS_COMPILE_PREFIX)),)
+ARCH := arm
+else ifneq ($(filter x86_64,$(CROSS_COMPILE_PREFIX)),)
+ARCH := x86_64
+else
+ARCH := $(shell uname -m)
+endif
+
+ifneq ($(CROSS_COMPILE_PREFIX),)
+VENDOR := $(word 2,$(subst -, ,$(CROSS_COMPILE_PREFIX)))
+ifeq ($(VENDOR),)
+VENDOR := native
+endif
+else
+VENDOR := native
+endif
+
+BUILD_NAME = $(ARCH)-$(VENDOR)

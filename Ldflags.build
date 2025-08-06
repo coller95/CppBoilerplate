@@ -1,0 +1,3 @@
+# # for foo
+# LIB_DIRS 	 += -L/lib/foo
+# LDLIBS       += -lfoo

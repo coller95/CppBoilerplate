@@ -1,0 +1,18 @@
+# Build and binary output
+bin/
+*.o
+*.d
+*.elf
+*.gdb
+
+# Editor and OS files
+*.swp
+*~
+.DS_Store
+
+# Libraries
+lib/*.a
+lib/*.so
+
+# Other
+sh
