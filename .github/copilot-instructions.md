@@ -51,7 +51,9 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
    - For every new module/feature, add or update unit tests in `tests/ModuleNameTest/` (PascalCase folder).
    - Place all test-only code (mocks, helpers) inside the module's test folder, never in production `src/` or `include/`.
 
-3. **Build and Run Tests**
+
+3. **Build and Run Tests (After Every Major Change!)**
+   - **After every major code or build change, always run the full build and test suite to catch errors early.**
    - Run `make test-clean`, `make debug`, `make test` from the project root.
    - Confirm the new test fails (red).
 
@@ -96,9 +98,11 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
    - All public APIs and logic should be covered by tests; avoid tightly coupling code to I/O or system state.
 
-5. **Rebuild and Retest**
-   - Run the test suite again.
+
+5. **Rebuild and Retest (Mandatory After Each Major Change)**
+   - Run the test suite again after any significant code, build, or dependency change.
    - Ensure the new test passes (green) and no regressions occur.
+   - If you skip this step, you risk introducing breaking changes—**always verify with tests and debug builds!**
 
    - Use Google Test for all C++ unit tests, and ensure all code is built with debug symbols (`-g`).
 
