@@ -5,7 +5,8 @@ Provide project context and coding guidelines that AI should follow when generat
 
 ## Debug Interaction Best Practice
 
-For best results when interacting with agent mode, always run debug builds and unit tests using the command line. This ensures you get full console output and better visibility for agent-assisted debugging and test validation.
+
+For best results when interacting with agent mode, always run debug builds and unit tests using the command line. The agent must always validate the current working directory before issuing any command, to ensure all commands are executed in the correct context and paths resolve as expected. Prefer running commands from the project root directory whenever possible. This ensures you get full console output and better visibility for agent-assisted debugging and test validation.
 
 **Recommended commands:**
 
