@@ -1,10 +1,15 @@
 # Makefile for Logger unit tests using Google Test
 
 CXX = g++
-CXXFLAGS = -std=c++17 -I../../include -I../../external/googletest/googletest/include -I../../external/googletest/googletest -pthread -g
+CXXFLAGS = -std=c++17 -I../../include \
+	-I../../external/googletest/googletest/include \
+	-I../../external/googletest/googletest \
+	-I../../external/googletest/googlemock/include \
+	-I../../external/googletest/googlemock \
+	-pthread -g
 
 GTEST_LIB_DIR = ../../external/googletest/build/lib
-GTEST_LIBS = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
+GTEST_LIBS = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a $(GTEST_LIB_DIR)/libgmock.a $(GTEST_LIB_DIR)/libgmock_main.a
 
 OBJDIR = obj
 BINDIR = bin

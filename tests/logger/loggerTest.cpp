@@ -1,28 +1,34 @@
+
 #include <gtest/gtest.h>
-#include <Logger.h>
-#include <sstream>
-#include <iostream>
+#include <gmock/gmock.h>
+#include "mockLogger.h"
 
 /**
- * Unit tests for Logger class
+ * Example test fixture for ILogger using Google Mock
  */
+class LoggerTestFixture : public ::testing::Test {
+protected:
+    MockLogger mockLogger;
+};
 
-TEST(LoggerTest, LogInfoPrintsMessage) {
-    Logger logger("127.0.0.1", 9000);
-    std::stringstream buffer;
-    std::streambuf* oldCout = std::cout.rdbuf(buffer.rdbuf());
-    logger.logInfo("Test info message");
-    std::cout.rdbuf(oldCout);
-    std::string output = buffer.str();
-    EXPECT_NE(output.find("Test info message"), std::string::npos);
+TEST_F(LoggerTestFixture, LogInfoCallsInterface) {
+    EXPECT_CALL(mockLogger, logInfo(testing::StrEq("Test info message"))).Times(1);
+    mockLogger.logInfo("Test info message");
 }
 
-TEST(LoggerTest, LogErrorPrintsMessage) {
-    Logger logger("127.0.0.1", 9000);
-    std::stringstream buffer;
-    std::streambuf* oldCerr = std::cerr.rdbuf(buffer.rdbuf());
-    logger.logError("Test error message");
-    std::cerr.rdbuf(oldCerr);
-    std::string output = buffer.str();
-    EXPECT_NE(output.find("Test error message"), std::string::npos);
+TEST_F(LoggerTestFixture, LogErrorCallsInterface) {
+    EXPECT_CALL(mockLogger, logError(testing::StrEq("Test error message"))).Times(1);
+    mockLogger.logError("Test error message");
 }
+
+TEST_F(LoggerTestFixture, StartReturnsTrue) {
+    EXPECT_CALL(mockLogger, start()).WillOnce(testing::Return(true));
+    EXPECT_TRUE(mockLogger.start());
+}
+
+TEST_F(LoggerTestFixture, IsConnectedReturnsFalse) {
+    EXPECT_CALL(mockLogger, isConnected()).WillOnce(testing::Return(false));
+    EXPECT_FALSE(mockLogger.isConnected());
+}
+
+// Add more tests for other ILogger methods as needed

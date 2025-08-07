@@ -402,12 +402,6 @@ bool Logger::isConnected() const {
     return _impl->isConnected();
 }
 
-void Logger::log(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    _impl->logFormatted(format, args);
-    va_end(args);
-}
 
 void Logger::logInfo(std::string_view message) {
     _impl->logWithLevel("INFO", message);
