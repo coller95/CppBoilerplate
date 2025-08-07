@@ -1,26 +1,34 @@
 
+#include <Logger/Logger.h>
+#include <PrintHello/PrintHello.h>
+#include <chrono>
 #include <foo.h>
 #include <foo_c.h>
 #include <iostream>
-#include <PrintHello/PrintHello.h>
-#include <Logger/Logger.h>
-#include <chrono>
 #include <thread>
 
-
+/**
+ * Application configuration struct (local to this file for convenience)
+ */
+struct AppConfig
+{
+	std::string loggerIp = "127.0.0.1";
+	int loggerPort = 9000;
+};
 
 /**
  * Demonstrates Logger usage and logging scenarios
  * @param logger Reference to Logger instance
  * @return 0 on completion
  */
-int loggerDemo(logger::Logger& logger, const print_hello::PrintHello& printer)
+int loggerDemo(logger::Logger &logger, const print_hello::PrintHello &printer)
 {
 	std::cout << "=== Logger Class Demo ===" << std::endl;
 
 	bool connected = logger.isConnected();
 
-	if (connected) {
+	if (connected)
+	{
 		std::cout << "Connected to log server successfully!" << std::endl;
 		logger.logInfo("Application started successfully");
 		logger.logDebug("This is a debug message");
@@ -31,7 +39,9 @@ int loggerDemo(logger::Logger& logger, const print_hello::PrintHello& printer)
 		printer.print();
 		std::this_thread::sleep_for(std::chrono::seconds(2));
 		logger.logInfo("Application finishing");
-	} else {
+	}
+	else
+	{
 		std::cout << "Could not connect to log server, running without remote logging" << std::endl;
 		logger.logInfo("This won't be sent anywhere");
 		logger.logError("Local error message");
@@ -41,26 +51,24 @@ int loggerDemo(logger::Logger& logger, const print_hello::PrintHello& printer)
 	return 0;
 }
 
-
-
 /**
  * Encapsulates the main application logic
  *
  * TDD-friendly: All dependencies are injected, no side effects in constructor.
  */
-class Application {
-private:
-	logger::Logger& _logger;
-	const print_hello::PrintHello& _printer;
+class Application
+{
+  private:
+	logger::Logger &_logger;
+	const print_hello::PrintHello &_printer;
 
-public:
+  public:
 	/**
 	 * Constructs the Application with injected Logger and PrintHello dependencies
 	 * @param logger Reference to Logger instance
 	 * @param printer Reference to PrintHello instance
 	 */
-	Application(logger::Logger& logger, const print_hello::PrintHello& printer)
-		: _logger(logger), _printer(printer)
+	Application(logger::Logger &logger, const print_hello::PrintHello &printer) : _logger(logger), _printer(printer)
 	{
 		// No side effects here; logger should be started by caller if needed
 	}
@@ -71,9 +79,12 @@ public:
 	 */
 	int run()
 	{
-		if (_logger.isConnected()) {
+		if (_logger.isConnected())
+		{
 			_logger.logInfo("Application started with remote logging");
-		} else {
+		}
+		else
+		{
 			std::cout << "Running without remote logging (no server at 127.0.0.1:9000)" << std::endl;
 		}
 
@@ -85,8 +96,6 @@ public:
 	}
 };
 
-
-
 /**
  * Main entry point for the application
  *
@@ -94,7 +103,8 @@ public:
  */
 int main()
 {
-	logger::Logger logger{"127.0.0.1", 9000};
+	AppConfig config;
+	logger::Logger logger{config.loggerIp, config.loggerPort};
 	logger.start();
 	print_hello::PrintHello printer;
 	Application app{logger, printer};
