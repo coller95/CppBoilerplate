@@ -1,0 +1,8 @@
+#include <WebServer/impl/Factory.h>
+#include <WebServer/impl/MongooseWebServerImpl.h>
+
+namespace WebServerLib {
+std::unique_ptr<IWebServerImpl> createDefaultWebServerImpl(uint16_t port) {
+    return std::make_unique<MongooseWebServerImpl>(port);
+}
+}

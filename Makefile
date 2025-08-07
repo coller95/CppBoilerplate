@@ -10,23 +10,32 @@ BIN_DIR_release = bin/$(BUILD_NAME)/release
 # Collect sources
 MAIN_SOURCES = $(shell find src -name '*.cpp')
 EXTERNAL_CPP_SOURCES = $(wildcard external/*/src/*.cpp)
+
+# Add WebServer/impl sources
+WEBSERVER_IMPL_SOURCES = $(wildcard src/WebServer/impl/*.cpp)
 EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
-SRCFILES = $(MAIN_SOURCES) $(EXTERNAL_CPP_SOURCES) $(EXTERNAL_C_SOURCES)
+
+# Add Mongoose C source explicitly if not already included
+MONGOOSE_C_SOURCE = external/mongoose/src/mongoose.c
+EXTERNAL_C_SOURCES += $(MONGOOSE_C_SOURCE)
+SRCFILES = $(MAIN_SOURCES) $(EXTERNAL_CPP_SOURCES) $(EXTERNAL_C_SOURCES) $(WEBSERVER_IMPL_SOURCES)
 
 # Generate object file names
 OBJECTS_debug = $(MAIN_SOURCES:src/%.cpp=$(BIN_DIR_debug)/src/%.o) \
 			   $(EXTERNAL_CPP_SOURCES:external/%.cpp=$(BIN_DIR_debug)/external/%.o) \
-			   $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_debug)/external/%.o)
+			   $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_debug)/external/%.o) \
+			   $(WEBSERVER_IMPL_SOURCES:src/%.cpp=$(BIN_DIR_debug)/src/%.o)
 OBJECTS_release = $(MAIN_SOURCES:src/%.cpp=$(BIN_DIR_release)/src/%.o) \
 				 $(EXTERNAL_CPP_SOURCES:external/%.cpp=$(BIN_DIR_release)/external/%.o) \
-				 $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_release)/external/%.o)
+				 $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_release)/external/%.o) \
+				 $(WEBSERVER_IMPL_SOURCES:src/%.cpp=$(BIN_DIR_release)/src/%.o)
 
 # Dependency files
 -include $(OBJECTS_debug:.o=.d)
 -include $(OBJECTS_release:.o=.d)
 
 # Compiler and linker flags
-INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir))
+INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir)) -Iexternal/mongoose/include
 LIB_DIRS     = -Llib 
 LDLIBS       = -lpthread -lrt -lm
 
