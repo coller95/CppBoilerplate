@@ -1,11 +1,8 @@
-
+#include <IoCContainer/IoCContainer.h>
 #include <Logger/Logger.h>
 #include <PrintHello/PrintHello.h>
-#include <chrono>
-#include <foo.h>
-#include <foo_c.h>
+#include <RestfulServer/RestfulServer.h>
 #include <iostream>
-#include <thread>
 
 /**
  * Application configuration struct (local to this file for convenience)
@@ -17,62 +14,51 @@ struct AppConfig
 };
 
 /**
- * Encapsulates the main application logic and owns all dependencies
- *
- * TDD-friendly: All dependencies are constructed and managed here.
+ * Main application class that encapsulates the IoC container and dependencies
  */
-class Application {
-private:
+class Application
+{
+  private:
 	AppConfig _config;
-	logger::Logger _logger;
-	print_hello::PrintHello _printer;
-public:
-	Application()
-		: _config(),
-		  _logger(_config.loggerIp, _config.loggerPort),
-		  _printer() {
-		_logger.start();
+	IoCContainer _container;
+	std::shared_ptr<logger::Logger> _logger;
+	std::shared_ptr<print_hello::PrintHello> _printer;
+	std::shared_ptr<RestfulServer> _restServer;
+
+  public:
+	Application() : _config(), _container()
+	{
+		// Register dependencies in IoCContainer
+		_container.registerType<logger::Logger>(
+		    [this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
+		_container.registerType<print_hello::PrintHello>([]() { return std::make_shared<print_hello::PrintHello>(); });
+		_container.registerType<RestfulServer>([]() { return std::make_shared<RestfulServer>(8080); });
+		_logger = _container.resolve<logger::Logger>();
+		_printer = _container.resolve<print_hello::PrintHello>();
+		_restServer = _container.resolve<RestfulServer>();
+		_logger->start();
 	}
 
-	~Application() {
-		_logger.stop();
+	~Application()
+	{
+		_logger->stop();
 	}
 
-private:
-	void runLoggerDemo() {
-		std::cout << "=== Logger Class Demo ===" << std::endl;
-		bool connected = _logger.isConnected();
-		if (connected) {
-			std::cout << "Connected to log server successfully!" << std::endl;
-			_logger.logInfo("Application started successfully");
-			_logger.logDebug("This is a debug message");
-			_logger.logWarning("This is a warning message");
-			_logger.logError("This is an error message");
-			_logger.log("Custom formatted message: %d + %d = %d", 5, 3, 8);
-			std::cout << "This stdout message should be intercepted by logger" << std::endl;
-			_printer.print();
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-			_logger.logInfo("Application finishing");
-		} else {
-			std::cout << "Could not connect to log server, running without remote logging" << std::endl;
-			_logger.logInfo("This won't be sent anywhere");
-			_logger.logError("Local error message");
-			_printer.print();
+	/**
+	 * Runs the main application logic.
+	 * @return Exit code (0 for success)
+	 */
+	int run()
+	{
+		if (_logger->isConnected())
+		{
+			_logger->logInfo("Application started with remote logging");
 		}
-		std::cout << "Demo completed." << std::endl;
-	}
-
-public:
-	int run() {
-		if (_logger.isConnected()) {
-			_logger.logInfo("Application started with remote logging");
-		} else {
+		else
+		{
 			std::cout << "Running without remote logging (no server at 127.0.0.1:9000)" << std::endl;
 		}
-		runLoggerDemo();
-		_printer.print();
-		external_print("Hello from the external C++ library!");
-		external_print_c("Hello from the external C library!");
+		_printer->print();
 		return 0;
 	}
 };
@@ -80,7 +66,7 @@ public:
 /**
  * Main entry point for the application
  *
- * TDD-friendly: All dependencies are constructed and injected here.
+ * This function initializes and runs the application.
  */
 
 int main()
