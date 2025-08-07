@@ -14,6 +14,12 @@ This project follows a **modular monolithic architecture**:
 - **Modular Monolithic Architecture:** Each module should have its own test suite, with object files in `obj/` and test executables in `bin/`.
 
 
+
+## Namespace Usage
+
+- Always define a namespace for each feature or module. The namespace should match the feature/module name and group all related classes and functions.
+- Do not use `using namespace` in header files. In implementation files, prefer explicit namespace qualification for clarity and to avoid symbol conflicts.
+
 ## Microsoft C++ Coding Style
 
 - Use PascalCase for class names, structs, enums, and namespaces.
