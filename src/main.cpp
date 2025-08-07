@@ -17,78 +17,59 @@ struct AppConfig
 };
 
 /**
- * Demonstrates Logger usage and logging scenarios
- * @param logger Reference to Logger instance
- * @return 0 on completion
- */
-int loggerDemo(logger::Logger &logger, const print_hello::PrintHello &printer)
-{
-	std::cout << "=== Logger Class Demo ===" << std::endl;
-
-	bool connected = logger.isConnected();
-
-	if (connected)
-	{
-		std::cout << "Connected to log server successfully!" << std::endl;
-		logger.logInfo("Application started successfully");
-		logger.logDebug("This is a debug message");
-		logger.logWarning("This is a warning message");
-		logger.logError("This is an error message");
-		logger.log("Custom formatted message: %d + %d = %d", 5, 3, 8);
-		std::cout << "This stdout message should be intercepted by logger" << std::endl;
-		printer.print();
-		std::this_thread::sleep_for(std::chrono::seconds(2));
-		logger.logInfo("Application finishing");
-	}
-	else
-	{
-		std::cout << "Could not connect to log server, running without remote logging" << std::endl;
-		logger.logInfo("This won't be sent anywhere");
-		logger.logError("Local error message");
-		printer.print();
-	}
-	std::cout << "Demo completed." << std::endl;
-	return 0;
-}
-
-/**
- * Encapsulates the main application logic
+ * Encapsulates the main application logic and owns all dependencies
  *
- * TDD-friendly: All dependencies are injected, no side effects in constructor.
+ * TDD-friendly: All dependencies are constructed and managed here.
  */
-class Application
-{
-  private:
-	logger::Logger &_logger;
-	const print_hello::PrintHello &_printer;
-
-  public:
-	/**
-	 * Constructs the Application with injected Logger and PrintHello dependencies
-	 * @param logger Reference to Logger instance
-	 * @param printer Reference to PrintHello instance
-	 */
-	Application(logger::Logger &logger, const print_hello::PrintHello &printer) : _logger(logger), _printer(printer)
-	{
-		// No side effects here; logger should be started by caller if needed
+class Application {
+private:
+	AppConfig _config;
+	logger::Logger _logger;
+	print_hello::PrintHello _printer;
+public:
+	Application()
+		: _config(),
+		  _logger(_config.loggerIp, _config.loggerPort),
+		  _printer() {
+		_logger.start();
 	}
 
-	/**
-	 * Runs the application
-	 * @return Exit code
-	 */
-	int run()
-	{
-		if (_logger.isConnected())
-		{
-			_logger.logInfo("Application started with remote logging");
+	~Application() {
+		_logger.stop();
+	}
+
+private:
+	void runLoggerDemo() {
+		std::cout << "=== Logger Class Demo ===" << std::endl;
+		bool connected = _logger.isConnected();
+		if (connected) {
+			std::cout << "Connected to log server successfully!" << std::endl;
+			_logger.logInfo("Application started successfully");
+			_logger.logDebug("This is a debug message");
+			_logger.logWarning("This is a warning message");
+			_logger.logError("This is an error message");
+			_logger.log("Custom formatted message: %d + %d = %d", 5, 3, 8);
+			std::cout << "This stdout message should be intercepted by logger" << std::endl;
+			_printer.print();
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			_logger.logInfo("Application finishing");
+		} else {
+			std::cout << "Could not connect to log server, running without remote logging" << std::endl;
+			_logger.logInfo("This won't be sent anywhere");
+			_logger.logError("Local error message");
+			_printer.print();
 		}
-		else
-		{
+		std::cout << "Demo completed." << std::endl;
+	}
+
+public:
+	int run() {
+		if (_logger.isConnected()) {
+			_logger.logInfo("Application started with remote logging");
+		} else {
 			std::cout << "Running without remote logging (no server at 127.0.0.1:9000)" << std::endl;
 		}
-
-		loggerDemo(_logger, _printer);
+		runLoggerDemo();
 		_printer.print();
 		external_print("Hello from the external C++ library!");
 		external_print_c("Hello from the external C library!");
@@ -101,14 +82,9 @@ class Application
  *
  * TDD-friendly: All dependencies are constructed and injected here.
  */
+
 int main()
 {
-	AppConfig config;
-	logger::Logger logger{config.loggerIp, config.loggerPort};
-	logger.start();
-	print_hello::PrintHello printer;
-	Application app{logger, printer};
-	int result = app.run();
-	logger.stop();
-	return result;
+	Application app;
+	return app.run();
 }

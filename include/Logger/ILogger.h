@@ -21,6 +21,13 @@ public:
     virtual void setInterceptStdStreams(bool intercept) = 0;
     virtual void setLocalDisplay(bool enable) = 0;
     virtual bool getLocalDisplay() const = 0;
+
+    /**
+     * Logs a formatted message (printf-style)
+     * @param format Format string
+     * @param ... Arguments for format string
+     */
+    virtual void log(std::string_view format, ...) = 0;
 };
 
 } // namespace logger

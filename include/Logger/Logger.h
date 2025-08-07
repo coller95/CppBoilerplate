@@ -31,7 +31,7 @@ public:
      * @param format Format string
      * @param ... Arguments for format string
      */
-    void log(std::string_view format, ...);
+    void log(std::string_view format, ...) override;
 
     /**
      * Destructor - ensures proper cleanup
