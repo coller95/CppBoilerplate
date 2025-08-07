@@ -1,6 +1,10 @@
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "MockLogger.h"
+#include "Logger/Logger.h"
+
+namespace logger {
 
 /**
  * Example test fixture for ILogger using Google Mock
@@ -31,3 +35,5 @@ TEST_F(LoggerTestFixture, IsConnectedReturnsFalse) {
 }
 
 // Add more tests for other ILogger methods as needed
+
+} // namespace logger

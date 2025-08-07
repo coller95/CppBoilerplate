@@ -4,8 +4,10 @@
 #include <memory>
 #include <string>
 #include <string_view>
-#include "ILogger.h"
+#include "Logger/ILogger.h"
 
+
+namespace logger {
 
 /**
  * Network-based logger that sends log messages to a TCP server
@@ -54,3 +56,5 @@ public:
     Logger(Logger&&) noexcept;
     Logger& operator=(Logger&&) noexcept;
 };
+
+} // namespace logger

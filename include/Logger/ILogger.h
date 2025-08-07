@@ -2,6 +2,8 @@
 
 #include <string_view>
 
+namespace logger {
+
 /**
  * Logger interface for TDD and mocking
  */
@@ -20,3 +22,5 @@ public:
     virtual void setLocalDisplay(bool enable) = 0;
     virtual bool getLocalDisplay() const = 0;
 };
+
+} // namespace logger

@@ -13,7 +13,7 @@ GTEST_LIBS = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a $(GTES
 
 OBJDIR = obj
 BINDIR = bin
-TEST_SRC = LoggerTest.cpp TestMain.cpp ../../src/Logger.cpp
+TEST_SRC = LoggerTest.cpp TestMain.cpp ../../src/Logger/Logger.cpp
 TEST_OBJS = $(OBJDIR)/LoggerTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/Logger.o
 TEST_BIN = $(BINDIR)/LoggerTest
 
@@ -28,7 +28,7 @@ $(BINDIR):
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJDIR)/Logger.o: ../../src/Logger.cpp | $(OBJDIR)
+$(OBJDIR)/Logger.o: ../../src/Logger/Logger.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TEST_BIN): $(TEST_OBJS)

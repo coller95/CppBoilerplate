@@ -1,8 +1,11 @@
+
 #pragma once
 
 #include <gmock/gmock.h>
 #include <string_view>
-#include "Logger.h"
+#include "Logger/Logger.h"
+
+namespace logger {
 
 /**
  * Google Mock for ILogger for unit testing
@@ -20,3 +23,5 @@ public:
     MOCK_METHOD(void, setLocalDisplay, (bool enable), (override));
     MOCK_METHOD(bool, getLocalDisplay, (), (const, override));
 };
+
+} // namespace logger
