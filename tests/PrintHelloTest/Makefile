@@ -10,8 +10,8 @@ GTEST_LIBS = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
 # Add the implementation file for printHello
 OBJDIR = obj
 BINDIR = bin
-TEST_SRC = PrintHelloTest.cpp TestMain.cpp ../../src/printHello.cpp
-TEST_OBJS = $(OBJDIR)/PrintHelloTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/printHello.o
+TEST_SRC = PrintHelloTest.cpp TestMain.cpp ../../src/PrintHello.cpp
+TEST_OBJS = $(OBJDIR)/PrintHelloTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/PrintHello.o
 TEST_BIN = $(BINDIR)/PrintHelloTest
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
@@ -26,8 +26,8 @@ $(BINDIR):
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Rule for printHello.o from ../../src/printHello.cpp
-$(OBJDIR)/printHello.o: ../../src/printHello.cpp | $(OBJDIR)
+# Rule for PrintHello.o from ../../src/PrintHello.cpp
+$(OBJDIR)/PrintHello.o: ../../src/PrintHello.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TEST_BIN): $(TEST_OBJS)
