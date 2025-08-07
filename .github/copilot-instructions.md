@@ -28,18 +28,30 @@ tests/ModuleNameTest/              # Unit tests (PascalCase folder)
 
 ## Build System Workflows
 
-### Main Application
+### Debug Build
 ```bash
 make debug              # Debug build (default for development)
+make run                # Run the debug build
+```
+### Release Build
+```bash
 make                    # Release build
-./bin/x86_64-native/debug/hello_world
+make run-release       # Run the release build
+```
+
+### Clean Build Artifacts
+```bash
+make clean              # Clean all build artifacts
 ```
 
 ### Unit Tests (Google Test)
 ```bash
-cd tests && make test   # Build and run ALL tests
-cd tests/PrintHelloTest && make  # Build specific test
-./bin/PrintHelloTest         # Run specific test
+make test              # Build and run all unit tests
+```
+
+### Clean Test Artifacts
+```bash
+make test-clean        # Clean all test artifacts
 ```
 
 **Test Structure**: Each test module has `obj/` (objects) and `bin/` (executables) to keep source clean.
