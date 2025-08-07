@@ -29,12 +29,13 @@ This document describes the standard workflow for developing a new feature in th
 - Use modern C++ practices, smart pointers, and follow naming/formatting rules.
 
 ## 6. Build and Test
-- From the project root, run:
+- From the project root, always run:
   ```bash
+  make test-clean
   make debug
   make test
   ```
-- This will build the debug version and run all unit tests (no need to cd into tests/).
+- This will clean all test artifacts, build the debug version, and run all unit tests (no need to cd into tests/).
 
 ## 7. Document
 - Add comments to public interfaces and complex logic.
