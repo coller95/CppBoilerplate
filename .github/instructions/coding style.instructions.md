@@ -112,6 +112,7 @@ This document defines the coding style guidelines for this C++ project. All code
   - **Encapsulation**: All data and logic must be encapsulated in classes or structs. No free functions for business logic; use static class methods if necessary.
   - **One class or struct per file**: Each class or struct must have its own header/source file pair.
   - **Interface/Implementation separation**: Public interfaces in headers, implementation in source files.
+    - **Important:** If a class uses a smart pointer (e.g., `std::unique_ptr`) to a forward-declared (incomplete) type as a member, its destructor **must be explicitly defined in the source file** (not defaulted or inlined in the header). This ensures the type is complete when the destructor is instantiated and prevents incomplete type errors during compilation.
   - **No global variables or free-standing logic**: All state and behavior must belong to a class or struct.
   - **Prefer composition and inheritance** for code reuse and extensibility.
   - **Use access specifiers** (`private`, `protected`, `public`) to control visibility and encapsulation.
