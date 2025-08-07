@@ -83,8 +83,14 @@ void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* e
                 for (const auto& mapping : _staticMappings) {
                     if (path.rfind(mapping.urlPrefix, 0) == 0) {
                         std::string filePath = mapping.directory + (path.substr(mapping.urlPrefix.length()));
-                        struct mg_http_serve_opts opts = {0};
-                        opts.root_dir = mapping.directory.c_str();
+                        struct mg_http_serve_opts opts = {
+                            mapping.directory.c_str(), // root_dir
+                            nullptr, // ssi_pattern
+                            nullptr, // extra_headers
+                            nullptr, // mime_types
+                            nullptr, // page404
+                            nullptr  // fs
+                        };
                         mg_http_serve_file(c, hm, filePath.c_str(), &opts);
                         handled = true;
                         break;
