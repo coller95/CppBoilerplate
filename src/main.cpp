@@ -30,7 +30,7 @@ class Application
 	{
 		// Register dependencies in IoCContainer
 		_container.registerType<logger::Logger>(
-		    [this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
+			[this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
 		_container.registerType<print_hello::PrintHello>([]() { return std::make_shared<print_hello::PrintHello>(); });
 		_container.registerType<RestfulServer>([]() { return std::make_shared<RestfulServer>(8080); });
 		_logger = _container.resolve<logger::Logger>();
@@ -59,6 +59,20 @@ class Application
 			std::cout << "Running without remote logging (no server at 127.0.0.1:9000)" << std::endl;
 		}
 		_printer->print();
+
+		// Register a demo REST handler
+		_restServer->registerHandler("/hello", [](const RestfulRequest& req, RestfulResponse& resp) {
+			resp.setStatus(200);
+			resp.setHeader("Content-Type", "text/plain");
+			resp.setBody("Hello from RestfulServer!\n");
+		});
+		_restServer->start();
+		std::cout << "RestfulServer running on http://localhost:8080/hello" << std::endl;
+
+		// Keep running until user presses Enter
+		std::cout << "Press Enter to exit..." << std::endl;
+		std::cin.get();
+		_restServer->stop();
 		return 0;
 	}
 };

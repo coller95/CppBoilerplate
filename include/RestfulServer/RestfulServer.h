@@ -1,16 +1,20 @@
+
 #pragma once
+
 
 #include <string>
 #include <memory>
 #include <unordered_map>
 #include <functional>
+#include "RestfulServer/RestfulRequest.h"
+#include "RestfulServer/RestfulResponse.h"
 
 /**
  * Provides a simple RESTful HTTP server interface for handling requests and responses.
  */
 class RestfulServer {
 public:
-    using HandlerFunc = std::function<std::string(const std::string& requestBody)>;
+    using HandlerFunc = std::function<void(const RestfulRequest&, RestfulResponse&)>;
 
     /**
      * Constructs a RestfulServer listening on the specified port.

@@ -1,40 +1,33 @@
+
 #include "RestfulServer/RestfulServer.h"
+
+
 #include <stdexcept>
 #include <utility>
+#include <memory>
+#include <string>
+#include <vector>
+#include "RestfulServer/RestfulRequest.h"
+#include "RestfulServer/RestfulResponse.h"
+#include "RestfulServer/IHttpServerBackend.h"
+#include "RestfulServer/MongooseHttpServerBackend.h"
 
+// ...existing code...
+
+// --- RestfulServer Implementation ---
 class RestfulServer::Impl {
 public:
     explicit Impl(int port)
-        : _port(port), _running(false) {}
+        : _backend(std::make_unique<MongooseHttpServerBackend>(port)) {}
 
     void registerHandler(const std::string& path, HandlerFunc handler) {
-        _handlers[path] = std::move(handler);
+        _backend->registerHandler(path, std::move(handler));
     }
-
-    void start() {
-        if (_running) {
-            throw std::runtime_error("Server is already running");
-        }
-        // Placeholder: actual server logic would go here
-        _running = true;
-    }
-
-    void stop() {
-        if (!_running) {
-            throw std::runtime_error("Server is not running");
-        }
-        // Placeholder: actual shutdown logic would go here
-        _running = false;
-    }
-
-    bool isRunning() const {
-        return _running;
-    }
-
+    void start() { _backend->start(); }
+    void stop() { _backend->stop(); }
+    bool isRunning() const { return _backend->isRunning(); }
 private:
-    int _port;
-    bool _running;
-    std::unordered_map<std::string, HandlerFunc> _handlers;
+    std::unique_ptr<IHttpServerBackend> _backend;
 };
 
 RestfulServer::RestfulServer(int port)
