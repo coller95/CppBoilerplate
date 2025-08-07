@@ -25,6 +25,13 @@ public:
     Logger(std::string_view serverIp, int serverPort);
 
     /**
+     * Logs a formatted message (printf-style)
+     * @param format Format string
+     * @param ... Arguments for format string
+     */
+    void log(std::string_view format, ...);
+
+    /**
      * Destructor - ensures proper cleanup
      */
     ~Logger() override;

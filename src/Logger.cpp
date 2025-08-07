@@ -7,6 +7,20 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
+#include <string_view>
+#include <cstdarg>
+#include <cstdio>
+// ...existing Logger methods...
+
+void Logger::log(std::string_view format, ...) {
+    constexpr size_t BufferSize = 1024;
+    char buffer[BufferSize];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, BufferSize, format.data(), args);
+    va_end(args);
+    logInfo(buffer);
+}
 #include <sys/select.h>
 #include <thread>
 #include <unistd.h>
