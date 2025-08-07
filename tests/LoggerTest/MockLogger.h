@@ -22,6 +22,9 @@ public:
     MOCK_METHOD(void, setInterceptStdStreams, (bool intercept), (override));
     MOCK_METHOD(void, setLocalDisplay, (bool enable), (override));
     MOCK_METHOD(bool, getLocalDisplay, (), (const, override));
+
+    // Google Mock does not support variadic functions; provide a dummy override
+    void log(std::string_view /*format*/, ...) override {}
 };
 
 } // namespace logger
