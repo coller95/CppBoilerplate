@@ -131,7 +131,7 @@ TEST(WebServerTest, ServeStaticFile) {
     }
 
     // Only create the file in the project root (where the server will look)
-    std::string rootFile = tempFilePath;
+    std::string rootFile = std::string("../") + tempFilePath;
     std::cout << "[ServeStaticFile] Creating file at: " << rootFile << std::endl;
     std::cout << "[ServeStaticFile] File content size: " << fileContent.size() << std::endl;
     std::cout << "[ServeStaticFile] File content hex: ";
@@ -210,5 +210,5 @@ TEST(WebServerTest, ServeStaticFile) {
     close(sock);
     server.stop();
     // Remove the file from the project root after the test
-    std::remove((tempFilePath).c_str());
+    std::remove((std::string("../") + tempFilePath).c_str());
 }
