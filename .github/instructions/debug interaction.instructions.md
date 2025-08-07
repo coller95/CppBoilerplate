@@ -1,7 +1,10 @@
 ---
 applyTo: '**'
 ---
+
 Provide project context and coding guidelines that AI should follow when generating code, answering questions, or reviewing changes.
+
+**Note:** Whenever instructions refer to actions on "the whole repo," always exclude any files or directories listed in `.gitignore`. Ignored files and folders must not be included in summaries, code changes, or batch operations.
 
 ## Efficient Debug & Test Workflow
 
