@@ -7,6 +7,13 @@ SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/M
 .PHONY: test-make-%
 test-make-%:
 	$(MAKE) -C $* all
+	@absdir="$$(cd $* && pwd)"; \
+	for bin in "$$absdir"/bin/*Test; do \
+	  if [ -x "$$bin" ]; then \
+		echo "Running $$bin"; \
+		"$$bin"; \
+	  fi; \
+	done
 
 .PHONY: test-clean-%
 test-clean-%:
