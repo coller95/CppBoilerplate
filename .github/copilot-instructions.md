@@ -1,3 +1,98 @@
+## Makefile and Build System Standards
+
+To ensure reliable, maintainable, and portable builds, all Makefiles in this project must follow these best practices:
+
+- **Compiler Selection:**
+    - Always use `g++` to compile `.cpp` (C++) files.
+    - Always use `gcc` to compile `.c` (C) files.
+
+- **Object and Dependency Files:**
+    - Compile all source files to object files (`*.o`) in a dedicated `obj/` directory, never in the source directory.
+    - Generate dependency files (`*.d`) for each source file, also in `obj/`.
+
+- **Binary Output:**
+    - Place all test and application executables in a dedicated `bin/` directory.
+
+- **Clean Rule:**
+    - Always provide a `clean` target that removes all object files, dependency files, and binaries (e.g., `rm -rf obj/* bin/*`).
+
+- **Best Practices:**
+    - Use pattern rules to avoid code duplication for compiling sources.
+    - Use variables for source, object, and binary lists.
+
+- **Example Pattern:**
+    ```makefile
+    # Compile C++
+
+    # Compile C
+    obj/%.o: src/%.c
+    \tmkdir -p $(dir $@)
+
+**Test Makefiles:**
+    - Follow all main Makefile standards: always use `g++` for `.cpp` and `gcc` for `.c` files, never mix compilers for the same file type.
+    - Compile all test and implementation sources to object files (`*.o`) and dependency files (`*.d`) in `obj/`, never in the source or test code directories.
+    - Place all test executables in `bin/` inside the test module folder (e.g., `tests/ModuleNameTest/bin/`).
+    - Never pollute the main build output with test artifacts; keep all test objects, binaries, and dependencies isolated in the test module's `obj/` and `bin/` folders.
+    - Always provide a `clean` target that removes all test objects, dependencies, and binaries (e.g., `rm -rf obj/* bin/*`).
+    - Use pattern rules and variables for sources, objects, and binaries to avoid duplication.
+    - Use `-MMD -MP` for dependency generation and `-include obj/*.d` for incremental builds.
+    - Always use `mkdir -p $(dir $@)` in every object/dependency rule to ensure all parent directories are created, especially for sources outside the test directory.
+    - Document any non-obvious logic with comments.
+    - Example (modern, robust):
+      ```makefile
+      OBJDIR = obj
+      BINDIR = bin
+      TEST_SRC = MyTest.cpp TestMain.cpp ../../src/MyModule/MyModule.cpp
+      TEST_OBJS = $(TEST_SRC:%.cpp=$(OBJDIR)/%.o)
+      TEST_BIN = $(BINDIR)/MyTest
+
+      CXX = g++
+      CC = gcc
+      CXXFLAGS = -std=c++20 -I../../include -I../../external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+      CFLAGS = -I../../include -g -Wall -Wextra -MMD -MP
+      GTEST_LIBS = -L../../external/googletest/build/lib -lgtest -lgtest_main
+
+      all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
+
+      $(OBJDIR):
+         mkdir -p $(OBJDIR)
+
+      $(BINDIR):
+         mkdir -p $(BINDIR)
+
+      # Pattern rule for C++ sources (local and relative)
+      $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+         mkdir -p $(dir $@)
+         $(CXX) $(CXXFLAGS) -c $< -o $@
+
+      # Pattern rule for C sources (if any)
+      $(OBJDIR)/%.o: %.c | $(OBJDIR)
+         mkdir -p $(dir $@)
+         $(CC) $(CFLAGS) -c $< -o $@
+
+      # Pattern rule for sources outside the test dir (example)
+      $(OBJDIR)/%.o: ../../src/MyModule/%.cpp | $(OBJDIR)
+         mkdir -p $(dir $@)
+         $(CXX) $(CXXFLAGS) -c $< -o $@
+
+      $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
+         $(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
+
+      -include $(OBJDIR)/*.d
+
+      clean:
+         rm -rf $(OBJDIR)/* $(BINDIR)/*
+      ```
+
+- **General Principle:**
+    - The build system should be predictable, maintainable, and easy for any developer to understand and extend.
+
+Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us/cpp/cpp/cpp-coding-guidelines) for more details.
+
+## Microsoft C++ Coding Style
+
+- One file per class: each class should have its own header (.h) and source (.cpp) file, named after the class.
+- Namespace per feature: group related classes and functions in a namespace named after the feature/module.
 
 # AI Coding Instructions for CppBoilerplate
 This document provides guidelines for AI-assisted coding in the CppBoilerplate project. It includes coding standards, architectural principles, and test-driven development (TDD) practices to ensure high-quality, maintainable code.---
@@ -68,35 +163,7 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
      - Use variables for sources, objects, and binaries.
      - Compile all test and implementation sources to `obj/*.o`.
      - Link against prebuilt Google Test libraries.
-     - Provide explicit rules for compiling sources and creating directories.
-     - Example:
-       ```makefile
-       OBJDIR = obj
-       BINDIR = bin
-       TEST_SRC = MyTest.cpp TestMain.cpp ../../src/MyModule/MyModule.cpp
-       TEST_OBJS = $(OBJDIR)/MyTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/MyModule.o
-       TEST_BIN = $(BINDIR)/MyTest
-
-       all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
-
-       $(OBJDIR):
-         mkdir -p $(OBJDIR)
-
-       $(BINDIR):
-         mkdir -p $(BINDIR)
-
-       $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-         $(CXX) $(CXXFLAGS) -c $< -o $@
-
-       $(OBJDIR)/MyModule.o: ../../src/MyModule/MyModule.cpp | $(OBJDIR)
-         $(CXX) $(CXXFLAGS) -c $< -o $@
-
-       $(TEST_BIN): $(TEST_OBJS)
-         $(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
-
-       clean:
-         rm -f $(OBJDIR)/*.o $(BINDIR)/MyTest
-       ```
+     - please refer to the **Test Makefiles:** for detailed examples.
 
 4. **Implement the Minimal Code**
    - Write just enough code in `src/ModuleName/ModuleName.cpp` to make the test pass.
