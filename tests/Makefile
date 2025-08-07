@@ -4,6 +4,14 @@ SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/M
 
 .PHONY: all clean test $(SUBDIRS)
 
+.PHONY: test-make-%
+test-make-%:
+	$(MAKE) -C $* all
+
+.PHONY: test-clean-%
+test-clean-%:
+	$(MAKE) -C $* clean
+
 all: $(SUBDIRS)
 
 $(SUBDIRS):

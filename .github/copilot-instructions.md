@@ -158,6 +158,16 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
    - Practice TDD: Write unit tests before or alongside production code. For every new feature or bugfix, add or update tests describing expected behavior.
 
+
+## Efficient Targeted Test Build & Clean
+
+- The test build system supports running, building, or cleaning tests for a specific test directory:
+    - `make test-<DirName>`: Build and run only the tests in `<DirName>` (e.g., `make test-WebServerTest`).
+    - `make test-make-<DirName>`: Build (but do not run) only the tests in `<DirName>`.
+    - `make test-clean-<DirName>`: Clean only the test artifacts in `<DirName>`.
+- These pattern rules are available from the project root and are delegated to the corresponding subdirectory Makefiles.
+- This enables rapid, focused development and cleanup for individual test modules.
+
 2. **Write a Failing Test**
    - Create a new test in `tests/ModuleNameTest/`.
    - Use Google Test; name test files and cases in PascalCase.
