@@ -5,6 +5,7 @@ obj/
 *.d
 *.elf
 *.gdb
+*.bin
 
 # Editor and OS files
 *.swp

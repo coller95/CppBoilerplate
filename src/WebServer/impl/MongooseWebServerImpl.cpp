@@ -1,6 +1,7 @@
 #include <WebServer/impl/MongooseWebServerImpl.h>
 #include <iostream>
 #include <cstring>
+#include <fstream>
 
 using namespace WebServerLib;
 
@@ -82,16 +83,47 @@ void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* e
                 // Check static mappings
                 for (const auto& mapping : _staticMappings) {
                     if (path.rfind(mapping.urlPrefix, 0) == 0) {
-                        std::string filePath = mapping.directory + (path.substr(mapping.urlPrefix.length()));
-                        struct mg_http_serve_opts opts = {
-                            mapping.directory.c_str(), // root_dir
-                            nullptr, // ssi_pattern
-                            nullptr, // extra_headers
-                            nullptr, // mime_types
-                            nullptr, // page404
-                            nullptr  // fs
-                        };
-                        mg_http_serve_file(c, hm, filePath.c_str(), &opts);
+                        std::string relPath = path.substr(mapping.urlPrefix.length());
+                        std::string filePath = mapping.directory;
+                        if (!filePath.empty() && filePath.back() != '/' && !relPath.empty() && relPath.front() != '/') {
+                            filePath += "/";
+                        }
+                        filePath += relPath;
+                        std::cout << "[MongooseWebServerImpl] Trying to serve file: " << filePath << std::endl;
+                        std::ifstream f(filePath);
+                        if (f.good()) {
+                            std::cout << "[MongooseWebServerImpl] File exists: " << filePath << std::endl;
+                        } else {
+                            std::cout << "[MongooseWebServerImpl] File NOT FOUND: " << filePath << std::endl;
+                        }
+                        // Serve .bin files manually as application/octet-stream
+                        if (filePath.size() >= 4 && filePath.substr(filePath.size() - 4) == ".bin") {
+                            std::ifstream binFile(filePath, std::ios::binary);
+                            if (binFile) {
+                                binFile.seekg(0, std::ios::end);
+                                size_t fileSize = binFile.tellg();
+                                std::cout << "[MongooseWebServerImpl] .bin file size: " << fileSize << std::endl;
+                                binFile.seekg(0, std::ios::beg);
+                                std::vector<char> buffer(fileSize);
+                                binFile.read(buffer.data(), fileSize);
+                                std::cout << "[MongooseWebServerImpl] .bin file read: " << binFile.gcount() << " bytes" << std::endl;
+                                mg_http_reply(c, 200, "Content-Type: application/octet-stream\r\n", "%.*s", (int)fileSize, buffer.data());
+                            } else {
+                                std::cout << "[MongooseWebServerImpl] .bin file open failed!" << std::endl;
+                                mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "Not found");
+                            }
+                        } else {
+                            static const char* binMime = ".bin=application/octet-stream";
+                            struct mg_http_serve_opts opts = {
+                                mapping.directory.c_str(), // root_dir
+                                nullptr, // ssi_pattern
+                                nullptr, // extra_headers
+                                binMime, // mime_types
+                                nullptr, // page404
+                                nullptr  // fs
+                            };
+                            mg_http_serve_file(c, hm, filePath.c_str(), &opts);
+                        }
                         handled = true;
                         break;
                     }
