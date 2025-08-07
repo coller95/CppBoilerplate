@@ -1,0 +1,9 @@
+# test.build - Makefile fragment for test-related targets
+.PHONY: test
+.PHONY: test-clean
+
+test:
+	cd tests && $(MAKE) test
+
+test-clean:
+	cd tests && $(MAKE) clean

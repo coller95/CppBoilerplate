@@ -1,3 +1,4 @@
+include test.build
 include Makefile.build
 
 APPNAME = hello_world
