@@ -21,15 +21,19 @@ To maximize productivity and feedback speed, always:
    ```bash
    # Build and run main application (from project root)
    make debug && make run_debug
+   ```
 
-   # Build and run all unit tests (from project root)
+   ```bash
+   # Build and run all unit tests (from project root) 
    make test
    ```
+
+   please note:for a new feature or significant change, you may need to run the following commands to ensure everything is built correctly:
 
    - if really needed, you can use the following commands to clean and build:
    ```bash
    # Clean and Build and run main application (from project root)
-   make clean &&make debug && make run_debug
+   make clean && make debug && make run_debug
 
    # Clean and Build and run all unit tests (from project root)
    make test-clean && make test
