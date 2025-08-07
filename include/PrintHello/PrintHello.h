@@ -2,6 +2,8 @@
 
 #include <string>
 
+namespace print_hello {
+
 /**
  * Provides functionality to print a hello message to standard output.
  */
@@ -12,3 +14,5 @@ public:
      */
     void print() const;
 };
+
+} // namespace print_hello

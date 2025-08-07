@@ -1,11 +1,11 @@
 
 #include <gtest/gtest.h>
-#include <PrintHello.h>
+#include <PrintHello/PrintHello.h>
 #include <sstream>
 #include <iostream>
 
 /**
- * Unit tests for PrintHello class
+ * Unit tests for print_hello::PrintHello class
  */
 
 TEST(PrintHelloTest, PrintsHelloWorld) {
@@ -14,7 +14,7 @@ TEST(PrintHelloTest, PrintsHelloWorld) {
     std::streambuf* oldCout = std::cout.rdbuf(buffer.rdbuf());
 
     // Call the method
-    PrintHello printer;
+    print_hello::PrintHello printer;
     printer.print();
 
     // Restore std::cout

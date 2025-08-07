@@ -2,7 +2,7 @@
 #include <foo.h>
 #include <foo_c.h>
 #include <iostream>
-#include <PrintHello.h>
+#include <PrintHello/PrintHello.h>
 #include <Logger.h>
 #include <chrono>
 #include <thread>
@@ -14,7 +14,7 @@
  * @param logger Reference to Logger instance
  * @return 0 on completion
  */
-int loggerDemo(Logger& logger, const PrintHello& printer)
+int loggerDemo(Logger& logger, const print_hello::PrintHello& printer)
 {
 	std::cout << "=== Logger Class Demo ===" << std::endl;
 
@@ -51,7 +51,7 @@ int loggerDemo(Logger& logger, const PrintHello& printer)
 class Application {
 private:
 	Logger& _logger;
-	const PrintHello& _printer;
+	const print_hello::PrintHello& _printer;
 
 public:
 	/**
@@ -59,7 +59,7 @@ public:
 	 * @param logger Reference to Logger instance
 	 * @param printer Reference to PrintHello instance
 	 */
-	Application(Logger& logger, const PrintHello& printer)
+	Application(Logger& logger, const print_hello::PrintHello& printer)
 		: _logger(logger), _printer(printer)
 	{
 		// No side effects here; logger should be started by caller if needed
@@ -96,7 +96,7 @@ int main()
 {
 	Logger logger{"127.0.0.1", 9000};
 	logger.start();
-	PrintHello printer;
+	print_hello::PrintHello printer;
 	Application app{logger, printer};
 	int result = app.run();
 	logger.stop();
