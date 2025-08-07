@@ -29,60 +29,67 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
     \tmkdir -p $(dir $@)
 
 **Test Makefiles:**
-    - Follow all main Makefile standards: always use `g++` for `.cpp` and `gcc` for `.c` files, never mix compilers for the same file type.
-    - Compile all test and implementation sources to object files (`*.o`) and dependency files (`*.d`) in `obj/`, never in the source or test code directories.
-    - Place all test executables in `bin/` inside the test module folder (e.g., `tests/ModuleNameTest/bin/`).
-    - Never pollute the main build output with test artifacts; keep all test objects, binaries, and dependencies isolated in the test module's `obj/` and `bin/` folders.
-    - Always provide a `clean` target that removes all test objects, dependencies, and binaries (e.g., `rm -rf obj/* bin/*`).
-    - Use pattern rules and variables for sources, objects, and binaries to avoid duplication.
-    - Use `-MMD -MP` for dependency generation and `-include obj/*.d` for incremental builds.
-    - Always use `mkdir -p $(dir $@)` in every object/dependency rule to ensure all parent directories are created, especially for sources outside the test directory.
-    - Document any non-obvious logic with comments.
-    - Example (modern, robust):
-      ```makefile
-      OBJDIR = obj
-      BINDIR = bin
-      TEST_SRC = MyTest.cpp TestMain.cpp ../../src/MyModule/MyModule.cpp
-      TEST_OBJS = $(TEST_SRC:%.cpp=$(OBJDIR)/%.o)
-      TEST_BIN = $(BINDIR)/MyTest
 
-      CXX = g++
-      CC = gcc
-      CXXFLAGS = -std=c++20 -I../../include -I../../external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
-      CFLAGS = -I../../include -g -Wall -Wextra -MMD -MP
-      GTEST_LIBS = -L../../external/googletest/build/lib -lgtest -lgtest_main
+      - Follow all main Makefile standards: always use `g++` for `.cpp` and `gcc` for `.c` files, never mix compilers for the same file type.
+      - Compile all test and implementation sources to object files (`*.o`) and dependency files (`*.d`) in `obj/`, never in the source or test code directories.
+      - Place all test executables in `bin/` inside the test module folder (e.g., `tests/ModuleNameTest/bin/`).
+      - Never pollute the main build output with test artifacts; keep all test objects, binaries, and dependencies isolated in the test module's `obj/` and `bin/` folders.
+      - Always provide a `clean` target that removes all test objects, dependencies, and binaries (e.g., `rm -rf obj/* bin/*`).
+      - Use pattern rules and variables for sources, objects, and binaries to avoid duplication.
+      - Use `-MMD -MP` for dependency generation and `-include obj/*.d` for incremental builds.
+      - Always use `mkdir -p $(dir $@)` in every object/dependency rule to ensure all parent directories are created, especially for sources outside the test directory.
+      - Document any non-obvious logic with comments.
+      - Example (modern, robust, flat obj/ mapping):
+        ```makefile
+        # Modern, robust Makefile for unit tests (Google Test)
+        # All object and dependency files are placed flat in obj/ (not nested)
 
-      all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
+        CXX = g++
+        CC = gcc
+        CXXFLAGS = -std=c++20 -I../../include -I../../external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+        CFLAGS = -I../../include -g -Wall -Wextra -MMD -MP
+        GTEST_LIBS = -L../../external/googletest/build/lib -lgtest -lgtest_main
 
-      $(OBJDIR):
-         mkdir -p $(OBJDIR)
+        OBJDIR = obj
+        BINDIR = bin
 
-      $(BINDIR):
-         mkdir -p $(BINDIR)
+        TEST_SRC = MyTest.cpp TestMain.cpp ../../src/MyModule/MyModule.cpp
+        # Explicit object/dependency mapping for sources outside test dir
+        TEST_OBJS = $(OBJDIR)/MyTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/MyModule.o
+        TEST_DEPS = $(OBJDIR)/MyTest.d $(OBJDIR)/TestMain.d $(OBJDIR)/MyModule.d
+        TEST_BIN = $(BINDIR)/MyTest
 
-      # Pattern rule for C++ sources (local and relative)
-      $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-         mkdir -p $(dir $@)
-         $(CXX) $(CXXFLAGS) -c $< -o $@
+        all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
 
-      # Pattern rule for C sources (if any)
-      $(OBJDIR)/%.o: %.c | $(OBJDIR)
-         mkdir -p $(dir $@)
-         $(CC) $(CFLAGS) -c $< -o $@
+        $(OBJDIR):
+            mkdir -p $(OBJDIR)
 
-      # Pattern rule for sources outside the test dir (example)
-      $(OBJDIR)/%.o: ../../src/MyModule/%.cpp | $(OBJDIR)
-         mkdir -p $(dir $@)
-         $(CXX) $(CXXFLAGS) -c $< -o $@
+        $(BINDIR):
+            mkdir -p $(BINDIR)
 
-      $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
-         $(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
+        # Pattern rule for C++ sources in this directory
+        $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CXX) $(CXXFLAGS) -c $< -o $@
 
-      -include $(OBJDIR)/*.d
+        # Explicit rule for sources outside test dir
+        $(OBJDIR)/MyModule.o: ../../src/MyModule/MyModule.cpp | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CXX) $(CXXFLAGS) -c $< -o $@
 
-      clean:
-         rm -rf $(OBJDIR)/* $(BINDIR)/*
-      ```
+        # Pattern rule for C sources (if any)
+        $(OBJDIR)/%.o: %.c | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CC) $(CFLAGS) -c $< -o $@
+
+        $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
+            $(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
+
+        -include $(TEST_DEPS)
+
+        clean:
+            rm -rf $(OBJDIR)/* $(BINDIR)/*
+        ```
 
 - **General Principle:**
     - The build system should be predictable, maintainable, and easy for any developer to understand and extend.
