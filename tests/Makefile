@@ -1,6 +1,6 @@
 # Main Makefile for running all unit tests in subdirectories
 
-SUBDIRS := printHello logger
+SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/Makefile' \; -print | sed 's|^\./||')
 
 .PHONY: all clean test $(SUBDIRS)
 
@@ -17,12 +17,10 @@ clean:
 test: all
 	@echo "Running all unit tests..."
 	for dir in $(SUBDIRS); do \
-	  if [ -x $$dir/bin/printHelloTest ]; then \
-		 echo "Running $$dir/bin/printHelloTest"; \
-		 ./$$dir/bin/printHelloTest; \
-	  fi; \
-	  if [ -x $$dir/bin/loggerTest ]; then \
-		 echo "Running $$dir/bin/loggerTest"; \
-		 ./$$dir/bin/loggerTest; \
-	  fi; \
+	  for bin in $$dir/bin/*Test; do \
+		if [ -x "$$bin" ]; then \
+		  echo "Running $$bin"; \
+		  ./$$bin; \
+		fi; \
+	  done; \
 	done
