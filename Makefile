@@ -92,3 +92,17 @@ copy:
 
 clean_copy:
 	rm -rf APP/$(APPNAME)
+
+
+# Run/launch the built app in debug mode
+run_debug: debug
+	@echo "Launching debug build: $(BIN_DIR_debug)/$(APPNAME)"
+	@$(BIN_DIR_debug)/$(APPNAME)
+
+# Run/launch the built app in release mode
+run_release: release
+	@echo "Launching release build: $(BIN_DIR_release)/$(APPNAME)"
+	@$(BIN_DIR_release)/$(APPNAME)
+
+# For backward compatibility, 'run' launches debug build
+run: run_debug

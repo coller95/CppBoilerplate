@@ -20,16 +20,21 @@ To maximize productivity and feedback speed, always:
 
    ```bash
    # Build and run main application (from project root)
-   make debug && ./bin/x86_64-native/debug/hello_world
+   make debug && make run_debug
 
    # Build and run all unit tests (from project root)
-   for d in tests/*/ ; do cd "$d" && make clean && make && ./bin/$(basename "$d")Test && cd -; done
+   make test
    ```
 
-   - For a specific module:
-     ```bash
-     cd tests/<module> && make clean && make && ./bin/<module>Test
-     ```
+   - if really needed, you can use the following commands to clean and build:
+   ```bash
+   # Clean and Build and run main application (from project root)
+   make clean &&make debug && make run_debug
+
+   # Clean and Build and run all unit tests (from project root)
+   make test-clean && make test
+   ```
+
 
 4. **After Every Change:**
    - Always run the relevant unit tests after any code change to catch issues early.
