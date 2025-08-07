@@ -21,9 +21,9 @@ This project uses a **modular monolithic architecture** in C++ with strict Micro
 
 ### Module Structure
 ```
-include/ModuleName.h    # Public interface
-src/ModuleName.cpp      # Implementation
-tests/ModuleNameTest/   # Unit tests (PascalCase folder)
+include/ModuleName/ModuleName.h    # Public interface
+src/ModuleName/ModuleName.cpp      # Implementation (always create a new subfolder in src/ named after the module/class in PascalCase, and place the .cpp file inside it)
+tests/ModuleNameTest/              # Unit tests (PascalCase folder)
 ```
 
 ## Build System Workflows
@@ -46,7 +46,10 @@ cd tests/PrintHelloTest && make  # Build specific test
 
 ## Adding New Modules
 
-1. **Create module files**: `include/NewModule.h`, `src/NewModule.cpp`
+1. **Create module files**: 
+   - `include/NewModule/NewModule.h`
+   - `src/NewModule/NewModule.cpp`  
+     (always create a new subfolder in `src/` named after the module/class in PascalCase, and place the `.cpp` file inside it)
 2. **Auto-detected** by build system (no Makefile changes)
 3. **Add unit tests**: `tests/NewModuleTest/` with its own Makefile (copy from existing)
 4. **Update** `tests/Makefile` SUBDIRS to include the new test folder (PascalCase)
