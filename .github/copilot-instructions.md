@@ -20,13 +20,20 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
     - Use pattern rules to avoid code duplication for compiling sources.
     - Use variables for source, object, and binary lists.
 
+- **Tab Consistency in Makefiles:**
+    - **All Makefile recipe lines (commands) must use a real tab character, not spaces.**
+    - This is required by `make` and ensures consistent, portable builds.
+    - When generating or editing Makefiles (AI or human), always use a real tab (not spaces) at the start of each command line in a recipe.
+    - Example: `\tmkdir -p $(OBJDIR)` (where `\t` is a real tab character, not spaces).
+
+
 - **Example Pattern:**
     ```makefile
     # Compile C++
 
     # Compile C
-    obj/%.o: src/%.c
-    \tmkdir -p $(dir $@)
+obj/%.o: src/%.c
+\tmkdir -p $(dir $@)
 
 **Test Makefiles:**
 
@@ -61,34 +68,34 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
 
         all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
 
-        $(OBJDIR):
-            mkdir -p $(OBJDIR)
+$(OBJDIR):
+\tmkdir -p $(OBJDIR)
 
-        $(BINDIR):
-            mkdir -p $(BINDIR)
+$(BINDIR):
+\tmkdir -p $(BINDIR)
 
-        # Pattern rule for C++ sources in this directory
-        $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-            mkdir -p $(dir $@)
-            $(CXX) $(CXXFLAGS) -c $< -o $@
+# Pattern rule for C++ sources in this directory
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+\tmkdir -p $(dir $@)
+\t$(CXX) $(CXXFLAGS) -c $< -o $@
 
-        # Explicit rule for sources outside test dir
-        $(OBJDIR)/MyModule.o: ../../src/MyModule/MyModule.cpp | $(OBJDIR)
-            mkdir -p $(dir $@)
-            $(CXX) $(CXXFLAGS) -c $< -o $@
+# Explicit rule for sources outside test dir
+$(OBJDIR)/MyModule.o: ../../src/MyModule/MyModule.cpp | $(OBJDIR)
+\tmkdir -p $(dir $@)
+\t$(CXX) $(CXXFLAGS) -c $< -o $@
 
-        # Pattern rule for C sources (if any)
-        $(OBJDIR)/%.o: %.c | $(OBJDIR)
-            mkdir -p $(dir $@)
-            $(CC) $(CFLAGS) -c $< -o $@
+# Pattern rule for C sources (if any)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+\tmkdir -p $(dir $@)
+\t$(CC) $(CFLAGS) -c $< -o $@
 
-        $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
-            $(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
+$(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
+\t$(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
 
-        -include $(TEST_DEPS)
+-include $(TEST_DEPS)
 
-        clean:
-            rm -rf $(OBJDIR)/* $(BINDIR)/*
+clean:
+\trm -rf $(OBJDIR)/* $(BINDIR)/*
         ```
 
 - **General Principle:**
