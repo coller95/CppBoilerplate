@@ -1,4 +1,4 @@
-include test.build
+
 include Makefile.build
 
 APPNAME = hello_world
@@ -105,4 +105,6 @@ run_release: release
 	@$(BIN_DIR_release)/$(APPNAME)
 
 # For backward compatibility, 'run' launches debug build
-run: run_debug
+run: run_release
+
+include test.build
