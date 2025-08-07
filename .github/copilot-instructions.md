@@ -31,12 +31,20 @@ tests/ModuleNameTest/              # Unit tests (PascalCase folder)
 ### Debug Build
 ```bash
 make debug              # Debug build (default for development)
-make run                # Run the debug build
 ```
+### Run Debug Build
+```bash
+make run-debug          # Run the debug build
+```
+
 ### Release Build
 ```bash
-make                    # Release build
-make run-release       # Run the release build
+make release            # Release build
+```
+
+### Run Release Build
+```bash
+make run-release        # Run the release build
 ```
 
 ### Clean Build Artifacts
