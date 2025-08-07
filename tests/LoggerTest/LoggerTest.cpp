@@ -1,7 +1,6 @@
-
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "mockLogger.h"
+#include "MockLogger.h"
 
 /**
  * Example test fixture for ILogger using Google Mock

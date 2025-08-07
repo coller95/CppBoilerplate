@@ -1,4 +1,4 @@
-# Makefile for Logger unit tests using Google Test
+# Makefile for LoggerTest unit tests using Google Test
 
 CXX = g++
 CXXFLAGS = -std=c++17 -I../../include \
@@ -13,9 +13,9 @@ GTEST_LIBS = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a $(GTES
 
 OBJDIR = obj
 BINDIR = bin
-TEST_SRC = loggerTest.cpp test_main.cpp ../../src/Logger.cpp
-TEST_OBJS = $(OBJDIR)/loggerTest.o $(OBJDIR)/test_main.o $(OBJDIR)/Logger.o
-TEST_BIN = $(BINDIR)/loggerTest
+TEST_SRC = LoggerTest.cpp TestMain.cpp ../../src/Logger.cpp
+TEST_OBJS = $(OBJDIR)/LoggerTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/Logger.o
+TEST_BIN = $(BINDIR)/LoggerTest
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
 
@@ -35,4 +35,4 @@ $(TEST_BIN): $(TEST_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
 
 clean:
-	rm -f $(OBJDIR)/*.o $(BINDIR)/loggerTest
+	rm -f $(OBJDIR)/*.o $(BINDIR)/LoggerTest
