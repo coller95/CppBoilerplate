@@ -92,17 +92,32 @@ This document defines the coding style guidelines for this C++ project. All code
   #define ENABLE_LOGGING
   ```
 
-## File Naming
+
 - Use **camelCase** for source files
 - Header files: `.h` extension
 - Source files: `.cpp` extension
+- **One class or struct per file**: Each class or struct must be defined in its own header/source file pair (e.g., `myClass.h`/`myClass.cpp`).
+- The file name should match the class or struct name (PascalCase), except for test/mocks or special-purpose files.
+- Avoid defining multiple classes or structs in a single file (except for private implementation details, e.g., PIMPL idiom).
 - Examples:
   ```
-  myClass.h
-  myClass.cpp
-  fileManager.h
+  myClass.h      // contains class MyClass
+  myClass.cpp    // contains implementation of MyClass
+  fileManager.h  // contains class FileManager
   fileManager.cpp
   ```
+
+## Object-Oriented Programming (OOP) Principles
+- All code must strictly follow OOP principles:
+  - **Encapsulation**: All data and logic must be encapsulated in classes or structs. No free functions for business logic; use static class methods if necessary.
+  - **One class or struct per file**: Each class or struct must have its own header/source file pair.
+  - **Interface/Implementation separation**: Public interfaces in headers, implementation in source files.
+  - **No global variables or free-standing logic**: All state and behavior must belong to a class or struct.
+  - **Prefer composition and inheritance** for code reuse and extensibility.
+  - **Use access specifiers** (`private`, `protected`, `public`) to control visibility and encapsulation.
+  - **Favor dependency injection** for all dependencies.
+  - **All logic must be testable via public interfaces.**
+  - **Avoid static/global state** except for constants.
 
 ## Code Formatting
 
