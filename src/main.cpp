@@ -1,7 +1,7 @@
 #include <IoCContainer/IoCContainer.h>
 #include <Logger/Logger.h>
 #include <PrintHello/PrintHello.h>
-#include <RestfulServer/RestfulServer.h>
+#include <WebServer/WebServer.h>
 #include <iostream>
 
 /**
@@ -23,7 +23,7 @@ class Application
 	IoCContainer _container;
 	std::shared_ptr<logger::Logger> _logger;
 	std::shared_ptr<print_hello::PrintHello> _printer;
-	std::shared_ptr<RestfulServer> _restServer;
+	std::shared_ptr<WebServer> _webServer;
 
   public:
 	Application() : _config(), _container()
@@ -32,10 +32,10 @@ class Application
 		_container.registerType<logger::Logger>(
 			[this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
 		_container.registerType<print_hello::PrintHello>([]() { return std::make_shared<print_hello::PrintHello>(); });
-		_container.registerType<RestfulServer>([]() { return std::make_shared<RestfulServer>(8080); });
+		_container.registerType<WebServer>([]() { return std::make_shared<WebServer>(8080); });
 		_logger = _container.resolve<logger::Logger>();
 		_printer = _container.resolve<print_hello::PrintHello>();
-		_restServer = _container.resolve<RestfulServer>();
+		_webServer = _container.resolve<WebServer>();
 		_logger->start();
 	}
 
@@ -60,19 +60,19 @@ class Application
 		}
 		_printer->print();
 
-		// Register a demo REST handler
-		_restServer->registerHandler("/hello", [](const RestfulRequest& req, RestfulResponse& resp) {
-			resp.setStatus(200);
-			resp.setHeader("Content-Type", "text/plain");
-			resp.setBody("Hello from RestfulServer!\n");
-		});
-		_restServer->start();
-		std::cout << "RestfulServer running on http://localhost:8080/hello" << std::endl;
+		// Register a demo HTTP handler
+		_webServer->registerHttpHandler("/hello", "GET",
+			[](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+				statusCode = 200;
+				responseBody = "Hello from WebServer!\n";
+			});
+		_webServer->start();
+		std::cout << "WebServer running on http://localhost:8080/hello" << std::endl;
 
 		// Keep running until user presses Enter
 		std::cout << "Press Enter to exit..." << std::endl;
 		std::cin.get();
-		_restServer->stop();
+		_webServer->stop();
 		return 0;
 	}
 };
