@@ -2,14 +2,233 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "make debug",
+            "label": "Build Debug",
             "type": "shell",
-            "command": "make debug",
+            "command": "make -j$(nproc) debug",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "Build Release",
+            "type": "shell",
+            "command": "make -j$(nproc) release",
+            "group": "build",
             "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Build Debug (Silent)",
+            "type": "shell",
+            "command": "VERBOSE=0 make -j$(nproc) debug",
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Run Debug",
+            "type": "shell",
+            "command": "make -j$(nproc) run_debug",
+            "group": "test",
+            "dependsOn": "Build Debug",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Release",
+            "type": "shell",
+            "command": "make -j$(nproc) run",
+            "group": "test",
+            "dependsOn": "Build Release",
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean All",
+            "type": "shell",
+            "command": "make clean",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run All Tests",
+            "type": "shell",
+            "command": "make -j$(nproc) test",
+            "group": "test",
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Run All Tests (Silent)",
+            "type": "shell",
+            "command": "VERBOSE=0 make -j$(nproc) test",
+            "group": "test",
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false
+            }
+        },
+        {
+            "label": "Test: Logger",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-LoggerTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: WebServer",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-WebServerTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: ApiModule",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-ApiModuleTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: IoCContainer",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-IoCContainerTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: EndpointHello",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-EndpointHelloTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: ServiceA",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-ServiceATest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: ServiceB",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-ServiceBTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test: PrintHello",
+            "type": "shell",
+            "command": "make -j$(nproc) test-run-PrintHelloTest",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Test Help",
+            "type": "shell",
+            "command": "make test-help",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "Test Stats",
+            "type": "shell",
+            "command": "make test-stats",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean All Tests",
+            "type": "shell",
+            "command": "make test-clean",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Comprehensive Test Script",
+            "type": "shell",
+            "command": "./scripts/test.sh",
+            "group": "test",
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Comprehensive Test Script (Agent Mode)",
+            "type": "shell",
+            "command": "./scripts/test.sh agent",
+            "group": "test",
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false
+            }
+        },
+        {
+            "label": "Create Endpoint",
+            "type": "shell",
+            "command": "./scripts/create_endpoint.sh create ${input:endpointName}",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Create Service",
+            "type": "shell",
+            "command": "./scripts/create_service.sh create ${input:serviceName}",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Create Module",
+            "type": "shell",
+            "command": "./scripts/create_module.sh create ${input:moduleName}",
+            "group": "build",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "endpointName",
+            "description": "Endpoint name (must start with 'Endpoint')",
+            "default": "EndpointExample",
+            "type": "promptString"
+        },
+        {
+            "id": "serviceName",
+            "description": "Service name (must start with 'Service')",
+            "default": "ServiceExample", 
+            "type": "promptString"
+        },
+        {
+            "id": "moduleName",
+            "description": "Module name (PascalCase, not starting with 'Service' or 'Endpoint')",
+            "default": "ExampleModule",
+            "type": "promptString"
         }
     ]
 }

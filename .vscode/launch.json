@@ -17,9 +17,323 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "make debug"
+            "preLaunchTask": "Build Debug",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Launch Release",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/x86_64-native/release/hello_world",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Release",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Launch Debug with Args",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/x86_64-native/debug/hello_world",
+            "args": ["${input:programArgs}"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Debug",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Launch Debug - Stop at Entry",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/x86_64-native/debug/hello_world",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Debug",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - Logger",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/LoggerTest/bin/LoggerTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: Logger",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - WebServer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/WebServerTest/bin/WebServerTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: WebServer",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - ApiModule",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/ApiModuleTest/bin/ApiModuleTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: ApiModule",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - EndpointHello",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/EndpointHelloTest/bin/EndpointHelloTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: EndpointHello",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - ServiceA",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/ServiceATest/bin/ServiceATest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: ServiceA",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - ServiceB",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/ServiceBTest/bin/ServiceBTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: ServiceB",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - PrintHello",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/PrintHelloTest/bin/PrintHelloTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: PrintHello",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug Tests - IoCContainer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/IoCContainerTest/bin/IoCContainerTest",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Test: IoCContainer",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Quick Debug - No Build",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/x86_64-native/debug/hello_world",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Debug with Valgrind",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/usr/bin/valgrind",
+            "args": [
+                "--tool=memcheck",
+                "--leak-check=full",
+                "--show-leak-kinds=all",
+                "--track-origins=yes",
+                "--verbose",
+                "${workspaceFolder}/bin/x86_64-native/debug/hello_world"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Debug",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "(gdb) Attach to Process",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/bin/x86_64-native/debug/hello_world",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "programArgs",
+            "description": "Program arguments",
+            "default": "",
+            "type": "promptString"
         }
     ]
 }

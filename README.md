@@ -619,27 +619,81 @@ bin/
 
 ---
 
-## 🐞 Debugging in VS Code
+## � VS Code Integration
 
-- Pre-configured for GDB debugging (`.vscode/launch.json`)
-- Build with `make debug` (`.vscode/tasks.json`)
-- Source-level debugging for C & C++
-- Full symbol loading for external libs
-- Mixed C/C++ stack traces & variable inspection
+### Comprehensive Task System
 
-**How to debug:**
-1. Open in VS Code
-2. Press `F5` or select **(gdb) Launch Debug**
-3. The project builds in debug mode and launches the debugger
-4. Set breakpoints, step, and inspect variables
+The project includes extensive VS Code task integration with multithreaded builds and dual-mode output:
 
-Debug binary default path:
+**Build Tasks:**
+- **Build Debug** (F1 → Tasks: Run Task): `make -j$(nproc) debug`
+- **Build Release**: `make -j$(nproc) release`
+- **Build Debug (Silent)**: `VERBOSE=0 make -j$(nproc) debug`
+- **Clean All**: `make clean`
 
-```sh
-./bin/x86_64-native/debug/hello_world
-```
+**Run Tasks:**
+- **Run Debug**: Build and execute debug version
+- **Run Release**: Build and execute release version
 
-If your architecture differs, update `.vscode/launch.json` accordingly.
+**Test Management:**
+- **Run All Tests**: Execute complete test suite with parallel builds
+- **Run All Tests (Silent)**: AI-agent optimized test execution
+- **Individual Module Tests**: Test specific modules (Logger, WebServer, ApiModule, etc.)
+- **Test Help**: Display all available test targets
+- **Test Stats**: Show project statistics and metrics
+
+**Module Generation:**
+- **Create Endpoint**: Interactive endpoint generation with input prompts
+- **Create Service**: Interactive service generation with input prompts
+- **Create Module**: Interactive utility module generation with input prompts
+
+**Automation:**
+- **Comprehensive Test Script**: Full project validation
+- **Comprehensive Test Script (Agent Mode)**: Silent automation for CI/CD
+
+### Advanced Debugging Configurations
+
+**Main Application Debugging:**
+- **(gdb) Launch Debug**: Standard debugging with automatic build
+- **(gdb) Launch Release**: Debug optimized release builds
+- **(gdb) Launch Debug with Args**: Interactive argument input
+- **(gdb) Launch Debug - Stop at Entry**: Pause at program start
+- **(gdb) Quick Debug - No Build**: Skip build for rapid iterations
+
+**Test Module Debugging:**
+- Individual debug configurations for every test module:
+  - Logger, WebServer, ApiModule, IoCContainer
+  - EndpointHello, ServiceA, ServiceB, PrintHello
+
+**Advanced Analysis:**
+- **(gdb) Debug with Valgrind**: Memory leak detection and analysis
+- **(gdb) Attach to Process**: Debug running processes
+
+### Key Features
+
+- **Multithreaded Builds**: All tasks use `make -j$(nproc)` for maximum performance
+- **Dual-Mode Output**: Human-friendly vs AI-agent optimized presentation
+- **Problem Matchers**: Integrated GCC error detection and navigation
+- **Interactive Inputs**: Prompted module creation with validation
+- **Pre-Launch Tasks**: Automatic builds before debugging
+- **Memory Analysis**: Built-in Valgrind integration for professional debugging
+
+### Usage
+
+**Access via Command Palette:**
+1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS)
+2. Type "Tasks: Run Task"
+3. Select from comprehensive task list
+
+**Quick Debugging:**
+1. Press `F5` for default debug configuration
+2. Or select specific debug configuration from Run and Debug panel
+3. Automatic build and launch with GDB integration
+
+**Module Generation:**
+1. Run "Create Endpoint", "Create Service", or "Create Module" tasks
+2. Follow interactive prompts for naming and configuration
+3. Generated modules include complete structure and tests
 
 ---
 
