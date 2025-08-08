@@ -23,7 +23,12 @@ void MongooseWebServerImpl::registerHttpHandler(std::string_view path, std::stri
 
 void MongooseWebServerImpl::serveStatic(std::string_view urlPrefix, std::string_view directory) {
     std::lock_guard<std::mutex> lock(_mutex);
-    _staticMappings.push_back({std::string(urlPrefix), std::string(directory)});
+    _staticMappings.push_back({std::string(urlPrefix), std::string(directory), ""});
+}
+
+void MongooseWebServerImpl::serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _staticMappings.push_back({std::string(urlPrefix), std::string(directory), std::string(mimeType)});
 }
 
 void MongooseWebServerImpl::registerWebSocketHandler(std::string_view /*path*/) {

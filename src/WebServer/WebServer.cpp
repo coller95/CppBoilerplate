@@ -1,4 +1,3 @@
-
 #include <WebServer/WebServer.h>
 #include <WebServer/impl/Factory.h>
 #include <memory>
@@ -21,6 +20,9 @@ public:
     void start() { _impl->start(); }
     void stop() { _impl->stop(); }
     bool isRunning() const { return _impl->isRunning(); }
+    void serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) {
+        _impl->serveStaticWithMime(urlPrefix, directory, mimeType);
+    }
 private:
     std::unique_ptr<IWebServerImpl> _impl;
 };
@@ -33,3 +35,6 @@ void WebServer::registerWebSocketHandler(std::string_view path) { _impl->registe
 void WebServer::start() { _impl->start(); }
 void WebServer::stop() { _impl->stop(); }
 bool WebServer::isRunning() const { return _impl->isRunning(); }
+void WebServer::serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) {
+    _impl->serveStaticWithMime(urlPrefix, directory, mimeType);
+}

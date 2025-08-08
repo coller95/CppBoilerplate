@@ -19,5 +19,12 @@ public:
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual bool isRunning() const = 0;
+    /**
+     * Serves static files from a directory with a specified MIME type.
+     * @param urlPrefix The URL prefix (e.g., "/static/")
+     * @param directory The local directory to serve
+     * @param mimeType The MIME type to use for the files
+     */
+    virtual void serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) = 0;
 };
 } // namespace WebServerLib

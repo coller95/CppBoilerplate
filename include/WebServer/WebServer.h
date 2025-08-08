@@ -36,6 +36,14 @@ public:
     void serveStatic(std::string_view urlPrefix, std::string_view directory);
 
     /**
+     * Serves static files from a directory with a specified MIME type.
+     * @param urlPrefix The URL prefix (e.g., "/static/")
+     * @param directory The local directory to serve
+     * @param mimeType The MIME type to use for the files
+     */
+    void serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType);
+
+    /**
      * Registers a WebSocket handler for a given path.
      * (Stub for future extension)
      */

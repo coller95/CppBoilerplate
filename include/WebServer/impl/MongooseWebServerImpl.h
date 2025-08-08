@@ -24,6 +24,14 @@ public:
     void stop() override;
     bool isRunning() const override;
 
+    /**
+     * Serves static files from a directory with a specified MIME type.
+     * @param urlPrefix The URL prefix (e.g., "/static/")
+     * @param directory The local directory to serve
+     * @param mimeType The MIME type to use for the files
+     */
+    void serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType);
+
 private:
     struct HandlerKey {
         std::string path;
@@ -36,6 +44,7 @@ private:
     struct StaticMapping {
         std::string urlPrefix;
         std::string directory;
+        std::string mimeType; // Added to support custom MIME types
     };
 
     uint16_t _port;
