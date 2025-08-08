@@ -199,6 +199,58 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
    - Practice TDD: Write unit tests before or alongside production code. For every new feature or bugfix, add or update tests describing expected behavior.
 
+   - **Note:** Every time code is touched, the TDD workflow must be strictly followed to ensure quality and maintainability.
+
+2. **Write a Failing Test**
+   - Create a new test in `tests/ModuleNameTest/cases/`.
+   - Use Google Test; name test files and cases in PascalCase.
+   - Focus on the public interface and expected behavior.
+
+   - For every new module/feature, add or update unit tests in `tests/ModuleNameTest/cases/` (PascalCase folder).
+   - Place all test-only code (mocks, helpers) inside the module's test folder, never in production `src/` or `include/`.
+
+3. **Build and Run Tests (After Every Major Change!)**
+   - **After every major code or build change, always run the full build and test suite to catch errors early.**
+   - Run `make test-clean`, `make debug`, `make test` from the project root.
+   - Confirm the new test fails (red).
+
+   - All new test Makefiles must follow the pattern of `tests/PrintHelloTest/Makefile`:
+     - Use `obj/` for object files and `bin/` for test executables.
+     - Use variables for sources, objects, and binaries.
+     - Compile all test and implementation sources to `obj/*.o`.
+     - Link against prebuilt Google Test libraries.
+     - Please refer to the **Test Makefiles:** for detailed examples.
+
+4. **Implement the Minimal Code**
+   - Write just enough code in `src/ModuleName/ModuleName.cpp` to make the test pass.
+   - Follow modern C++ and project style guidelines.
+
+   - All public APIs and logic should be covered by tests; avoid tightly coupling code to I/O or system state.
+
+5. **Rebuild and Retest (Mandatory After Each Major Change)**
+   - Run the test suite again after any significant code, build, or dependency change.
+   - Ensure the new test passes (green) and no regressions occur.
+   - If you skip this step, you risk introducing breaking changes—**always verify with tests and debug builds!**
+
+   - Use Google Test for all C++ unit tests, and ensure all code is built with debug symbols (`-g`).
+
+6. **Refactor**
+   - Clean up code and tests for clarity, modularity, and maintainability.
+   - Use smart pointers, dependency injection, and standard algorithms.
+
+   - Refactor tests and production code together to maintain clarity, coverage, and maintainability.
+
+7. **Repeat**
+   - For each new requirement or bug, repeat the cycle.
+   - Maintain high test coverage and code quality.
+
+   - Use mocks and dependency injection to isolate tests from real system/network state. Avoid tests that depend on external resources unless explicitly required.
+
+8. **Document**
+   - Add comments to public interfaces and complex logic.
+   - Clearly document the purpose of each test.
+
+   - Name test cases and mocks clearly. Add comments to clarify the purpose of each test and mock.
 
 ## Efficient Targeted Test Build & Clean
 
@@ -210,11 +262,11 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 - This enables rapid, focused development and cleanup for individual test modules.
 
 2. **Write a Failing Test**
-   - Create a new test in `tests/ModuleNameTest/`.
+   - Create a new test in `tests/ModuleNameTest/cases/`.
    - Use Google Test; name test files and cases in PascalCase.
    - Focus on the public interface and expected behavior.
 
-   - For every new module/feature, add or update unit tests in `tests/ModuleNameTest/` (PascalCase folder).
+   - For every new module/feature, add or update unit tests in `tests/ModuleNameTest/cases/` (PascalCase folder).
    - Place all test-only code (mocks, helpers) inside the module's test folder, never in production `src/` or `include/`.
 
 
