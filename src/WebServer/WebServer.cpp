@@ -23,6 +23,9 @@ public:
     void serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) {
         _impl->serveStaticWithMime(urlPrefix, directory, mimeType);
     }
+    void registerPreServeHandler(WebServer::PreServeHandler handler) {
+        _impl->registerPreServeHandler(std::move(handler));
+    }
 private:
     std::unique_ptr<IWebServerImpl> _impl;
 };
@@ -37,4 +40,7 @@ void WebServer::stop() { _impl->stop(); }
 bool WebServer::isRunning() const { return _impl->isRunning(); }
 void WebServer::serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) {
     _impl->serveStaticWithMime(urlPrefix, directory, mimeType);
+}
+void WebServer::registerPreServeHandler(PreServeHandler handler) {
+    _impl->registerPreServeHandler(std::move(handler));
 }

@@ -26,5 +26,10 @@ public:
      * @param mimeType The MIME type to use for the files
      */
     virtual void serveStaticWithMime(std::string_view urlPrefix, std::string_view directory, std::string_view mimeType) = 0;
+    /**
+     * Registers a handler to be executed before serving a file.
+     * @param handler The handler function
+     */
+    virtual void registerPreServeHandler(WebServer::PreServeHandler handler) = 0;
 };
 } // namespace WebServerLib

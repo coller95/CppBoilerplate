@@ -16,6 +16,7 @@ class WebServer;
 class WebServer {
 public:
     using HttpHandler = std::function<void(std::string_view path, std::string_view method, const std::string& body, std::string& responseBody, int& statusCode)>;
+    using PreServeHandler = std::function<void(const std::string& filePath)>;
 
     WebServer(uint16_t port = 8080);
     ~WebServer();
@@ -48,6 +49,12 @@ public:
      * (Stub for future extension)
      */
     void registerWebSocketHandler(std::string_view path /*, handler type TBD */);
+
+    /**
+     * Registers a handler to be executed before serving a file.
+     * @param handler The handler function
+     */
+    void registerPreServeHandler(PreServeHandler handler);
 
     /** Starts the server. */
     void start();

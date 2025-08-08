@@ -6,7 +6,7 @@
 using namespace WebServerLib;
 
 MongooseWebServerImpl::MongooseWebServerImpl(uint16_t port)
-    : _port(port), _running(false), _listener(nullptr) {
+    : _port(port), _running(false), _listener(nullptr), _preServeHandler(nullptr) {
     mg_mgr_init(&_mgr);
 }
 
@@ -23,6 +23,7 @@ void MongooseWebServerImpl::registerHttpHandler(std::string_view path, std::stri
 
 void MongooseWebServerImpl::serveStatic(std::string_view urlPrefix, std::string_view directory) {
     std::lock_guard<std::mutex> lock(_mutex);
+    std::cout << "[serveStatic] Registering static mapping: " << urlPrefix << " -> " << directory << std::endl;
     _staticMappings.push_back({std::string(urlPrefix), std::string(directory), ""});
 }
 
@@ -68,10 +69,16 @@ void MongooseWebServerImpl::eventLoop() {
     }
 }
 
+void MongooseWebServerImpl::registerPreServeHandler(WebServer::PreServeHandler handler) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _preServeHandler = std::move(handler);
+}
+
 void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* ev_data) {
     if (ev == MG_EV_HTTP_MSG) {
         auto* hm = (struct mg_http_message*)ev_data;
         std::string path(hm->uri.buf, hm->uri.len);
+        std::cout << "[handleEvent] Received request for path: " << path << std::endl;
         std::string method(hm->method.buf, hm->method.len);
         std::string body(hm->body.buf, hm->body.len);
         std::string responseBody;
@@ -79,6 +86,7 @@ void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* e
         bool handled = false;
         {
             std::lock_guard<std::mutex> lock(_mutex);
+            // Removed early call of _preServeHandler(path) to ensure handler only receives resolved file paths
             HandlerKey key{path, method};
             auto it = _handlers.find(key);
             if (it != _handlers.end()) {
@@ -88,46 +96,47 @@ void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* e
                 // Check static mappings
                 for (const auto& mapping : _staticMappings) {
                     if (path.rfind(mapping.urlPrefix, 0) == 0) {
+                        std::cout << "[handleEvent] Checking static mapping: " << mapping.urlPrefix << " -> " << mapping.directory << std::endl;
                         std::string relPath = path.substr(mapping.urlPrefix.length());
                         std::string filePath = mapping.directory;
                         if (!filePath.empty() && filePath.back() != '/' && !relPath.empty() && relPath.front() != '/') {
                             filePath += "/";
                         }
                         filePath += relPath;
-                        std::cout << "[MongooseWebServerImpl] Trying to serve file: " << filePath << std::endl;
-                        std::ifstream f(filePath);
-                        if (f.good()) {
-                            std::cout << "[MongooseWebServerImpl] File exists: " << filePath << std::endl;
-                        } else {
-                            std::cout << "[MongooseWebServerImpl] File NOT FOUND: " << filePath << std::endl;
+                        std::cout << "[handleEvent] Constructed file path: " << filePath << std::endl;
+
+                        std::ifstream file(filePath);
+                        if (!file) {
+                            std::cerr << "[handleEvent] File not found or inaccessible: " << filePath << std::endl;
+                            continue;
                         }
-                        // Serve .bin files manually as application/octet-stream
-                        if (filePath.size() >= 4 && filePath.substr(filePath.size() - 4) == ".bin") {
-                            std::ifstream binFile(filePath, std::ios::binary);
-                            if (binFile) {
-                                binFile.seekg(0, std::ios::end);
-                                size_t fileSize = binFile.tellg();
-                                std::cout << "[MongooseWebServerImpl] .bin file size: " << fileSize << std::endl;
-                                binFile.seekg(0, std::ios::beg);
-                                std::vector<char> buffer(fileSize);
-                                binFile.read(buffer.data(), fileSize);
-                                std::cout << "[MongooseWebServerImpl] .bin file read: " << binFile.gcount() << " bytes" << std::endl;
-                                mg_http_reply(c, 200, "Content-Type: application/octet-stream\r\n", "%.*s", (int)fileSize, buffer.data());
-                            } else {
-                                std::cout << "[MongooseWebServerImpl] .bin file open failed!" << std::endl;
-                                mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "Not found");
+
+                        if (_preServeHandler) {
+                            try {
+                                _preServeHandler(filePath);
+                            } catch (const std::exception& e) {
+                                std::cerr << "PreServeHandler exception: " << e.what() << std::endl;
                             }
-                        } else {
-                            static const char* binMime = ".bin=application/octet-stream";
+                        }
+
+                        std::cout << "[handleEvent] Preparing to serve file: " << filePath << std::endl;
+                        try {
+                            std::cout << "[handleEvent] mg_connection address: " << c << std::endl;
+                            std::cout << "[handleEvent] mg_http_message URI: " << std::string(hm->uri.buf, hm->uri.len) << std::endl;
+                            std::cout << "[handleEvent] mg_http_message Method: " << std::string(hm->method.buf, hm->method.len) << std::endl;
+                            const char* binMime = ".bin=application/octet-stream";
                             struct mg_http_serve_opts opts = {
-                                mapping.directory.c_str(), // root_dir
-                                nullptr, // ssi_pattern
-                                nullptr, // extra_headers
-                                binMime, // mime_types
-                                nullptr, // page404
-                                nullptr  // fs
+                                /*root_dir*/ mapping.directory.c_str(),
+                                /*ssi_pattern*/ nullptr,
+                                /*extra_headers*/ nullptr,
+                                /*mime_types*/ binMime,
+                                /*page404*/ nullptr,
+                                /*fs*/ nullptr
                             };
                             mg_http_serve_file(c, hm, filePath.c_str(), &opts);
+                            std::cout << "[handleEvent] Successfully served file: " << filePath << std::endl;
+                        } catch (const std::exception& e) {
+                            std::cerr << "[handleEvent] Exception while serving file: " << e.what() << std::endl;
                         }
                         handled = true;
                         break;

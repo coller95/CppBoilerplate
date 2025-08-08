@@ -23,6 +23,7 @@ public:
     void start() override;
     void stop() override;
     bool isRunning() const override;
+    void registerPreServeHandler(WebServer::PreServeHandler handler) override;
 
     /**
      * Serves static files from a directory with a specified MIME type.
@@ -55,6 +56,7 @@ private:
     std::map<HandlerKey, WebServer::HttpHandler> _handlers;
     std::vector<StaticMapping> _staticMappings;
     std::mutex _mutex;
+    WebServer::PreServeHandler _preServeHandler;
 
     void eventLoop();
     void handleEvent(struct mg_connection* c, int ev, void* ev_data);
