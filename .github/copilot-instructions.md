@@ -323,6 +323,11 @@ All contributors, including AI assistants, must follow these rules without excep
      - Link against prebuilt Google Test libraries.
      - please refer to the **Test Makefiles:** for detailed examples.
 
+   - **If you are working on a specific module (e.g., `WebServerTest`), you can build, clean, or run only that module's tests for faster feedback:**
+     - Clean test artifacts: `make test-clean-<ModuleName>`, e.g., `make test-clean-WebServerTest`
+     - Build tests only: `make test-make-<ModuleName>`, e.g., `make test-make-WebServerTest`
+     - Build and run tests: `make test-run-<ModuleName>`, e.g., `make test-run-WebServerTest`
+
 4. **Implement the Minimal Code**
    - Write just enough code in `src/ModuleName/ModuleName.cpp` to make the test pass.
    - Follow modern C++ and project style guidelines.
