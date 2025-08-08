@@ -15,9 +15,6 @@ EXTERNAL_CPP_SOURCES = $(wildcard external/*/src/*.cpp)
 WEBSERVER_IMPL_SOURCES = $(wildcard src/WebServer/impl/*.cpp)
 EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
 
-# Add Mongoose C source explicitly if not already included
-MONGOOSE_C_SOURCE = external/mongoose/src/mongoose.c
-EXTERNAL_C_SOURCES += $(MONGOOSE_C_SOURCE)
 SRCFILES = $(MAIN_SOURCES) $(EXTERNAL_CPP_SOURCES) $(EXTERNAL_C_SOURCES) $(WEBSERVER_IMPL_SOURCES)
 
 # Generate object file names
