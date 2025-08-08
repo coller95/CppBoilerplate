@@ -496,6 +496,43 @@ clean:
 
 **Rationale:** Multithreaded builds significantly reduce build times, especially for large projects with many source files.
 
+### External Library Management
+
+The project uses a centralized external library management system through `Ldflags.build`:
+
+#### Ldflags.build Configuration File
+- **Purpose**: Centralized configuration for external library dependencies and linking flags
+- **Location**: `Ldflags.build` in the project root
+- **Integration**: Automatically included by the main Makefile using `-include Ldflags.build`
+- **Pattern**: Use `LIB_DIRS += -L/path/to/library` and `LDLIBS += -llibraryname`
+
+#### Library Categories
+- **System Libraries**: Common system-level dependencies (math, threading)
+- **Project External Libraries**: Project-specific libraries (mongoose, gtest/gmock)
+- **Custom Libraries**: Third-party libraries (database, JSON, networking, SSL/TLS)
+- **Cross-Compilation Support**: Architecture-specific library paths using conditional statements
+
+#### Usage Examples
+```makefile
+# Enable a library by uncommenting:
+LIB_DIRS  += -L/usr/local/lib
+LDLIBS    += -lsqlite3
+
+# Cross-compilation example:
+ifeq ($(ARCH),aarch64)
+  LIB_DIRS += -L/opt/aarch64-toolchain/lib
+endif
+```
+
+#### Best Practices
+- **Centralized Management**: All external library configuration in one file
+- **Documentation**: Well-commented sections with usage examples
+- **Optional Include**: Build system works with or without the file
+- **Cross-Platform**: Supports both native and cross-compilation scenarios
+- **Integration**: Works seamlessly with the flexible test Makefile system via `EXTERNAL_DEPS`
+
+**Rationale:** Centralized external library management separates dependency configuration from build logic, making it easier to manage different deployment scenarios and cross-compilation targets.
+
 ---
 
 ## Test-Driven Development (TDD)
@@ -685,6 +722,8 @@ This helps keep the project's standards up to date and ensures all contributors 
 - Place test cases in `cases/` subfolders for scalability
 - Use dependency injection and clear interfaces for testability
 - Run relevant tests after every significant change
+- Configure external libraries through `Ldflags.build` for centralized dependency management
+- Use the enhanced test management system: `make test-help` for comprehensive test targets
 
 ---
 

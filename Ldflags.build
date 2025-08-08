@@ -1,3 +1,78 @@
-# # for foo
-# LIB_DIRS 	 += -L/lib/foo
-# LDLIBS       += -lfoo
+# Ldflags.build - External Library Linking Configuration
+# =====================================================
+# This file provides a centralized location for managing external library 
+# dependencies and their linking flags. Uncomment and modify the sections 
+# you need for your specific project requirements.
+#
+# Usage:
+#   - Uncomment relevant sections for libraries you're using
+#   - Add custom library configurations following the same pattern
+#   - This file is included by the main Makefile automatically
+#
+# Pattern:
+#   LIB_DIRS  += -L/path/to/library
+#   LDLIBS    += -llibraryname
+
+# =====================================================
+# COMMON SYSTEM LIBRARIES
+# =====================================================
+
+# Example: Additional math libraries (already included in main Makefile)
+# LIB_DIRS  += -L/usr/lib
+# LDLIBS    += -lm
+
+# Example: Additional threading libraries (already included in main Makefile)
+# LIB_DIRS  += -L/usr/lib
+# LDLIBS    += -lpthread
+
+# =====================================================
+# PROJECT EXTERNAL LIBRARIES
+# =====================================================
+
+# Mongoose Web Server (if using external installation)
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lmongoose
+
+# Google Test/Mock (if using system installation instead of external/)
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lgtest -lgtest_main -lgmock -lgmock_main
+
+# =====================================================
+# EXAMPLE CUSTOM LIBRARIES
+# =====================================================
+
+# Example: foo library
+# LIB_DIRS  += -L/lib/foo
+# LDLIBS    += -lfoo
+
+# Example: Database libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lsqlite3
+
+# Example: JSON libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -ljsoncpp
+
+# Example: Networking libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lcurl
+
+# Example: SSL/TLS libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lssl -lcrypto
+
+# =====================================================
+# CROSS-COMPILATION SUPPORT
+# =====================================================
+# When cross-compiling, you may need architecture-specific library paths.
+# Use conditional statements based on BUILD_NAME or ARCH if needed.
+#
+# Example:
+# ifeq ($(ARCH),aarch64)
+#   LIB_DIRS += -L/opt/aarch64-toolchain/lib
+# endif
+
+# =====================================================
+# CUSTOM CONFIGURATIONS
+# =====================================================
+# Add your project-specific library configurations below:
