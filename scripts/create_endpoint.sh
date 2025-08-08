@@ -81,13 +81,11 @@ cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 namespace $NAMESPACE_NAME {
 
 void $ENDPOINT_NAME::registerEndpoints(IEndpointRegistrar& registrar) {
-    // TODO: Register your endpoints here
-    // Example:
-    // registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
-    //     [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
-    //         statusCode = 200;
-    //         responseBody = "Hello from $ENDPOINT_NAME!\\n";
-    //     });
+    registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
+       [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+           statusCode = 200;
+           responseBody = "Hello from $ENDPOINT_NAME!\\n";
+       });
 }
 
 // Auto-registration: Register this endpoint module with ApiModules
