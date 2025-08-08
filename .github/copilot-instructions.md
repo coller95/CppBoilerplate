@@ -200,7 +200,7 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 ## Efficient Targeted Test Build & Clean
 
 - The test build system supports running, building, or cleaning tests for a specific test directory:
-    - `make test-<DirName>`: Build and run only the tests in `<DirName>` (e.g., `make test-WebServerTest`).
+    - `make test-run-<DirName>`: Build and run only the tests in `<DirName>` (e.g., `make test-run-WebServerTest`).
     - `make test-make-<DirName>`: Build (but do not run) only the tests in `<DirName>`.
     - `make test-clean-<DirName>`: Clean only the test artifacts in `<DirName>`.
 - These pattern rules are available from the project root and are delegated to the corresponding subdirectory Makefiles.
@@ -271,17 +271,6 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 3. **After every change:** Run relevant unit tests to catch issues early.
 4. **Iterative debugging:** If a test fails, fix and rerun up to 5 times, reviewing all output.
 5. **Escalate if needed:** If problems persist after 5 attempts, escalate with detailed logs and context.
-
-## Context-Specific Testing and Phony Targets
-
-When running tests, prefer targeting specific test modules instead of running the entire suite. This approach is faster and more focused, especially during development.
-
-- To clean or build tests for a specific module, use the phony targets defined in the root `test.build` file:
-  ```bash
-  make test-make-WebServerTest
-  make test-clean-WebServerTest
-  ```
-  These commands build or clean the `WebServerTest` module without affecting others.
 
 ### Rationale:
 - **Efficiency**: Running only the relevant tests saves time.

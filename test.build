@@ -8,6 +8,9 @@ test:
 test-clean:
 	cd tests && $(MAKE) clean
 
+test-run-%:
+	cd tests && $(MAKE) test-run-$*	
+
 test-make-%:
 	cd tests && $(MAKE) test-make-$*
 
