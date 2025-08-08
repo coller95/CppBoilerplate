@@ -100,24 +100,34 @@ mkdir -p "include/$SERVICE/"
 cat > "include/$SERVICE/$SERVICE.h" <<EOF
 #pragma once
 #include <string>
+#include <IoCContainer/IoCContainer.h>
 
 namespace ${SERVICE_LC} {
 class $SERVICE {
 public:
-	std::string doSomething$SERVICE() const;
+    $SERVICE();
+    std::string doSomething${SERVICE}() const;
+    // Static registration helper for TDD and decoupling
+    static void registerWith(IoCContainer& container);
 };
 }
 EOF
 
 # Create service implementation
 cat > "src/$SERVICE/$SERVICE.cpp" <<EOF
+#include <IoCContainer/IoCContainer.h>
 #include <$SERVICE/$SERVICE.h>
 
 namespace ${SERVICE_LC} {
-std::string $SERVICE::doSomething$SERVICE() const {
-	return "$SERVICE result";
+$SERVICE::$SERVICE() = default;
+std::string $SERVICE::doSomething${SERVICE}() const {
+    return "$SERVICE result";
 }
+
+void $SERVICE::registerWith(IoCContainer& container) {
+    container.registerType<$SERVICE>([]() { return std::make_shared<$SERVICE>(); });
 }
+} // namespace ${SERVICE_LC}
 EOF
 
 # Create test folder structure
@@ -139,8 +149,24 @@ cat > "tests/${SERVICE}Test/cases/${SERVICE}BasicTest.cpp" <<EOF
 #include <$SERVICE/$SERVICE.h>
 
 TEST(${SERVICE}Test, DoSomething${SERVICE}ReturnsExpected) {
-	${SERVICE_LC}::$SERVICE service;
-	EXPECT_EQ(service.doSomething$SERVICE(), "$SERVICE result");
+    ${SERVICE_LC}::$SERVICE service;
+    EXPECT_EQ(service.doSomething${SERVICE}(), "$SERVICE result");
+}
+EOF
+
+# Create registration test
+cat > "tests/${SERVICE}Test/cases/${SERVICE}RegistrationTest.cpp" <<EOF
+#include <gtest/gtest.h>
+#include <IoCContainer/IoCContainer.h>
+#include <$SERVICE/$SERVICE.h>
+
+TEST(${SERVICE}RegistrationTest, ${SERVICE}IsRegisteredInIoC) {
+    IoCContainer container;
+    ${SERVICE_LC}::$SERVICE::registerWith(container);
+    EXPECT_NO_THROW({
+        auto ptr = container.resolve<${SERVICE_LC}::$SERVICE>();
+        EXPECT_NE(ptr, nullptr);
+    });
 }
 EOF
 
@@ -158,9 +184,9 @@ GTEST_LIBS = -L\$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
 OBJDIR = obj
 BINDIR = bin
 
-TEST_SRC = cases/*.cpp TestMain.cpp \$(ROOTDIR)/src/\$(SERVICE)/\$(SERVICE).cpp
-TEST_OBJS = \$(patsubst cases/%.cpp,\$(OBJDIR)/%.o,\$(wildcard cases/*.cpp)) \$(OBJDIR)/TestMain.o \$(OBJDIR)/\$(SERVICE).o
-TEST_DEPS = \$(patsubst %.cpp,\$(OBJDIR)/%.d,\$(notdir \$(basename \$(wildcard cases/*.cpp)))) \$(OBJDIR)/TestMain.d \$(OBJDIR)/\$(SERVICE).d
+TEST_SRC = cases/*.cpp TestMain.cpp \$(ROOTDIR)/src/\$(SERVICE)/\$(SERVICE).cpp \$(ROOTDIR)/src/IoCContainer/IoCContainer.cpp
+TEST_OBJS = \$(patsubst cases/%.cpp,\$(OBJDIR)/%.o,\$(wildcard cases/*.cpp)) \$(OBJDIR)/TestMain.o \$(OBJDIR)/\$(SERVICE).o \$(OBJDIR)/IoCContainer.o
+TEST_DEPS = \$(patsubst %.cpp,\$(OBJDIR)/%.d,\$(notdir \$(basename \$(wildcard cases/*.cpp)))) \$(OBJDIR)/TestMain.d \$(OBJDIR)/\$(SERVICE).d \$(OBJDIR)/IoCContainer.d
 TEST_BIN = \$(BINDIR)/\$(SERVICE)Test
 
 all: \$(OBJDIR) \$(BINDIR) \$(TEST_BIN)
@@ -183,6 +209,11 @@ all: \$(OBJDIR) \$(BINDIR) \$(TEST_BIN)
 
 # Explicit rule for service source
 \$(OBJDIR)/\$(SERVICE).o: \$(ROOTDIR)/src/\$(SERVICE)/\$(SERVICE).cpp | \$(OBJDIR)
+	mkdir -p \$(dir \$@)
+	\$(CXX) \$(CXXFLAGS) -c \$< -o \$@
+
+# Explicit rule for IoCContainer source
+\$(OBJDIR)/IoCContainer.o: \$(ROOTDIR)/src/IoCContainer/IoCContainer.cpp | \$(OBJDIR)
 	mkdir -p \$(dir \$@)
 	\$(CXX) \$(CXXFLAGS) -c \$< -o \$@
 
