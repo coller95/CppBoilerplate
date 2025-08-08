@@ -38,4 +38,7 @@ else
   exit 1
 fi
 
-echo -e "${GREEN}All checks complete. Your code is working!${NC}"
+status "Cleaning up build artifacts after successful completion..."
+make clean -j$(nproc) && make test-clean -j$(nproc)
+
+echo -e "${GREEN}All checks complete. Your code is working! Build artifacts cleaned up.${NC}"
