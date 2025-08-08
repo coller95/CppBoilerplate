@@ -1,18 +1,84 @@
 # test.build - Makefile fragment for test-related targets
-.PHONY: test
-.PHONY: test-clean
+# Provides convenient test targets at the project root level
 
+# ============================================================================
+# PHONY TARGETS - Declare all test targets as phony
+# ============================================================================
+.PHONY: test test-clean test-help test-stats test-debug-all
+.PHONY: test-run-% test-make-% test-clean-% test-debug-%
+
+# ============================================================================
+# MAIN TEST TARGETS - Core test operations
+# ============================================================================
+
+# Run all tests with comprehensive reporting
 test:
+	@echo "🧪 Running all tests from project root..."
 	cd tests && $(MAKE) test
 
+# Clean all test artifacts
 test-clean:
+	@echo "🧹 Cleaning all test artifacts from project root..."
 	cd tests && $(MAKE) clean
 
+# ============================================================================
+# INDIVIDUAL MODULE TARGETS - Work with specific test modules
+# ============================================================================
+
+# Run tests for a specific module
 test-run-%:
+	@echo "🧪 Running tests for $* from project root..."
 	cd tests && $(MAKE) test-run-$*	
 
+# Build tests for a specific module (without running)
 test-make-%:
+	@echo "🔧 Building tests for $* from project root..."
 	cd tests && $(MAKE) test-make-$*
 
+# Clean artifacts for a specific module
 test-clean-%:
+	@echo "🧹 Cleaning test artifacts for $* from project root..."
 	cd tests && $(MAKE) test-clean-$*
+
+# Debug configuration for a specific module
+test-debug-%:
+	@echo "🐛 Debug configuration for $* from project root..."
+	cd tests && $(MAKE) test-debug-$*
+
+# ============================================================================
+# UTILITY TARGETS - Help and project-wide operations
+# ============================================================================
+
+# Show test help information
+test-help:
+	@echo "📋 CppBoilerplate Test Targets (Project Root)"
+	@echo ""
+	@echo "🎯 Main targets:"
+	@echo "  test                   - Run all tests with comprehensive reporting"
+	@echo "  test-clean             - Clean all test artifacts"
+	@echo "  test-help              - Show this help message"
+	@echo "  test-stats             - Show test project statistics"
+	@echo "  test-debug-all         - Debug all module configurations"
+	@echo ""
+	@echo "🔧 Individual module targets:"
+	@echo "  test-run-<module>      - Build and run tests for a specific module"
+	@echo "  test-make-<module>     - Build tests for a specific module (without running)"
+	@echo "  test-clean-<module>    - Clean artifacts for a specific module"
+	@echo "  test-debug-<module>    - Show debug configuration for a specific module"
+	@echo ""
+	@echo "💡 Examples:"
+	@echo "  make test-run-LoggerTest     # Run Logger tests"
+	@echo "  make test-debug-ServiceATest # Debug ServiceA test configuration"
+	@echo "  make test                    # Run all tests with full reporting"
+	@echo ""
+	@echo "ℹ️  For more detailed help, use: cd tests && make help"
+
+# Show test project statistics
+test-stats:
+	@echo "📊 Test Project Statistics (from project root):"
+	cd tests && $(MAKE) stats
+
+# Debug all module configurations
+test-debug-all:
+	@echo "🐛 Debug all test module configurations (from project root):"
+	cd tests && $(MAKE) debug-all

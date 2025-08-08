@@ -376,9 +376,10 @@ All test modules now use a **flexible Makefile template** that simplifies depend
 
 #### Key Features
 - **Easy dependency management**: Just add module names to the `DEPENDENCIES` variable
-- **Automatic compilation rules**: Generic patterns handle any module type
+- **Automatic compilation rules**: Generic patterns handle any module type (C++17 standard)
 - **Debug support**: Use `make debug-config` to verify dependency resolution
 - **External library support**: Use `EXTERNAL_DEPS` for dependencies from `external/` folder
+- **Enhanced testing**: Includes both Google Test and Google Mock support
 - **Consistent structure**: All Makefiles follow the same template
 
 #### Usage Examples
@@ -409,7 +410,33 @@ cd tests/ModuleNameTest
 make debug-config
 ```
 
-**Rationale:** The flexible Makefile system eliminates boilerplate, reduces errors, ensures consistency across all test modules, and makes dependency management trivial for developers.
+#### Enhanced Test Management System
+
+The project includes a comprehensive test management system accessible both from individual test modules and from the project root:
+
+**Individual Test Management (from test module directory):**
+- `make test` - Build and run tests for the specific module
+- `make clean` - Clean module-specific artifacts  
+- `make debug-config` - Display dependency resolution details
+- Standard build targets (`all`, `clean`, etc.)
+
+**Project-Wide Test Management (from project root):**
+- `make test-help` - Display comprehensive help with all available test targets
+- `make test-stats` - Show project statistics (modules, test files, lines of code)
+- `make test-run-<ModuleName>` - Build and run tests for a specific module
+- `make test-make-<ModuleName>` - Build tests only for a specific module  
+- `make test-clean-<ModuleName>` - Clean artifacts for a specific module
+- `make test-debug-<ModuleName>` - Show debug configuration for a specific module
+- `make test` - Run all tests in the project
+- `make test-clean` - Clean all test artifacts
+
+**Error Handling and User Experience:**
+- Intelligent error messages with module name suggestions for typos
+- Detailed pass/fail reporting with test counts and execution times
+- Comprehensive help system with usage examples
+- Project statistics including module counts and test coverage metrics
+
+**Rationale:** The flexible Makefile system eliminates boilerplate, reduces errors, ensures consistency across all test modules, and makes dependency management trivial for developers. The enhanced test management system provides a seamless experience for both individual module development and project-wide testing operations.
 
 ### Legacy Makefile Example (for reference)
 ```makefile
@@ -495,9 +522,12 @@ clean:
 
 3. **Build and Run Tests**
    - After every major code or build change, always run the relevant module's tests to catch errors early:
-     - Clean test artifacts: `make test-clean-<ModuleName>` (e.g., `make test-clean-WebServerTest`)
-     - Build tests only: `make test-make-<ModuleName>` (e.g., `make test-make-WebServerTest`)
-     - Build and run tests: `make test-run-<ModuleName>` (e.g., `make test-run-WebServerTest`)
+     - Clean test artifacts: `make test-clean-<ModuleName>` (from project root) or `make clean` (from test module)
+     - Build tests only: `make test-make-<ModuleName>` (from project root) or standard build targets (from test module)
+     - Build and run tests: `make test-run-<ModuleName>` (from project root) or `make test` (from test module)
+     - Debug configuration: `make test-debug-<ModuleName>` (from project root) or `make debug-config` (from test module)
+   - Use `make test-help` (from project root) to see all available test management targets
+   - Use `make test-stats` (from project root) to view project statistics and test coverage metrics
    - Confirm the new test fails (red) before proceeding to implementation
    - Only run the full test suite (`make test-clean`, `make debug`, `make test`) if explicitly requested
 
@@ -549,20 +579,25 @@ clean:
 ### Efficient Debug & Test Workflow
 
 1. **Always work from the project root**
-2. **Batch build & test:** Use batch commands to build and test in one step for rapid feedback:
-   - Main app: `make debug && make run_debug`
-   - All unit tests: `make test`
-   - Clean & build (if needed):
-     - `make clean && make debug && make run_debug`
-     - `make test-clean && make test`
-3. **After every change:** Run relevant unit tests to catch issues early
-4. **Iterative debugging:** If a test fails, fix and rerun up to 5 times, reviewing all output
-5. **Escalate if needed:** If problems persist after 5 attempts, escalate with detailed logs and context
+2. **Enhanced test management system:** Use the comprehensive test management commands for streamlined development:
+   - **Individual module testing:** `make test-run-<ModuleName>` (builds and runs tests for specific module)
+   - **Project overview:** `make test-help` (shows all available test targets with examples)
+   - **Project statistics:** `make test-stats` (displays module counts, test files, and lines of code)
+   - **Debug configuration:** `make test-debug-<ModuleName>` (shows dependency resolution details)
+   - **Batch operations:** `make test` (runs all tests), `make test-clean` (cleans all test artifacts)
+3. **Main app workflow:** Use batch commands for rapid feedback:
+   - `make debug && make run_debug`
+   - Clean & build: `make clean && make debug && make run_debug`
+4. **After every change:** Run relevant module tests to catch issues early using the enhanced test targets
+5. **Error handling:** System provides intelligent error messages with module name suggestions for typos
+6. **Iterative debugging:** If a test fails, fix and rerun up to 5 times, reviewing all output
+7. **Escalate if needed:** If problems persist after 5 attempts, escalate with detailed logs and context
 
 **Rationale:**
-- **Efficiency**: Running only the relevant tests saves time
-- **Focus**: Limits output to the module you're working on, making debugging easier
-- **Scalability**: As the project grows, this approach ensures manageable test runs
+- **Enhanced user experience**: Comprehensive test management with detailed reporting and error handling
+- **Efficiency**: Running only the relevant tests saves time, with project-wide overview when needed
+- **Focus**: Detailed feedback and statistics help developers understand project state and progress
+- **Scalability**: As the project grows, the enhanced system ensures manageable and informative test operations
 
 ### Script and Template Generation Conventions
 
@@ -589,11 +624,14 @@ All generation scripts (`create_endpoint.sh`, `create_service.sh`, `create_modul
 #### Makefile Generation Requirements
 
 Generated test Makefiles must:
-- Set `SERVICE = <ModuleName>` (for services) or `SERVICE = <EndpointName>` (for endpoints)
-- Reference sources/objects via `$(SERVICE)` (e.g., `$(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp`)
-- Use `cases/*.cpp` glob for test cases and keep the test runner at the module root
+- Use the **flexible Makefile template** with configuration-based dependency management
+- Set `MODULE_NAME = <ModuleName>` in the CONFIGURATION SECTION at the top
+- Specify dependencies using `DEPENDENCIES = ModuleA ModuleB` (simple format) or `ModuleA:FolderA ModuleB` (complex format)
+- Use `EXTERNAL_DEPS = library1 library2` for external dependencies from `external/` folder
+- Include `cases/*.cpp` glob for test cases and keep the test runner at the module root
 - Place all objects in `obj/` and the binary in `bin/` inside the test module folder
 - **Use real tabs for all recipe lines** (critical for make compatibility)
+- Support both Google Test and Google Mock for comprehensive testing capabilities
 
 #### Heredoc Best Practices
 
