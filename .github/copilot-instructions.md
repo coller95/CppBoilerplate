@@ -112,6 +112,23 @@ This project follows a **modular monolithic architecture**:
 - The script creates the complete modular structure with IoC registration verification tests
 - Always test the generated service with `make test-run-ServiceNameTest`
 
+### Module Generation Script
+
+- Use the `scripts/create_module.sh` script to generate new utility/infrastructure modules automatically
+- Usage:
+  - Create: `./scripts/create_module.sh create ModuleName` (must be in PascalCase, cannot start with "Service" or "Endpoint")
+  - Remove: `./scripts/create_module.sh remove ModuleName` (removes an existing module with confirmation)
+- The script creates the complete modular structure with interface, implementation, and comprehensive tests:
+  - `include/ModuleName/IModuleName.h` (interface definition)
+  - `include/ModuleName/ModuleName.h` (main implementation header)
+  - `src/ModuleName/ModuleName.cpp` (implementation)
+  - `tests/ModuleNameTest/` (with comprehensive test cases and mocks)
+- Generated modules follow RAII principles and include mock classes for testing
+- Always test the generated module with `make test-run-ModuleNameTest`
+- Examples: `DatabaseManager`, `ConfigReader`, `CacheManager`, `FileHandler`
+
+**Rationale:** Infrastructure modules require different patterns than services/endpoints, including interfaces for testability, RAII resource management, and mock objects for testing dependent components.
+
 ### Test File Type Standardization
 
 - For all test cases that require file input/output, use binary file types instead of `.txt` files
@@ -188,6 +205,23 @@ This project follows a **modular monolithic architecture**:
 - Automatically follows all established conventions and standards
 - Provides safe removal with confirmation to prevent accidental deletion
 - **IoC registration tests guarantee dependency injection works correctly and catch integration issues early**
+
+## Module Generation Script
+
+- Use the `scripts/create_module.sh` script to generate new utility/infrastructure modules automatically
+- Usage:
+  - Create: `./scripts/create_module.sh create ModuleName` (must be in PascalCase, cannot start with "Service" or "Endpoint")
+  - Remove: `./scripts/create_module.sh remove ModuleName` (removes an existing module with confirmation)
+- The script creates the complete modular structure with interface, implementation, and comprehensive tests:
+  - `include/ModuleName/IModuleName.h` (interface definition)
+  - `include/ModuleName/ModuleName.h` (main implementation header)
+  - `src/ModuleName/ModuleName.cpp` (implementation)
+  - `tests/ModuleNameTest/` (with comprehensive test cases and mocks)
+- Generated modules follow RAII principles and include mock classes for testing
+- Always test the generated module with `make test-run-ModuleNameTest`
+- Examples: `DatabaseManager`, `ConfigReader`, `CacheManager`, `FileHandler`
+
+**Rationale:** Infrastructure modules require different patterns than services/endpoints, including interfaces for testability, RAII resource management, and mock objects for testing dependent components.
 
 # AI/Assistant Guidance: Evolving Project Conventions
 
@@ -330,7 +364,54 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
 - Only the test runner (e.g., `TestMain.cpp`) should remain at the root of the test module folder
 - To add a new test, **always** create a new `.cpp` file in the `cases/` folder—no Makefile changes required
 
-Example Makefile for test modules:
+### Flexible Makefile System
+
+All test modules now use a **flexible Makefile template** that simplifies dependency management and follows consistent patterns:
+
+#### Configuration-Based Dependencies
+- Each test Makefile has a clear **CONFIGURATION SECTION** at the top where dependencies are specified declaratively
+- No need to manually write compilation rules or object file patterns
+- Dependencies are specified in a simple list format: `DEPENDENCIES = ServiceA ServiceB Logger`
+- Special folder structures use the format: `ModuleName:FolderName` (e.g., `ApiModules:ApiModule`)
+
+#### Key Features
+- **Easy dependency management**: Just add module names to the `DEPENDENCIES` variable
+- **Automatic compilation rules**: Generic patterns handle any module type
+- **Debug support**: Use `make debug-config` to verify dependency resolution
+- **External library support**: Use `EXTERNAL_DEPS` for dependencies from `external/` folder
+- **Consistent structure**: All Makefiles follow the same template
+
+#### Usage Examples
+
+**Simple service with IoC dependency:**
+```makefile
+MODULE_NAME = ServiceA
+DEPENDENCIES = IoCContainer
+```
+
+**Endpoint with API modules:**
+```makefile
+MODULE_NAME = EndpointUser
+DEPENDENCIES = ApiModules:ApiModule
+```
+
+**Complex module with multiple dependencies:**
+```makefile
+MODULE_NAME = DatabaseManager
+DEPENDENCIES = Logger IoCContainer
+EXTERNAL_DEPS = mongoose
+```
+
+#### Debugging Dependencies
+Use the built-in debug target to verify your configuration:
+```bash
+cd tests/ModuleNameTest
+make debug-config
+```
+
+**Rationale:** The flexible Makefile system eliminates boilerplate, reduces errors, ensures consistency across all test modules, and makes dependency management trivial for developers.
+
+### Legacy Makefile Example (for reference)
 ```makefile
 # Modern, robust Makefile for unit tests (Google Test)
 ROOTDIR = ../..
@@ -487,7 +568,7 @@ clean:
 
 #### Universal Script Standards
 
-All generation scripts (`create_endpoint.sh`, `create_service.sh`, etc.) must follow consistent patterns:
+All generation scripts (`create_endpoint.sh`, `create_service.sh`, `create_module.sh`, etc.) must follow consistent patterns:
 - Script location resolution: Use the standard pattern to resolve script directory and run from project root
 - Argument parsing: Use simple positional arguments: `<create|remove> <ModuleName>`
 - Module naming: Validate naming conventions (endpoints start with "Endpoint", services start with "Service")
@@ -555,7 +636,12 @@ This helps keep the project's standards up to date and ensures all contributors 
 ### Key Reminders
 
 - Strict adherence to TDD is mandatory for all development tasks
-- Always use the generation scripts for creating new modules
+- Always use the generation scripts for creating new modules:
+  - `./scripts/create_endpoint.sh` for endpoints 
+  - `./scripts/create_service.sh` for services
+  - `./scripts/create_module.sh` for utility/infrastructure modules
+- Use the flexible Makefile system: modify only the DEPENDENCIES line in test Makefiles
+- Use `make debug-config` to verify dependency resolution in test modules
 - Follow the modular monolithic architecture principles
 - Ensure all Makefiles use real tabs for recipe lines
 - Place test cases in `cases/` subfolders for scalability
