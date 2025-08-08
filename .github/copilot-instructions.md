@@ -1,3 +1,12 @@
+# AI/Assistant Guidance: Evolving Project Conventions
+
+Whenever the user expresses a new idea, workflow, or coding/build convention during development, the AI assistant should ask the user whether they want to add this idea to `copilot-instructions.md` for future reference and consistency. This ensures that evolving best practices and project-specific rules are captured and documented in a single, authoritative place.
+
+**Example:**
+
+- If the user proposes a new test structure, build rule, or coding style, the assistant should confirm: “Do you want to add this convention to `copilot-instructions.md`?”
+
+This helps keep the project’s standards up to date and ensures all contributors and the AI follow the latest agreed practices.
 ## Makefile and Build System Standards
 
 To ensure reliable, maintainable, and portable builds, all Makefiles in this project must follow these best practices:
@@ -46,7 +55,24 @@ obj/%.o: src/%.c
       - Use `-MMD -MP` for dependency generation and `-include obj/*.d` for incremental builds.
       - Always use `mkdir -p $(dir $@)` in every object/dependency rule to ensure all parent directories are created, especially for sources outside the test directory.
       - Document any non-obvious logic with comments.
-      - Example (modern, robust, flat obj/ mapping):
+
+
+
+      - **Test Case Organization and Makefile Globbing (Universal Pattern):**
+        - For every test module (e.g., `tests/ModuleNameTest/`), all test case `.cpp` files must be placed in a `cases/` subfolder (e.g., `tests/ModuleNameTest/cases/`).
+        - The module's `Makefile` must use a glob pattern (`cases/*.cpp`) to automatically include all test case files in that folder as sources and objects.
+        - Only the test runner (e.g., `TestMain.cpp`) should remain at the root of the test module folder.
+        - To add a new test, simply create a new `.cpp` file in `cases/`—no Makefile changes required.
+        - This approach keeps each test folder clean, makes test management scalable, and ensures new tests are always built.
+        - Example Makefile snippet:
+          ```makefile
+          TEST_SRC = cases/*.cpp TestMain.cpp ../../src/ModuleName/ModuleName.cpp ...
+          TEST_OBJS = $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o ...
+          TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/ModuleName.d ...
+          ```
+        - **Rationale:** This convention enables rapid test development, easy file navigation, and eliminates manual Makefile edits for each new test file in any module.
+
+      - Example (modern, robust, flat obj/ mapping for a test module):
         ```makefile
         # Modern, robust Makefile for unit tests (Google Test)
         # All object and dependency files are placed flat in obj/ (not nested)
@@ -60,42 +86,46 @@ obj/%.o: src/%.c
         OBJDIR = obj
         BINDIR = bin
 
-        TEST_SRC = MyTest.cpp TestMain.cpp ../../src/MyModule/MyModule.cpp
-        # Explicit object/dependency mapping for sources outside test dir
-        TEST_OBJS = $(OBJDIR)/MyTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/MyModule.o
-        TEST_DEPS = $(OBJDIR)/MyTest.d $(OBJDIR)/TestMain.d $(OBJDIR)/MyModule.d
-        TEST_BIN = $(BINDIR)/MyTest
+        TEST_SRC = cases/*.cpp TestMain.cpp ../../src/ModuleName/ModuleName.cpp
+        TEST_OBJS = $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o
+        TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/ModuleName.d
+        TEST_BIN = $(BINDIR)/ModuleNameTest
 
         all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
 
-$(OBJDIR):
-\tmkdir -p $(OBJDIR)
+        $(OBJDIR):
+            mkdir -p $(OBJDIR)
 
-$(BINDIR):
-\tmkdir -p $(BINDIR)
+        $(BINDIR):
+            mkdir -p $(BINDIR)
 
-# Pattern rule for C++ sources in this directory
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-\tmkdir -p $(dir $@)
-\t$(CXX) $(CXXFLAGS) -c $< -o $@
+        # Pattern rule for C++ test cases in cases/
+        $(OBJDIR)/%.o: cases/%.cpp | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Explicit rule for sources outside test dir
-$(OBJDIR)/MyModule.o: ../../src/MyModule/MyModule.cpp | $(OBJDIR)
-\tmkdir -p $(dir $@)
-\t$(CXX) $(CXXFLAGS) -c $< -o $@
+        # Pattern rule for the test runner
+        $(OBJDIR)/TestMain.o: TestMain.cpp | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Pattern rule for C sources (if any)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-\tmkdir -p $(dir $@)
-\t$(CC) $(CFLAGS) -c $< -o $@
+        # Explicit rule for sources outside test dir
+        $(OBJDIR)/ModuleName.o: ../../src/ModuleName/ModuleName.cpp | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
-\t$(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
+        # Pattern rule for C sources (if any)
+        $(OBJDIR)/%.o: %.c | $(OBJDIR)
+            mkdir -p $(dir $@)
+            $(CC) $(CFLAGS) -c $< -o $@
 
--include $(TEST_DEPS)
+        $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
+            $(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
 
-clean:
-\trm -rf $(OBJDIR)/* $(BINDIR)/*
+        -include $(TEST_DEPS)
+
+        clean:
+            rm -rf $(OBJDIR)/* $(BINDIR)/*
         ```
 
 - **General Principle:**
