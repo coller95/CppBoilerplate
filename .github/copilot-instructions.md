@@ -338,10 +338,12 @@ The build system supports two output modes optimized for different consumers:
 #### Agent Mode (VERBOSE=0)
 - **Ultra-concise output** optimized for AI context processing
 - **Silent compilation** - no individual file compilation messages
+- **Silent test building** - no verbose build output during test compilation
+- **Silent test execution** - only final pass/fail results, no individual test details
 - **Error-focused** - compilation/linking errors and warnings are fully visible
 - **Essential milestones only**: linking step and final success/failure
-- **Standardized prefixes**: `[BUILD]`, `[TEST]` for easy parsing
-- **Usage**: `VERBOSE=0 make debug` or `VERBOSE=0 make test-run-ModuleName`
+- **Standardized prefixes**: `[BUILD]`, `[TEST]`, `[SCRIPT]` for easy parsing
+- **Usage**: `VERBOSE=0 make debug` or `./scripts/test.sh agent`
 
 #### Key Benefits
 - **Human developers** get rich, colorful feedback for better debugging experience
@@ -374,6 +376,16 @@ make test-run-LoggerTest
 VERBOSE=0 make test-run-LoggerTest
 # Output: [TEST] RUN LoggerTest
 #         [TEST] RESULT LoggerTest 1/1
+
+# Agent-friendly script (ultra-silent)
+./scripts/test.sh agent
+# Output: [SCRIPT] Cleaning build artifacts...
+#         [BUILD] CLEAN
+#         [TEST] CLEAN_ALL
+#         [SCRIPT] SUCCESS: All tests passed!
+#         [BUILD] LINK release hello_world
+#         [BUILD] BUILT release hello_world x86_64-native
+#         [SCRIPT] SUCCESS: All checks complete
 ```
 
 **Rationale:** This dual-mode system ensures optimal user experience for both human developers and AI agents, reducing context pollution while maintaining full functionality and debugging capabilities when needed.

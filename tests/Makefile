@@ -122,24 +122,37 @@ test-debug-%:
 
 # Build all test modules
 all: $(SUBDIRS)
+ifeq ($(VERBOSE),1)
 	@echo "✅ All test modules built successfully"
+endif
 
 # Build a specific test module
 $(SUBDIRS):
+ifeq ($(VERBOSE),1)
 	@echo "🔧 Building $@..."
 	$(MAKE) -C $@
+else
+	@$(MAKE) -C $@ >/dev/null 2>&1
+endif
 
 # Clean all test artifacts
 clean:
+ifeq ($(VERBOSE),1)
 	@echo "🧹 Cleaning all test artifacts..."
 	@for dir in $(SUBDIRS); do \
 		echo "  Cleaning $$dir..."; \
 		$(MAKE) -C $$dir clean; \
 	done
 	@echo "✅ All test artifacts cleaned"
+else
+	@for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir clean >/dev/null 2>&1; \
+	done
+endif
 
 # Run all tests with comprehensive reporting
 test: all
+ifeq ($(VERBOSE),1)
 	@echo "🧪 Running all unit tests..."
 	@echo "Found test modules: $(SUBDIRS)"
 	@echo ""
@@ -192,6 +205,36 @@ test: all
 		echo "  ✅ All tests passed!"; \
 		echo "=========================================="; \
 	fi
+else
+	@total_modules=0; \
+	passed_modules=0; \
+	total_tests=0; \
+	passed_tests=0; \
+	for dir in $(SUBDIRS); do \
+		total_modules=$$((total_modules + 1)); \
+		module_tests=0; \
+		module_passed=0; \
+		module_failed=false; \
+		for bin in $$dir/bin/*Test; do \
+			if [ -x "$$bin" ]; then \
+				module_tests=$$((module_tests + 1)); \
+				total_tests=$$((total_tests + 1)); \
+				if "$$bin" >/dev/null 2>&1; then \
+					module_passed=$$((module_passed + 1)); \
+					passed_tests=$$((passed_tests + 1)); \
+				else \
+					module_failed=true; \
+				fi; \
+			fi; \
+		done; \
+		if [ "$$module_failed" = false ]; then \
+			passed_modules=$$((passed_modules + 1)); \
+		fi; \
+	done; \
+	if [ $$passed_modules -ne $$total_modules ]; then \
+		exit 1; \
+	fi
+endif
 
 # ============================================================================
 # UTILITY TARGETS - Help and debugging
