@@ -364,3 +364,22 @@ Strict TDD ensures:
 
 **Note:**
 - Be cautious when using `-j` on systems with limited resources, as it may cause excessive memory or CPU usage.
+
+## Script and Template Generation Conventions (Bash + Makefile)
+
+- Bash scripts must resolve their own location and run from the project root for predictable relative paths:
+  - SCRIPTDIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
+  - PROJECT_ROOT="$(dirname "$SCRIPTDIR")"; cd "$PROJECT_ROOT"
+- Use PROJECT_ROOT-relative paths for all script operations (creating/removing sources, headers, tests).
+- Do not define ROOTDIR inside scripts. Only define ROOTDIR in generated Makefiles as the path from the test folder to the project root (usually `../..`).
+- Generated test Makefiles must:
+  - Set `SERVICE = <ServiceName>` and reference sources/objects via `$(SERVICE)` (e.g., `$(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp`).
+  - Use `cases/*.cpp` glob for test cases and keep the test runner at the module root.
+  - Place all objects in `obj/` and the binary in `bin/` inside the test module folder.
+  - Use real tabs for all recipe lines.
+- When emitting Makefiles from bash, preserve Makefile variables (`$(...)`) by either:
+  - Using a single-quoted heredoc (preferred): `cat <<'EOF'` so `$` is not expanded by bash, or
+  - Escaping `$` as `\$` if using an unquoted heredoc.
+- If mixing preserved Makefile variables with injected bash variables (e.g., `SERVICE`), either:
+  - Use a single-quoted heredoc and print injected lines separately before/after, or
+  - Keep an unquoted heredoc and escape all Makefile `$` occurrences as `\$` while letting bash expand only the intended variables.
