@@ -73,8 +73,10 @@ EOF
 cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
 #include <ApiModule/IEndpointRegistrar.h>
+#include <ApiModule/ApiModules.h>
 #include <string_view>
 #include <string>
+#include <memory>
 
 namespace $NAMESPACE_NAME {
 
@@ -86,6 +88,16 @@ void $ENDPOINT_NAME::registerEndpoints(IEndpointRegistrar& registrar) {
     //         statusCode = 200;
     //         responseBody = "Hello from $ENDPOINT_NAME!\\n";
     //     });
+}
+
+// Auto-registration: Register this endpoint module with ApiModules
+namespace {
+    static bool registered = []() {
+        apimodule::ApiModules::registerModuleFactory([]() -> std::unique_ptr<apimodule::IApiModule> {
+            return std::make_unique<$ENDPOINT_NAME>();
+        });
+        return true;
+    }();
 }
 
 } // namespace $NAMESPACE_NAME
@@ -206,10 +218,7 @@ EOF
     echo "Next steps:"
     echo "1. Edit src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp to implement your endpoints"
     echo "2. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp with proper test assertions"
-    echo "3. Add your endpoint to src/ApiModule/ApiModules.cpp:"
-    echo "   - #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>"
-    echo "   - $NAMESPACE_NAME::$ENDPOINT_NAME ${ENDPOINT_PART,,}Endpoint;"
-    echo "   - ${ENDPOINT_PART,,}Endpoint.registerEndpoints(countingRegistrar);"
+    echo "3. The endpoint will auto-register with ApiModules (no manual integration needed!)"
     echo "4. Test your endpoint:"
     echo "   make test-run-${ENDPOINT_NAME}Test"
     echo ""
@@ -251,10 +260,7 @@ remove_endpoint() {
     echo "✅ Endpoint module '$ENDPOINT_NAME' removed successfully!"
     echo ""
     echo "Don't forget to:"
-    echo "1. Remove references from src/ApiModule/ApiModules.cpp:"
-    echo "   - Remove: #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>"
-    echo "   - Remove: $NAMESPACE_NAME::$ENDPOINT_NAME ${ENDPOINT_PART,,}Endpoint;"
-    echo "   - Remove: ${ENDPOINT_PART,,}Endpoint.registerEndpoints(countingRegistrar);"
+    echo "1. The endpoint was auto-registered, so no manual removal from ApiModules.cpp needed"
     echo "2. Clean any build artifacts:"
     echo "   make clean && make test-clean"
     echo ""

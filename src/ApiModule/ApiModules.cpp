@@ -1,9 +1,10 @@
 
 #include <ApiModule/ApiModules.h>
 #include <ApiModule/IApiModule.h>
-#include <EndpointHello/EndpointHello.h>
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <functional>
 
 namespace apimodule {
 
@@ -39,12 +40,26 @@ public:
 void ApiModules::registerAll(IEndpointRegistrar& registrar) {
     EndpointCountingRegistrar countingRegistrar(registrar);
     
-    // Register all API modules here
-    endpointhello::EndpointHello helloEndpoint;
-    helloEndpoint.registerEndpoints(countingRegistrar);
+    // Automatically register all endpoint modules that have been registered
+    const auto& factories = getModuleFactories();
+    for (const auto& factory : factories) {
+        auto module = factory();
+        if (module) {
+            module->registerEndpoints(countingRegistrar);
+        }
+    }
     
     // Print detailed information about registered endpoints
     countingRegistrar.printEndpointDetails();
+}
+
+std::vector<ApiModules::ModuleFactory>& ApiModules::getModuleFactories() {
+    static std::vector<ModuleFactory> factories;
+    return factories;
+}
+
+void ApiModules::registerModuleFactory(ModuleFactory factory) {
+    getModuleFactories().push_back(factory);
 }
 
 } // namespace apimodule
