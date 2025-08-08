@@ -2,6 +2,14 @@
 
 Whenever the user expresses a new idea, workflow, or coding/build convention during development, the AI assistant should ask the user whether they want to add this idea to `copilot-instructions.md` for future reference and consistency. This ensures that evolving best practices and project-specific rules are captured and documented in a single, authoritative place.
 
+## Test File Type Standardization
+
+- For all test cases that require file input/output, use binary file types instead of `.txt` files. This applies to any test that interacts with files, ensuring consistency and clarity in test data handling.
+- Avoid using `.txt` files for new or updated tests; prefer binary files (e.g., `.bin`) to standardize file-based testing across the project.
+
+**Rationale:**
+- Using binary files for tests ensures that file handling logic is robust and not dependent on text encoding or formatting, and it provides a consistent approach for all contributors.
+
 **Example:**
 
 - If the user proposes a new test structure, build rule, or coding style, the assistant should confirm: “Do you want to add this convention to `copilot-instructions.md`?”
@@ -263,4 +271,19 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 3. **After every change:** Run relevant unit tests to catch issues early.
 4. **Iterative debugging:** If a test fails, fix and rerun up to 5 times, reviewing all output.
 5. **Escalate if needed:** If problems persist after 5 attempts, escalate with detailed logs and context.
----
+
+## Context-Specific Testing and Phony Targets
+
+When running tests, prefer targeting specific test modules instead of running the entire suite. This approach is faster and more focused, especially during development.
+
+- To clean or build tests for a specific module, use the phony targets defined in the root `test.build` file:
+  ```bash
+  make test-make-WebServerTest
+  make test-clean-WebServerTest
+  ```
+  These commands build or clean the `WebServerTest` module without affecting others.
+
+### Rationale:
+- **Efficiency**: Running only the relevant tests saves time.
+- **Focus**: Limits output to the module you're working on, making debugging easier.
+- **Scalability**: As the project grows, this approach ensures manageable test runs.
