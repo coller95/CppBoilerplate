@@ -2,9 +2,52 @@
 
 A comprehensive, modern C++ project template with advanced Makefile-based build system, modular architecture, comprehensive testing framework, and dual-mode output optimized for both human developers and AI agents. This boilerplate demonstrates enterprise-grade structure for scalable C++ projects with IoC container, web server capabilities, and extensive automation.
 
----
+## 🚀 Quick Start
 
-## ✨ Key Features
+### Bootstrap Fresh Clone
+
+After cloning the repository, run the bootstrap script to set up all dependencies:
+
+```bash
+# Standard bootstrap (recommended)
+./bootstrap.sh
+
+# With verbose output to see all commands
+./bootstrap.sh --verbose
+
+# Download dependencies only (skip building)
+./bootstrap.sh --skip-build
+
+# Force rebuild even if dependencies exist
+./bootstrap.sh --force
+```
+
+**What the bootstrap script does:**
+- ✅ Checks system requirements (git, make, gcc/g++, cmake)
+- ✅ Downloads Google Test framework (v1.14.0)
+- ✅ Builds Google Test libraries
+- ✅ Sets up external library structure (mongoose, foo examples)
+- ✅ Validates setup with test build
+- ✅ Provides next steps for development
+
+### Manual Setup (Alternative)
+
+If you prefer manual setup or the bootstrap script fails:
+
+```bash
+# Install system dependencies
+sudo apt-get install git make gcc g++ cmake curl  # Ubuntu/Debian
+# sudo yum install git make gcc gcc-c++ cmake curl   # RHEL/CentOS
+
+# Download and build Google Test
+cd external
+git clone --depth 1 --branch v1.14.0 https://github.com/google/googletest.git
+cd googletest && mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j$(nproc)
+```
+
+---
 
 - 🏗️ **Immutable Build System**: Configuration-driven, never modify core Makefiles
 - 🎯 **Dual-Mode Output**: Human-friendly vs AI agent-optimized build output
