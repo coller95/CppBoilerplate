@@ -32,7 +32,7 @@ OBJECTS_release = $(MAIN_SOURCES:src/%.cpp=$(BIN_DIR_release)/src/%.o) \
 -include $(OBJECTS_release:.o=.d)
 
 # Compiler and linker flags
-INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir)) -Iexternal/mongoose/include
+INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir))
 LIB_DIRS     = -Llib 
 LDLIBS       = -lpthread -lrt -lm
 
