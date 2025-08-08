@@ -192,71 +192,61 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 - One file per class: each class should have its own header (.h) and source (.cpp) file, named after the class.
 - Namespace per feature: group related classes and functions in a namespace named after the feature/module.
 
-## Test-Driven Development (TDD) Workflow
+
+**Remember:** For any action requiring changes to development code, you must strictly follow TDD. Write test cases first, always. This is non-negotiable and critical to the project's success.
+
+## Test-Driven Development (TDD) Workflow and Enforcement
+
+### Workflow
 
 1. **Define the Requirement**
    - Clearly state the feature or bug to address.
-
-   - Practice TDD: Write unit tests before or alongside production code. For every new feature or bugfix, add or update tests describing expected behavior.
-
-   - **Note:** Every time code is touched, the TDD workflow must be strictly followed to ensure quality and maintainability.
+   - Write unit tests before or alongside production code. For every new feature or bugfix, add or update tests describing expected behavior.
+   - Strictly follow the TDD workflow to ensure quality and maintainability.
 
 2. **Write a Failing Test**
+   - Clean the existing build and test artifacts before making changes:
+     - Run `make clean` to remove all build artifacts.
+     - Run `make test-clean` to remove all test artifacts.
    - Create a new test in `tests/ModuleNameTest/cases/`.
    - Use Google Test; name test files and cases in PascalCase.
    - Focus on the public interface and expected behavior.
-
-   - For every new module/feature, add or update unit tests in `tests/ModuleNameTest/cases/` (PascalCase folder).
    - Place all test-only code (mocks, helpers) inside the module's test folder, never in production `src/` or `include/`.
 
-3. **Build and Run Tests (After Every Major Change!)**
-   - **After every major code or build change, always run the relevant module's tests to catch errors early.**
-   - Run the following commands in the terminal from the project root:
-     - Clean test artifacts: `make test-clean-<ModuleName>` (e.g., `make test-clean-WebServerTest`)
-     - Build tests only: `make test-make-<ModuleName>` (e.g., `make test-make-WebServerTest`)
-     - Build and run tests: `make test-run-<ModuleName>` (e.g., `make test-run-WebServerTest`)
-   - **Only run the full test suite (`make test-clean`, `make debug`, `make test`) if explicitly requested.**
+3. **Build and Run Tests**
+   - After every major code or build change, always run the relevant module's tests to catch errors early:
+     - Clean test artifacts: `make test-clean-<ModuleName>` (e.g., `make test-clean-WebServerTest`).
+     - Build tests only: `make test-make-<ModuleName>` (e.g., `make test-make-WebServerTest`).
+     - Build and run tests: `make test-run-<ModuleName>` (e.g., `make test-run-WebServerTest`).
    - Confirm the new test fails (red) before proceeding to implementation.
-
-   - All new test Makefiles must follow the pattern of `tests/PrintHelloTest/Makefile`:
-     - Use `obj/` for object files and `bin/` for test executables.
-     - Use variables for sources, objects, and binaries.
-     - Compile all test and implementation sources to `obj/*.o`.
-     - Link against prebuilt Google Test libraries.
-     - Please refer to the **Test Makefiles:** for detailed examples.
+   - Only run the full test suite (`make test-clean`, `make debug`, `make test`) if explicitly requested.
 
 4. **Implement the Minimal Code**
    - Write just enough code in `src/ModuleName/ModuleName.cpp` to make the test pass.
    - Follow modern C++ and project style guidelines.
+   - Ensure all public APIs and logic are covered by tests; avoid tightly coupling code to I/O or system state.
 
-   - All public APIs and logic should be covered by tests; avoid tightly coupling code to I/O or system state.
-
-5. **Rebuild and Retest (Mandatory After Each Major Change)**
+5. **Rebuild and Retest**
    - Run the test suite again after any significant code, build, or dependency change.
    - Ensure the new test passes (green) and no regressions occur.
-   - If you skip this step, you risk introducing breaking changes—**always verify with tests and debug builds!**
-
    - Use Google Test for all C++ unit tests, and ensure all code is built with debug symbols (`-g`).
 
 6. **Refactor**
    - Clean up code and tests for clarity, modularity, and maintainability.
    - Use smart pointers, dependency injection, and standard algorithms.
-
    - Refactor tests and production code together to maintain clarity, coverage, and maintainability.
 
 7. **Repeat**
    - For each new requirement or bug, repeat the cycle.
    - Maintain high test coverage and code quality.
-
    - Use mocks and dependency injection to isolate tests from real system/network state. Avoid tests that depend on external resources unless explicitly required.
 
 8. **Document**
    - Add comments to public interfaces and complex logic.
    - Clearly document the purpose of each test.
-
    - Name test cases and mocks clearly. Add comments to clarify the purpose of each test and mock.
 
-## Test-Driven Development (TDD) Enforcement
+### Enforcement
 
 To ensure high-quality, maintainable code, **strict adherence to TDD** is mandatory for all development tasks. The following rules must be followed:
 
@@ -284,124 +274,7 @@ To ensure high-quality, maintainable code, **strict adherence to TDD** is mandat
    - For each new requirement or bug, repeat the TDD cycle.
    - Maintain high test coverage and code quality.
 
-### Prohibited Actions
-- **No direct implementation without a failing test.**
-- **No skipping of test validation after changes.**
-- **No merging of code that has not been tested.**
-
-### Rationale
-Strict TDD ensures:
-- Predictable and reliable code behavior.
-- Early detection of bugs and regressions.
-- Maintainable and scalable codebase.
-
-All contributors, including AI assistants, must follow these rules without exception.
-
-## Efficient Targeted Test Build & Clean
-
-- The test build system supports running, building, or cleaning tests for a specific test directory:
-    - `make test-run-<DirName>`: Build and run only the tests in `<DirName>` (e.g., `make test-run-WebServerTest`).
-    - `make test-make-<DirName>`: Build (but do not run) only the tests in `<DirName>`.
-    - `make test-clean-<DirName>`: Clean only the test artifacts in `<DirName>`.
-- These pattern rules are available from the project root and are delegated to the corresponding subdirectory Makefiles.
-- This enables rapid, focused development and cleanup for individual test modules.
-
-2. **Write a Failing Test**
-   - Create a new test in `tests/ModuleNameTest/cases/`.
-   - Use Google Test; name test files and cases in PascalCase.
-   - Focus on the public interface and expected behavior.
-
-   - For every new module/feature, add or update unit tests in `tests/ModuleNameTest/cases/` (PascalCase folder).
-   - Place all test-only code (mocks, helpers) inside the module's test folder, never in production `src/` or `include/`.
-
-
-3. **Build and Run Tests (After Every Major Change!)**
-   - **After every major code or build change, always run the relevant module's tests to catch errors early.**
-   - Run the following commands in the terminal from the project root:
-     - Clean test artifacts: `make test-clean-<ModuleName>` (e.g., `make test-clean-WebServerTest`)
-     - Build tests only: `make test-make-<ModuleName>` (e.g., `make test-make-WebServerTest`)
-     - Build and run tests: `make test-run-<ModuleName>` (e.g., `make test-run-WebServerTest`)
-   - **Only run the full test suite (`make test-clean`, `make debug`, `make test`) if explicitly requested.**
-   - Confirm the new test fails (red) before proceeding to implementation.
-
-   - All new test Makefiles must follow the pattern of `tests/PrintHelloTest/Makefile`:
-     - Use `obj/` for object files and `bin/` for test executables.
-     - Use variables for sources, objects, and binaries.
-     - Compile all test and implementation sources to `obj/*.o`.
-     - Link against prebuilt Google Test libraries.
-     - please refer to the **Test Makefiles:** for detailed examples.
-
-   - **If you are working on a specific module (e.g., `WebServerTest`), you can build, clean, or run only that module's tests for faster feedback:**
-     - Clean test artifacts: `make test-clean-<ModuleName>`, e.g., `make test-clean-WebServerTest`
-     - Build tests only: `make test-make-<ModuleName>`, e.g., `make test-make-WebServerTest`
-     - Build and run tests: `make test-run-<ModuleName>`, e.g., `make test-run-WebServerTest`
-
-4. **Implement the Minimal Code**
-   - Write just enough code in `src/ModuleName/ModuleName.cpp` to make the test pass.
-   - Follow modern C++ and project style guidelines.
-
-   - All public APIs and logic should be covered by tests; avoid tightly coupling code to I/O or system state.
-
-
-5. **Rebuild and Retest (Mandatory After Each Major Change)**
-   - Run the test suite again after any significant code, build, or dependency change.
-   - Ensure the new test passes (green) and no regressions occur.
-   - If you skip this step, you risk introducing breaking changes—**always verify with tests and debug builds!**
-
-   - Use Google Test for all C++ unit tests, and ensure all code is built with debug symbols (`-g`).
-
-6. **Refactor**
-   - Clean up code and tests for clarity, modularity, and maintainability.
-   - Use smart pointers, dependency injection, and standard algorithms.
-
-   - Refactor tests and production code together to maintain clarity, coverage, and maintainability.
-
-7. **Repeat**
-   - For each new requirement or bug, repeat the cycle.
-   - Maintain high test coverage and code quality.
-
-   - Use mocks and dependency injection to isolate tests from real system/network state. Avoid tests that depend on external resources unless explicitly required.
-
-8. **Document**
-   - Add comments to public interfaces and complex logic.
-   - Clearly document the purpose of each test.
-
-   - Name test cases and mocks clearly. Add comments to clarify the purpose of each test and mock.
-
-## Build and Test Cleanup Before Changes
-
-Before making any changes to the codebase, always clean the existing build and test artifacts to ensure a fresh start. This can be done by running the following commands from the project root:
-
-```bash
-make clean
-make test-clean
-```
-
-This ensures that no stale or outdated artifacts interfere with the new build or tests.
-
-## Efficient Debug & Test Workflow
-
-1. **Always work from the project root.**
-2. **Batch build & test:** Use batch commands to build and test in one step for rapid feedback.
-   - Main app: `make debug && make run_debug`
-   - All unit tests: `make test`
-   - Clean & build (if needed):
-     - `make clean && make debug && make run_debug`
-     - `make test-clean && make test`
-3. **After every change:** Run relevant unit tests to catch issues early.
-4. **Iterative debugging:** If a test fails, fix and rerun up to 5 times, reviewing all output.
-5. **Escalate if needed:** If problems persist after 5 attempts, escalate with detailed logs and context.
-
-### Rationale:
-- **Efficiency**: Running only the relevant tests saves time.
-- **Focus**: Limits output to the module you're working on, making debugging easier.
-- **Scalability**: As the project grows, this approach ensures manageable test runs.
-
-**Remember:** For any action requiring changes to development code, you must strictly follow TDD. Write test cases first, always. This is non-negotiable and critical to the project's success.
-
-## Test-Driven Development (TDD) Example: Adding serveStaticWithMime to WebServer
-
-### Steps Followed:
+### Example
 
 1. **Define the Requirement**
    - Added a new feature to allow serving static files with a user-defined MIME type.
@@ -434,3 +307,34 @@ This ensures that no stale or outdated artifacts interfere with the new build or
 - Strict adherence to TDD ensures predictable and reliable code behavior.
 - Incremental development and testing catch issues early and improve maintainability.
 - Documenting the process helps maintain consistency and serves as a reference for future tasks.
+
+
+### Prohibited Actions
+- **No direct implementation without a failing test.**
+- **No skipping of test validation after changes.**
+- **No merging of code that has not been tested.**
+
+### Rationale
+Strict TDD ensures:
+- Predictable and reliable code behavior.
+- Early detection of bugs and regressions.
+- Maintainable and scalable codebase.
+
+## Efficient Debug & Test Workflow
+
+1. **Always work from the project root.**
+2. **Batch build & test:** Use batch commands to build and test in one step for rapid feedback.
+   - Main app: `make debug && make run_debug`
+   - All unit tests: `make test`
+   - Clean & build (if needed):
+     - `make clean && make debug && make run_debug`
+     - `make test-clean && make test`
+3. **After every change:** Run relevant unit tests to catch issues early.
+4. **Iterative debugging:** If a test fails, fix and rerun up to 5 times, reviewing all output.
+5. **Escalate if needed:** If problems persist after 5 attempts, escalate with detailed logs and context.
+
+### Rationale:
+- **Efficiency**: Running only the relevant tests saves time.
+- **Focus**: Limits output to the module you're working on, making debugging easier.
+- **Scalability**: As the project grows, this approach ensures manageable test runs.
+
