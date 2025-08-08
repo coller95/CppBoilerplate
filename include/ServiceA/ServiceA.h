@@ -4,6 +4,6 @@
 namespace servicea {
 class ServiceA {
 public:
-    std::string doSomethingA() const;
+	std::string doSomethingServiceA() const;
 };
 }

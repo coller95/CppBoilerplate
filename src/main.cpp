@@ -70,8 +70,8 @@ class Application
 
 		_printer->print();
 		// Example usage of ServiceA and ServiceB
-		std::cout << "ServiceA: " << _serviceA->doSomethingA() << std::endl;
-		std::cout << "ServiceB: " << _serviceB->doSomethingB() << std::endl;
+		std::cout << "ServiceA: " << _serviceA->doSomethingServiceA() << std::endl;
+		std::cout << "ServiceB: " << _serviceB->doSomethingServiceB() << std::endl;
 
 		// Register all API modules (endpoints) via ApiModules
 		apimodule::ApiModules::registerAll(*_webServer);
