@@ -10,11 +10,12 @@ GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
 
 OBJDIR = obj
 BINDIR = bin
+SERVICE = EndpointHello
 
-TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/EndpointHello/EndpointHello.cpp
-TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/EndpointHello.o
-TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/EndpointHello.d
-TEST_BIN = $(BINDIR)/EndpointHelloTest
+TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(SERVICE).o
+TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/$(SERVICE).d
+TEST_BIN = $(BINDIR)/$(SERVICE)Test
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
 
@@ -35,7 +36,7 @@ $(OBJDIR)/TestMain.o: TestMain.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Explicit rule for sources outside test dir
-$(OBJDIR)/EndpointHello.o: $(ROOTDIR)/src/EndpointHello/EndpointHello.cpp | $(OBJDIR)
+$(OBJDIR)/$(SERVICE).o: $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

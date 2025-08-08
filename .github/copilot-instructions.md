@@ -29,6 +29,26 @@
 **Rationale:**
 - This approach maximizes decoupling, modularity, and maintainability, making it easy to add, test, and refactor endpoints independently.
 
+## Endpoint Generation Script
+
+- Use the `scripts/create_endpoint.sh` script to generate new endpoint modules automatically
+- Usage: 
+  - Create: `./scripts/create_endpoint.sh create EndpointName` (must start with "Endpoint" followed by a capitalized name)
+  - Remove: `./scripts/create_endpoint.sh remove EndpointName` (removes an existing endpoint with confirmation)
+- The script creates the complete modular structure:
+  - `include/EndpointName/EndpointName.h`
+  - `src/EndpointName/EndpointName.cpp` 
+  - `tests/EndpointNameTest/` with test cases and Makefile
+- Follow the script's instructions to integrate the new endpoint into `ApiModules.cpp`
+- Always test the generated endpoint with `make test-run-EndpointNameTest`
+- Use remove function to clean up unwanted endpoints safely
+
+**Rationale:**
+- Ensures consistent endpoint structure across the project
+- Reduces boilerplate and setup time for new endpoints
+- Automatically follows all established conventions and standards
+- Provides safe removal with confirmation to prevent accidental deletion
+
 # AI/Assistant Guidance: Evolving Project Conventions
 
 Whenever the user expresses a new idea, workflow, or coding/build convention during development, the AI assistant should ask the user whether they want to add this idea to `copilot-instructions.md` for future reference and consistency. This ensures that evolving best practices and project-specific rules are captured and documented in a single, authoritative place.

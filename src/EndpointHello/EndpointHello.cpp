@@ -6,11 +6,13 @@
 namespace endpointhello {
 
 void EndpointHello::registerEndpoints(IEndpointRegistrar& registrar) {
-    registrar.registerHttpHandler("/hello", "GET",
-        [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
-            statusCode = 200;
-            responseBody = "Hello from EndpointHello!\n";
-        });
+    // TODO: Register your endpoints here
+    // Example:
+    // registrar.registerHttpHandler("/hello", "GET",
+    //     [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+    //         statusCode = 200;
+    //         responseBody = "Hello from EndpointHello!\n";
+    //     });
 }
 
 } // namespace endpointhello
