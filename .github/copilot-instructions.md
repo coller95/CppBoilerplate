@@ -66,12 +66,14 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
 
 
 
-      - **Test Case Organization and Makefile Globbing (Universal Pattern):**
-        - For every test module (e.g., `tests/ModuleNameTest/`), all test case `.cpp` files must be placed in a `cases/` subfolder (e.g., `tests/ModuleNameTest/cases/`).
+      - **Test Case Organization and Makefile Globbing (Universal Pattern)**
+
+        - For every test module (e.g., `tests/ModuleNameTest/`), all test case `.cpp` files **must** be placed in a `cases/` subfolder (e.g., `tests/ModuleNameTest/cases/`).
         - The module's `Makefile` must use a glob pattern (`cases/*.cpp`) to automatically include all test case files in that folder as sources and objects.
         - Only the test runner (e.g., `TestMain.cpp`) should remain at the root of the test module folder.
-        - To add a new test, simply create a new `.cpp` file in `cases/`—no Makefile changes required.
+        - To add a new test, **always** create a new `.cpp` file in the `cases/` folder—no Makefile changes required.
         - This approach keeps each test folder clean, makes test management scalable, and ensures new tests are always built.
+
         - Example Makefile snippet:
           ```makefile
           TEST_SRC = cases/*.cpp TestMain.cpp ../../src/ModuleName/ModuleName.cpp ...
@@ -79,6 +81,7 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
           TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/ModuleName.d ...
           ```
         - **Rationale:** This convention enables rapid test development, easy file navigation, and eliminates manual Makefile edits for each new test file in any module.
+        - **Always ensure new test cases are added to the `cases/` folder to maintain consistency.**
 
       - Example (modern, robust, flat obj/ mapping for a test module):
         ```makefile
