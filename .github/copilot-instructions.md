@@ -41,8 +41,8 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
     # Compile C++
 
     # Compile C
-obj/%.o: src/%.c
-\tmkdir -p $(dir $@)
+    obj/%.o: src/%.c
+        mkdir -p $(dir $@)
 
 **Test Makefiles:**
 
@@ -67,7 +67,7 @@ obj/%.o: src/%.c
         - Example Makefile snippet:
           ```makefile
           TEST_SRC = cases/*.cpp TestMain.cpp ../../src/ModuleName/ModuleName.cpp ...
-          TEST_OBJS = $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o ...
+          TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o ...
           TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/ModuleName.d ...
           ```
         - **Rationale:** This convention enables rapid test development, easy file navigation, and eliminates manual Makefile edits for each new test file in any module.
@@ -87,7 +87,7 @@ obj/%.o: src/%.c
         BINDIR = bin
 
         TEST_SRC = cases/*.cpp TestMain.cpp ../../src/ModuleName/ModuleName.cpp
-        TEST_OBJS = $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o
+        TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o
         TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/ModuleName.d
         TEST_BIN = $(BINDIR)/ModuleNameTest
 
