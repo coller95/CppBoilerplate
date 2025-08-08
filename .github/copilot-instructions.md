@@ -210,9 +210,13 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
    - Place all test-only code (mocks, helpers) inside the module's test folder, never in production `src/` or `include/`.
 
 3. **Build and Run Tests (After Every Major Change!)**
-   - **After every major code or build change, always run the full build and test suite to catch errors early.**
-   - Run `make test-clean`, `make debug`, `make test` from the project root.
-   - Confirm the new test fails (red).
+   - **After every major code or build change, always run the relevant module's tests to catch errors early.**
+   - Run the following commands in the terminal from the project root:
+     - Clean test artifacts: `make test-clean-<ModuleName>` (e.g., `make test-clean-WebServerTest`)
+     - Build tests only: `make test-make-<ModuleName>` (e.g., `make test-make-WebServerTest`)
+     - Build and run tests: `make test-run-<ModuleName>` (e.g., `make test-run-WebServerTest`)
+   - **Only run the full test suite (`make test-clean`, `make debug`, `make test`) if explicitly requested.**
+   - Confirm the new test fails (red) before proceeding to implementation.
 
    - All new test Makefiles must follow the pattern of `tests/PrintHelloTest/Makefile`:
      - Use `obj/` for object files and `bin/` for test executables.
@@ -312,9 +316,13 @@ All contributors, including AI assistants, must follow these rules without excep
 
 
 3. **Build and Run Tests (After Every Major Change!)**
-   - **After every major code or build change, always run the full build and test suite to catch errors early.**
-   - Run `make test-clean`, `make debug`, `make test` from the project root.
-   - Confirm the new test fails (red).
+   - **After every major code or build change, always run the relevant module's tests to catch errors early.**
+   - Run the following commands in the terminal from the project root:
+     - Clean test artifacts: `make test-clean-<ModuleName>` (e.g., `make test-clean-WebServerTest`)
+     - Build tests only: `make test-make-<ModuleName>` (e.g., `make test-make-WebServerTest`)
+     - Build and run tests: `make test-run-<ModuleName>` (e.g., `make test-run-WebServerTest`)
+   - **Only run the full test suite (`make test-clean`, `make debug`, `make test`) if explicitly requested.**
+   - Confirm the new test fails (red) before proceeding to implementation.
 
    - All new test Makefiles must follow the pattern of `tests/PrintHelloTest/Makefile`:
      - Use `obj/` for object files and `bin/` for test executables.
