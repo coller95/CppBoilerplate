@@ -7,7 +7,7 @@
 class MockEndpointRegistrar : public IEndpointRegistrar {
 public:
     std::vector<std::string> registeredPaths;
-    void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler) override {
+    void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler /*handler*/) override {
         registeredPaths.push_back(std::string(path) + ":" + std::string(method));
     }
 };
