@@ -385,3 +385,39 @@ This ensures that no stale or outdated artifacts interfere with the new build or
 - **Scalability**: As the project grows, this approach ensures manageable test runs.
 
 **Remember:** For any action requiring changes to development code, you must strictly follow TDD. Write test cases first, always. This is non-negotiable and critical to the project's success.
+
+## Test-Driven Development (TDD) Example: Adding serveStaticWithMime to WebServer
+
+### Steps Followed:
+
+1. **Define the Requirement**
+   - Added a new feature to allow serving static files with a user-defined MIME type.
+
+2. **Write a Failing Test**
+   - Created a test case `ServeStaticWithMimeTest` in `tests/WebServerTest/cases/ServeStaticWithMimeTest.cpp`.
+   - The test verified that the server correctly serves files with the specified MIME type.
+
+3. **Implement Minimal Code**
+   - Updated the `WebServer` interface to include the `serveStaticWithMime` method.
+   - Implemented the method in `MongooseWebServerImpl` and ensured it handled MIME types.
+
+4. **Rebuild and Retest**
+   - Ran the test suite to confirm the new test failed initially.
+   - Incrementally implemented the feature and re-ran tests after each change.
+
+5. **Refactor**
+   - Cleaned up the implementation to ensure clarity and maintainability.
+   - Resolved warnings and ensured all tests passed without issues.
+
+6. **Repeat**
+   - Followed the TDD cycle for each incremental change, ensuring high-quality code.
+
+### Resolving Warnings:
+- During the implementation, a warning was encountered regarding the missing initializer for the `mimeType` field in the `StaticMapping` struct.
+- The issue was resolved by explicitly initializing the `mimeType` field with an empty string (`""`) in the `MongooseWebServerImpl` implementation.
+- This step ensured clean builds and adherence to best practices.
+
+### Key Takeaways:
+- Strict adherence to TDD ensures predictable and reliable code behavior.
+- Incremental development and testing catch issues early and improve maintainability.
+- Documenting the process helps maintain consistency and serves as a reference for future tasks.
