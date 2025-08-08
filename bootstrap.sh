@@ -247,6 +247,9 @@ download_googletest() {
         
         if command -v git >/dev/null 2>&1; then
             verbose_run git clone --depth 1 --branch v1.14.0 https://github.com/google/googletest.git
+            cd googletest
+            verbose_run git checkout v1.14.0
+            cd ..
         else
             print_error "Git is required to download Google Test"
             exit 1
