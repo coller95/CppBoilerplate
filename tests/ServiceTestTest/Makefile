@@ -7,14 +7,14 @@
 # ============================================================================
 
 ROOTDIR = ../..
-MODULE_NAME = EndpointHello
+MODULE_NAME = ServiceTest
 
 # Primary module being tested (automatically included)
 PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = IoCContainer
 
 # External dependencies (from external/ folder) - uncomment if needed
 # EXTERNAL_DEPS = mongoose foo
@@ -90,6 +90,11 @@ $(OBJDIR)/%.o: $(ROOTDIR)/src/%/%.cpp | $(OBJDIR)
 
 # Explicit rule for ApiModules (since it has a different folder structure)
 $(OBJDIR)/ApiModules.o: $(ROOTDIR)/src/ApiModule/ApiModules.cpp | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Explicit rule for IoCContainer 
+$(OBJDIR)/IoCContainer.o: $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

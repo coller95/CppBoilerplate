@@ -136,26 +136,65 @@ TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}IsRegisteredInIoC) {
 }
 EOF
 
-# Create Makefile for tests
+# Create Makefile for tests using the flexible template
 cat << 'EOF' > "tests/${SERVICE_NAME}Test/Makefile"
-# Modern, robust Makefile for ServiceName unit tests (Google Test)
+# Modern, flexible Makefile for unit tests (Google Test)
+# Supports easy addition of services, modules, and dependencies
 # All object and dependency files are placed flat in obj/ (not nested)
 
+# ============================================================================
+# CONFIGURATION SECTION - Modify this section to add/remove dependencies
+# ============================================================================
+
 ROOTDIR = ../..
+MODULE_NAME = MODULE_NAME_PLACEHOLDER
+
+# Primary module being tested (automatically included)
+PRIMARY_MODULE = $(MODULE_NAME)
+
+# Additional dependencies - add any services, modules, or utilities needed
+# Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
+DEPENDENCIES = IoCContainer
+
+# External dependencies (from external/ folder) - uncomment if needed
+# EXTERNAL_DEPS = mongoose foo
+
+# ============================================================================
+# BUILD CONFIGURATION - Usually no changes needed below this line
+# ============================================================================
+
 CXX = g++
 CC = gcc
-CXXFLAGS = -std=c++20 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+CXXFLAGS = -std=c++17 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
 CFLAGS = -I$(ROOTDIR)/include -g -Wall -Wextra -MMD -MP
 GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
 
 OBJDIR = obj
 BINDIR = bin
-SERVICE = ServiceName
 
-TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp
-TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(SERVICE).o $(OBJDIR)/IoCContainer.o
-TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/$(SERVICE).d $(OBJDIR)/IoCContainer.d
-TEST_BIN = $(BINDIR)/$(SERVICE)Test
+# Process dependencies into source files and object files
+# Handle both simple format (Name) and complex format (Name:Folder)
+DEP_SOURCES = $(foreach dep,$(DEPENDENCIES),$(ROOTDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).cpp)
+DEP_OBJECTS = $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).o)
+DEP_NAMES = $(foreach dep,$(DEPENDENCIES),$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)))
+DEP_FOLDERS = $(foreach dep,$(DEPENDENCIES),$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep)))
+
+# External dependencies (if any)
+ifdef EXTERNAL_DEPS
+EXT_SOURCES = $(foreach ext,$(EXTERNAL_DEPS),$(ROOTDIR)/external/$(ext)/src/$(ext).cpp)
+EXT_OBJECTS = $(foreach ext,$(EXTERNAL_DEPS),$(OBJDIR)/$(ext).o)
+EXT_NAMES = $(EXTERNAL_DEPS)
+else
+EXT_SOURCES =
+EXT_OBJECTS =
+EXT_NAMES =
+endif
+
+# Complete source and object lists
+ALL_SOURCES = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp $(DEP_SOURCES) $(EXT_SOURCES)
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(PRIMARY_MODULE).o $(DEP_OBJECTS) $(EXT_OBJECTS)
+TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/$(PRIMARY_MODULE).d $(foreach dep,$(DEP_NAMES),$(OBJDIR)/$(dep).d) $(foreach ext,$(EXT_NAMES),$(OBJDIR)/$(ext).d)
+TEST_BIN = $(BINDIR)/$(MODULE_NAME)Test
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
 
@@ -164,6 +203,10 @@ $(OBJDIR):
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
+
+# ============================================================================
+# COMPILATION RULES - Generic patterns that work for any module
+# ============================================================================
 
 # Pattern rule for C++ test cases in cases/
 $(OBJDIR)/%.o: cases/%.cpp | $(OBJDIR)
@@ -175,13 +218,28 @@ $(OBJDIR)/TestMain.o: TestMain.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Explicit rule for service source
-$(OBJDIR)/$(SERVICE).o: $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp | $(OBJDIR)
+# Rule for primary module source
+$(OBJDIR)/$(PRIMARY_MODULE).o: $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Explicit rule for IoCContainer source
+# Generic rule for dependency modules
+$(OBJDIR)/%.o: $(ROOTDIR)/src/%/%.cpp | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Explicit rule for ApiModules (since it has a different folder structure)
+$(OBJDIR)/ApiModules.o: $(ROOTDIR)/src/ApiModule/ApiModules.cpp | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Explicit rule for IoCContainer 
 $(OBJDIR)/IoCContainer.o: $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Generic rule for external dependencies
+$(OBJDIR)/%.o: $(ROOTDIR)/external/%/src/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -190,17 +248,42 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Link the test binary
 $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread
 
+# Include dependency files for incremental builds
 -include $(TEST_DEPS)
+
+# ============================================================================
+# UTILITY TARGETS
+# ============================================================================
+
+# Debug: Print configuration for troubleshooting
+debug-config:
+	@echo "=== Makefile Configuration ==="
+	@echo "MODULE_NAME: $(MODULE_NAME)"
+	@echo "PRIMARY_MODULE: $(PRIMARY_MODULE)"
+	@echo "DEPENDENCIES: $(DEPENDENCIES)"
+	@echo "DEP_NAMES: $(DEP_NAMES)"
+	@echo "DEP_SOURCES: $(DEP_SOURCES)"
+	@echo "DEP_OBJECTS: $(DEP_OBJECTS)"
+ifdef EXTERNAL_DEPS
+	@echo "EXTERNAL_DEPS: $(EXTERNAL_DEPS)"
+	@echo "EXT_SOURCES: $(EXT_SOURCES)"
+	@echo "EXT_OBJECTS: $(EXT_OBJECTS)"
+endif
+	@echo "TEST_OBJS: $(TEST_OBJS)"
+	@echo "TEST_BIN: $(TEST_BIN)"
 
 clean:
 	rm -rf $(OBJDIR)/* $(BINDIR)/*
+
+.PHONY: all clean debug-config
 EOF
 
-    # Replace ServiceName placeholders in the Makefile
-    sed -i "s/ServiceName/$SERVICE_NAME/g" "tests/${SERVICE_NAME}Test/Makefile"
+    # Replace MODULE_NAME_PLACEHOLDER in the Makefile
+    sed -i "s/MODULE_NAME_PLACEHOLDER/$SERVICE_NAME/g" "tests/${SERVICE_NAME}Test/Makefile"
 
     echo ""
     echo "✅ Service module '$SERVICE_NAME' created successfully!"
@@ -218,7 +301,10 @@ EOF
     echo "2. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp with proper test assertions"
     echo "3. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp with IoC verification"
     echo "4. The service will auto-register with IoCContainer (no manual integration needed!)"
-    echo "5. Test your service:"
+    echo "5. To add dependencies, edit the DEPENDENCIES line in tests/${SERVICE_NAME}Test/Makefile"
+    echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
+    echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
+    echo "6. Test your service:"
     echo "   make test-run-${SERVICE_NAME}Test"
     echo ""
 }
