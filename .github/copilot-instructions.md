@@ -1,3 +1,16 @@
+## WebServer Backend Selection via Enum
+
+- When adding or updating the WebServer implementation, always use an `enum class` to select the backend (e.g., Mongoose, _Other) instead of string or integer parameters.
+- The `WebServer` constructor must accept a `Backend` enum parameter, defaulting to the primary backend (e.g., Mongoose).
+- All backend selection logic (including factories) must use this enum for clarity, type safety, and extensibility.
+- Example usage:
+  ```cpp
+  std::unique_ptr<WebServer> server = std::make_unique<WebServer>(ip, port, WebServer::Backend::Mongoose);
+  ```
+- Update all tests and documentation to use the enum-based selection pattern.
+
+**Rationale:**
+- Using an enum for backend selection ensures type safety, discoverability, and prevents errors from stringly-typed APIs. It also makes adding new backends straightforward and consistent.
 # AI/Assistant Guidance: Evolving Project Conventions
 
 Whenever the user expresses a new idea, workflow, or coding/build convention during development, the AI assistant should ask the user whether they want to add this idea to `copilot-instructions.md` for future reference and consistency. This ensures that evolving best practices and project-specific rules are captured and documented in a single, authoritative place.

@@ -1,22 +1,27 @@
+
 #include <gtest/gtest.h>
 #include <WebServer/WebServer.h>
 #include <memory>
 #include <fstream>
 
-class ServeStaticWithMimeTest : public ::testing::Test {
+class ServeStaticWithMimeTest : public ::testing::TestWithParam<WebServer::Backend> {
 protected:
     void SetUp() override {
-        server = std::make_unique<WebServer>("127.0.0.1", 8080);
+        server = std::make_unique<WebServer>("127.0.0.1", 8080, GetParam());
     }
-
     void TearDown() override {
         server->stop();
     }
-
     std::unique_ptr<WebServer> server;
 };
 
-TEST_F(ServeStaticWithMimeTest, ServeStaticWithCustomMimeType) {
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    ServeStaticWithMimeTest,
+    ::testing::Values(WebServer::Backend::Mongoose, WebServer::Backend::_)
+);
+
+TEST_P(ServeStaticWithMimeTest, ServeStaticWithCustomMimeType) {
     const std::string urlPrefix = "/custom/";
     const std::string directory = "./test_files";
     const std::string mimeType = "application/custom";

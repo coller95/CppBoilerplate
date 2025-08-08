@@ -14,20 +14,25 @@
 // Update the namespace usage
 using namespace WebServerLib;
 
-class PreServeHandlerTest : public ::testing::Test {
+
+class PreServeHandlerTest : public ::testing::TestWithParam<WebServer::Backend> {
 protected:
     void SetUp() override {
-        webServer = std::make_unique<WebServer>("127.0.0.1", 8080);
+        webServer = std::make_unique<WebServer>("127.0.0.1", 8080, GetParam());
     }
-
     void TearDown() override {
         webServer->stop();
     }
-
     std::unique_ptr<WebServer> webServer;
 };
 
-TEST_F(PreServeHandlerTest, PreServeHandlerIsCalled) {
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    PreServeHandlerTest,
+    ::testing::Values(WebServer::Backend::Mongoose, WebServer::Backend::_)
+);
+
+TEST_P(PreServeHandlerTest, PreServeHandlerIsCalled) {
     bool handlerCalled = false;
     std::string capturedFilePath;
 
@@ -48,7 +53,7 @@ TEST_F(PreServeHandlerTest, PreServeHandlerIsCalled) {
 
     // Map static and start server on a unique port
     const int port = 9094;
-    webServer = std::make_unique<WebServer>("127.0.0.1", port);
+    webServer = std::make_unique<WebServer>("127.0.0.1", port, GetParam());
     webServer->registerPreServeHandler([&](const std::string& filePath) {
         handlerCalled = true;
         capturedFilePath = filePath;

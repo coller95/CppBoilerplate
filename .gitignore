@@ -18,3 +18,5 @@ lib/*.so
 
 # Other
 sh
+
+test_files

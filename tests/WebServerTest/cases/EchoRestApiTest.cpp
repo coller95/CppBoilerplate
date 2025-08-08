@@ -9,8 +9,17 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-TEST(WebServerTest, EchoRestApi) {
-    WebServer server("127.0.0.1", 9091);
+
+class EchoRestApiTest : public ::testing::TestWithParam<WebServer::Backend> {};
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    EchoRestApiTest,
+    ::testing::Values(WebServer::Backend::Mongoose, WebServer::Backend::_)
+);
+
+TEST_P(EchoRestApiTest, EchoRestApi) {
+    WebServer server("127.0.0.1", 9091, GetParam());
     server.registerHttpHandler("/api/echo", "POST",
         [](std::string_view, std::string_view, const std::string& body, std::string& responseBody, int& statusCode) {
             statusCode = 200;

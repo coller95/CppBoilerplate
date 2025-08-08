@@ -10,7 +10,15 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-TEST(WebServerTest, ServeStaticFile) {
+class ServeStaticFileTest : public ::testing::TestWithParam<WebServer::Backend> {};
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    ServeStaticFileTest,
+    ::testing::Values(WebServer::Backend::Mongoose, WebServer::Backend::_)
+);
+
+TEST_P(ServeStaticFileTest, ServeStaticFile) {
     // Create a temporary file with known content
     const std::string tempFilePath = "test_static_file.bin";
     const std::string fileContent = "This is a static file test.\x00\x01\x02\x03\x04\x05";
@@ -33,7 +41,7 @@ TEST(WebServerTest, ServeStaticFile) {
     ifs.close();
     ASSERT_EQ(readContent, fileContent);
 
-    WebServer server("127.0.0.1", 9092);
+    WebServer server("127.0.0.1", 9092, GetParam());
     server.serveStatic("/static/", "..");
     server.start();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

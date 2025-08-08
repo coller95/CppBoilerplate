@@ -11,18 +11,21 @@ using namespace ::testing;
 
 namespace webserver_test {
 
-TEST(WebServerBindAddressTest, BindsToSpecifiedIpAddress)
+class WebServerBindAddressTest : public ::testing::TestWithParam<WebServer::Backend> {};
+
+INSTANTIATE_TEST_SUITE_P(
+    AllBackends,
+    WebServerBindAddressTest,
+    ::testing::Values(WebServer::Backend::Mongoose, WebServer::Backend::_)
+);
+
+TEST_P(WebServerBindAddressTest, BindsToSpecifiedIpAddress)
 {
-    // Arrange: create WebServer with custom IP and port
     std::string ip = "0.0.0.0";
     int port = 12345;
-    std::unique_ptr<WebServer> server = std::make_unique<WebServer>(ip, port);
-
-    // Act: retrieve bind address (assume WebServer exposes a method for test)
+    std::unique_ptr<WebServer> server = std::make_unique<WebServer>(ip, port, GetParam());
     std::string actualIp = server->getBindIp();
     int actualPort = server->getBindPort();
-
-    // Assert: should match what was passed in
     EXPECT_EQ(actualIp, ip);
     EXPECT_EQ(actualPort, port);
 }

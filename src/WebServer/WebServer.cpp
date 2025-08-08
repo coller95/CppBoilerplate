@@ -7,8 +7,8 @@ using namespace WebServerLib;
 
 class WebServer::Impl {
 public:
-    Impl(const std::string& ipAddr, uint16_t port)
-        : _ipAddr(ipAddr), _port(port), _impl(WebServerLib::createDefaultWebServerImpl(ipAddr, port)) {}
+    Impl(const std::string& ipAddr, uint16_t port, WebServer::Backend backend)
+        : _ipAddr(ipAddr), _port(port), _impl(WebServerLib::createWebServerImpl(ipAddr, port, static_cast<int>(backend))) {}
 
     void registerHttpHandler(std::string_view path, std::string_view method, WebServer::HttpHandler handler) {
         _impl->registerHttpHandler(path, method, std::move(handler));
@@ -36,8 +36,8 @@ private:
     std::unique_ptr<IWebServerImpl> _impl;
 };
 
-WebServer::WebServer(const std::string& ipAddr, uint16_t port)
-    : _impl(std::make_unique<Impl>(ipAddr, port)) {}
+WebServer::WebServer(const std::string& ipAddr, uint16_t port, Backend backend)
+    : _impl(std::make_unique<Impl>(ipAddr, port, backend)) {}
 WebServer::~WebServer() = default;
 void WebServer::registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler) { _impl->registerHttpHandler(path, method, std::move(handler)); }
 void WebServer::serveStatic(std::string_view urlPrefix, std::string_view directory) { _impl->serveStatic(urlPrefix, directory); }

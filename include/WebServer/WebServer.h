@@ -19,12 +19,18 @@ public:
     using HttpHandler = std::function<void(std::string_view path, std::string_view method, const std::string& body, std::string& responseBody, int& statusCode)>;
     using PreServeHandler = std::function<void(const std::string& filePath)>;
 
+    enum class Backend {
+        Mongoose,
+        _
+    };
+
     /**
      * Construct a WebServer bound to the given IP address and port.
      * @param ipAddr The IP address to bind (e.g., "127.0.0.1" or "0.0.0.0")
      * @param port The port to bind
+     * @param backend The backend implementation to use (default: Mongoose)
      */
-    WebServer(const std::string& ipAddr, uint16_t port);
+    WebServer(const std::string& ipAddr, uint16_t port, Backend backend = Backend::Mongoose);
     ~WebServer();
 
     void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler);
