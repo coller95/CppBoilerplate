@@ -5,7 +5,7 @@ SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/M
 .PHONY: all clean test $(SUBDIRS)
 
 .PHONY: test-run-%
-test-%:
+test-run-%:
 	$(MAKE) -C $* all
 	@absdir="$$(cd $* && pwd)"; \
 	for bin in "$$absdir"/bin/*Test; do \
