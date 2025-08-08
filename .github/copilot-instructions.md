@@ -338,3 +338,15 @@ Strict TDD ensures:
 - **Focus**: Limits output to the module you're working on, making debugging easier.
 - **Scalability**: As the project grows, this approach ensures manageable test runs.
 
+## Multithreading for Make
+
+- Always use the `-j` option with `make` to enable multithreaded builds, leveraging multiple CPU cores for faster compilation.
+- Example: `make -j$(nproc)` where `$(nproc)` dynamically determines the number of available cores.
+- For systems without `nproc`, specify a reasonable number of threads manually (e.g., `make -j4`).
+
+**Rationale:**
+- Multithreaded builds significantly reduce build times, especially for large projects with many source files.
+- Ensures efficient utilization of system resources during the build process.
+
+**Note:**
+- Be cautious when using `-j` on systems with limited resources, as it may cause excessive memory or CPU usage.
