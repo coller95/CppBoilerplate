@@ -224,32 +224,31 @@ download_googletest() {
     
     cd "$PROJECT_ROOT/external"
     
-    # Check if Google Test already exists
-    if [[ -d "googletest" && $FORCE_REBUILD -eq 0 ]]; then
-        if [[ -f "googletest/build/lib/libgtest.a" && -f "googletest/build/lib/libgtest_main.a" ]]; then
-            print_info "Google Test already exists and is built. Use --force to rebuild."
-            return 0
-        elif [[ $SKIP_BUILD -eq 1 ]]; then
-            print_info "Google Test directory exists. Skipping download."
-            return 0
-        fi
+    # Check if Google Test already exists and is fully built
+    if [[ -d "googletest" && -f "googletest/build/lib/libgtest.a" && -f "googletest/build/lib/libgtest_main.a" && $FORCE_REBUILD -eq 0 ]]; then
+        print_info "Google Test already exists and is built. Use --force to rebuild."
+        return 0
     fi
     
-    # Remove existing directory if force rebuild
+    # Remove existing directory if force rebuild or if incomplete
     if [[ $FORCE_REBUILD -eq 1 && -d "googletest" ]]; then
         print_info "Force rebuild: removing existing Google Test..."
         rm -rf googletest
+    elif [[ -d "googletest" && ! -f "googletest/build/lib/libgtest.a" ]]; then
+        print_info "Incomplete Google Test installation detected. Removing and re-downloading..."
+        rm -rf googletest
     fi
     
-    # Download Google Test if directory doesn't exist
+    # Download Google Test if directory doesn't exist or was incomplete
     if [[ ! -d "googletest" ]]; then
         print_info "Downloading Google Test framework..."
         
         if command -v git >/dev/null 2>&1; then
             verbose_run git clone --depth 1 --branch v1.14.0 https://github.com/google/googletest.git
-            cd googletest
-            verbose_run git checkout v1.14.0
-            cd ..
+            if [[ $? -ne 0 ]]; then
+                print_error "Failed to clone Google Test repository"
+                exit 1
+            fi
         else
             print_error "Git is required to download Google Test"
             exit 1
@@ -270,10 +269,16 @@ build_googletest() {
     
     cd "$PROJECT_ROOT/external/googletest"
     
-    # Check if already built
+    # Check if already built and not forcing rebuild
     if [[ -f "build/lib/libgtest.a" && -f "build/lib/libgtest_main.a" && $FORCE_REBUILD -eq 0 ]]; then
         print_info "Google Test libraries already built"
         return 0
+    fi
+    
+    # Remove existing build directory if force rebuild or if incomplete
+    if [[ $FORCE_REBUILD -eq 1 && -d "build" ]]; then
+        print_info "Force rebuild: removing existing build directory..."
+        rm -rf build
     fi
     
     # Create build directory
@@ -282,17 +287,24 @@ build_googletest() {
     
     # Configure with CMake
     print_info "Configuring Google Test build..."
-    verbose_run cmake -DCMAKE_BUILD_TYPE=Release ..
+    if ! verbose_run cmake -DCMAKE_BUILD_TYPE=Release ..; then
+        print_error "Failed to configure Google Test with CMake"
+        exit 1
+    fi
     
     # Build libraries
     print_info "Compiling Google Test libraries..."
-    verbose_run make -j$(nproc 2>/dev/null || echo 4)
+    if ! verbose_run make -j$(nproc 2>/dev/null || echo 4); then
+        print_error "Failed to compile Google Test libraries"
+        exit 1
+    fi
     
     # Verify build success
     if [[ -f "lib/libgtest.a" && -f "lib/libgtest_main.a" ]]; then
         print_success "Google Test libraries built successfully"
     else
-        print_error "Failed to build Google Test libraries"
+        print_error "Failed to build Google Test libraries - library files not found"
+        print_info "Expected files: lib/libgtest.a and lib/libgtest_main.a"
         exit 1
     fi
 }
@@ -415,15 +427,26 @@ validate_setup() {
     
     cd "$PROJECT_ROOT"
     
+    # Verify Google Test libraries exist before attempting build
+    if [[ ! -f "external/googletest/build/lib/libgtest.a" ]]; then
+        print_error "Google Test libraries not found. Build may have failed."
+        print_info "Expected: external/googletest/build/lib/libgtest.a"
+        exit 1
+    fi
+    
     # Clean any existing build
-    verbose_run make clean
+    print_info "Cleaning previous build artifacts..."
+    if ! verbose_run make clean; then
+        print_warning "Clean command failed, but continuing..."
+    fi
     
     # Try building debug version
     print_info "Testing debug build..."
     if verbose_run make debug; then
         print_success "Debug build successful"
     else
-        print_error "Debug build failed"
+        print_error "Debug build failed - check dependencies and build configuration"
+        print_info "Try running 'make debug' manually to see detailed error messages"
         exit 1
     fi
     
@@ -432,7 +455,8 @@ validate_setup() {
     if verbose_run make test-run-LoggerTest; then
         print_success "Test framework working correctly"
     else
-        print_warning "Test framework may need attention"
+        print_warning "Test framework may need attention, but bootstrap is complete"
+        print_info "You can test manually with: make test-run-LoggerTest"
     fi
     
     print_success "Setup validation completed"
