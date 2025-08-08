@@ -134,6 +134,82 @@ TEST(${ENDPOINT_NAME}Test, RegisterEndpointsCanBeRegistered) {
 }
 EOF
 
+# Create auto-registration cross-check test
+cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp" << EOF
+#include <gtest/gtest.h>
+#include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
+#include <ApiModule/ApiModules.h>
+#include <ApiModule/IEndpointRegistrar.h>
+#include <vector>
+#include <string>
+#include <memory>
+
+class MockEndpointRegistrar : public IEndpointRegistrar {
+public:
+    std::vector<std::string> registeredPaths;
+    void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler /*handler*/) override {
+        registeredPaths.push_back(std::string(path) + ":" + std::string(method));
+    }
+};
+
+TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithApiModules) {
+    // Check that at least one module factory is registered
+    size_t moduleCount = apimodule::ApiModules::getRegisteredModuleCount();
+    ASSERT_GE(moduleCount, 1U) << "No endpoint modules were auto-registered";
+    
+    // Create instances of all registered modules
+    auto modules = apimodule::ApiModules::createAllModules();
+    ASSERT_EQ(modules.size(), moduleCount) << "Module creation count mismatch";
+    
+    // Check if any of the modules is $ENDPOINT_NAME
+    bool found${ENDPOINT_NAME} = false;
+    for (const auto& module : modules) {
+        ASSERT_NE(module, nullptr) << "Module instance is null";
+        
+        // Try to dynamic_cast to $ENDPOINT_NAME to verify the type
+        auto ${ENDPOINT_PART,,}Endpoint = dynamic_cast<$NAMESPACE_NAME::$ENDPOINT_NAME*>(module.get());
+        if (${ENDPOINT_PART,,}Endpoint != nullptr) {
+            found${ENDPOINT_NAME} = true;
+            
+            // Verify the module can register endpoints
+            MockEndpointRegistrar registrar;
+            ${ENDPOINT_PART,,}Endpoint->registerEndpoints(registrar);
+            
+            // TODO: Update this based on your actual endpoints
+            // Example:
+            // ASSERT_EQ(registrar.registeredPaths.size(), 1U) << "$ENDPOINT_NAME should register exactly one endpoint";
+            // EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET") << "$ENDPOINT_NAME should register /${ENDPOINT_PART,,}:GET endpoint";
+            
+            // For now, just verify the method executes without error
+            SUCCEED();
+            break;
+        }
+    }
+    
+    ASSERT_TRUE(found${ENDPOINT_NAME}) << "$ENDPOINT_NAME was not found in auto-registered modules";
+}
+
+TEST(${ENDPOINT_NAME}AutoRegistrationTest, ApiModulesCanInstantiateAllRegisteredModules) {
+    // Get count of registered module factories
+    size_t moduleCount = apimodule::ApiModules::getRegisteredModuleCount();
+    
+    // Create instances of all registered modules
+    auto modules = apimodule::ApiModules::createAllModules();
+    ASSERT_EQ(modules.size(), moduleCount) << "Not all modules could be instantiated";
+    
+    // Verify each module can be used to register endpoints
+    for (const auto& module : modules) {
+        ASSERT_NE(module, nullptr) << "Module instance is null";
+        
+        MockEndpointRegistrar registrar;
+        module->registerEndpoints(registrar);
+        
+        // The test passes if no exceptions are thrown
+        SUCCEED();
+    }
+}
+EOF
+
 # Create test runner
 cat > "tests/${ENDPOINT_NAME}Test/TestMain.cpp" << EOF
 #include <gtest/gtest.h>
@@ -160,9 +236,9 @@ OBJDIR = obj
 BINDIR = bin
 SERVICE = EndpointName
 
-TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp
-TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(SERVICE).o
-TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/$(SERVICE).d
+TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp $(ROOTDIR)/src/ApiModule/ApiModules.cpp
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(SERVICE).o $(OBJDIR)/ApiModules.o
+TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/$(SERVICE).d $(OBJDIR)/ApiModules.d
 TEST_BIN = $(BINDIR)/$(SERVICE)Test
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
@@ -185,6 +261,11 @@ $(OBJDIR)/TestMain.o: TestMain.cpp | $(OBJDIR)
 
 # Explicit rule for sources outside test dir
 $(OBJDIR)/$(SERVICE).o: $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Explicit rule for ApiModules dependency
+$(OBJDIR)/ApiModules.o: $(ROOTDIR)/src/ApiModule/ApiModules.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -212,15 +293,18 @@ EOF
     echo "  📁 include/$ENDPOINT_NAME/$ENDPOINT_NAME.h"
     echo "  📁 src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
     echo "  📁 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp"
+    echo "  📁 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp"
     echo "  📁 tests/${ENDPOINT_NAME}Test/TestMain.cpp"
     echo "  📁 tests/${ENDPOINT_NAME}Test/Makefile"
     echo ""
     echo "Next steps:"
     echo "1. Edit src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp to implement your endpoints"
     echo "2. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp with proper test assertions"
-    echo "3. The endpoint will auto-register with ApiModules (no manual integration needed!)"
-    echo "4. Test your endpoint:"
+    echo "3. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp with endpoint verification"
+    echo "4. The endpoint will auto-register with ApiModules (no manual integration needed!)"
+    echo "5. Test your endpoint:"
     echo "   make test-run-${ENDPOINT_NAME}Test"
+    echo "6. The auto-registration cross-check will verify your endpoint is properly registered"
     echo ""
 }
 

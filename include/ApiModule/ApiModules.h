@@ -22,5 +22,15 @@ namespace apimodule {
          * This is typically called from module constructors or static initializers
          */
         static void registerModuleFactory(ModuleFactory factory);
+        
+        /**
+         * Get the number of registered module factories (for testing)
+         */
+        static size_t getRegisteredModuleCount();
+        
+        /**
+         * Create instances of all registered modules (for testing)
+         */
+        static std::vector<std::unique_ptr<IApiModule>> createAllModules();
     };
 }

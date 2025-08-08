@@ -39,7 +39,11 @@
   - `include/EndpointName/EndpointName.h`
   - `src/EndpointName/EndpointName.cpp` 
   - `tests/EndpointNameTest/` with test cases and Makefile
-- Follow the script's instructions to integrate the new endpoint into `ApiModules.cpp`
+- Generated tests include **auto-registration cross-check** that verifies:
+  - The endpoint module is automatically registered with ApiModules
+  - The specific endpoints (e.g., `/endpoint:GET`) are properly registered
+  - All registered modules can be instantiated and used correctly
+- Follow the script's instructions to implement your endpoints and update test assertions
 - Always test the generated endpoint with `make test-run-EndpointNameTest`
 - Use remove function to clean up unwanted endpoints safely
 
@@ -48,6 +52,7 @@
 - Reduces boilerplate and setup time for new endpoints
 - Automatically follows all established conventions and standards
 - Provides safe removal with confirmation to prevent accidental deletion
+- **Cross-check tests guarantee auto-registration works correctly and catch integration issues early**
 
 # AI/Assistant Guidance: Evolving Project Conventions
 

@@ -62,4 +62,20 @@ void ApiModules::registerModuleFactory(ModuleFactory factory) {
     getModuleFactories().push_back(factory);
 }
 
+size_t ApiModules::getRegisteredModuleCount() {
+    return getModuleFactories().size();
+}
+
+std::vector<std::unique_ptr<IApiModule>> ApiModules::createAllModules() {
+    std::vector<std::unique_ptr<IApiModule>> modules;
+    const auto& factories = getModuleFactories();
+    for (const auto& factory : factories) {
+        auto module = factory();
+        if (module) {
+            modules.push_back(std::move(module));
+        }
+    }
+    return modules;
+}
+
 } // namespace apimodule
