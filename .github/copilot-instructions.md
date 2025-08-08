@@ -324,6 +324,60 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
 ## Build System Standards
 
+### Dual-Mode Output System
+
+The build system supports two output modes optimized for different consumers:
+
+#### Human Mode (VERBOSE=1, default)
+- **Colorful, descriptive output** with emojis and detailed messages
+- **Full compilation commands** visible for debugging
+- **Comprehensive test reporting** with detailed pass/fail information
+- **Intuitive progress indicators** and helpful error messages
+- **Usage**: `make debug` or `VERBOSE=1 make debug`
+
+#### Agent Mode (VERBOSE=0)
+- **Ultra-concise output** optimized for AI context processing
+- **Silent compilation** - no individual file compilation messages
+- **Error-focused** - compilation/linking errors and warnings are fully visible
+- **Essential milestones only**: linking step and final success/failure
+- **Standardized prefixes**: `[BUILD]`, `[TEST]` for easy parsing
+- **Usage**: `VERBOSE=0 make debug` or `VERBOSE=0 make test-run-ModuleName`
+
+#### Key Benefits
+- **Human developers** get rich, colorful feedback for better debugging experience
+- **AI agents** get ultra-silent builds with only essential milestones and full error visibility
+- **Context efficiency** - agent mode eliminates compilation noise while preserving error details
+- **Consistent behavior** across all build and test operations
+- **Easy switching** between modes via environment variable
+
+#### Examples
+```bash
+# Human-friendly build (default)
+make debug
+# Output: 🔨 Compiling (debug): src/main.cpp
+#         🔗 Linking debug executable...
+#         ✅ Successfully built debug version
+
+# Agent-friendly build
+VERBOSE=0 make debug  
+# Output: [BUILD] LINK debug hello_world
+#         [BUILD] BUILT debug hello_world x86_64-native
+
+# Human-friendly test
+make test-run-LoggerTest
+# Output: 🧪 Building and running tests for LoggerTest...
+#         ▶️  Running LoggerTest...
+#         ✅ LoggerTest passed
+#         📊 Tests completed: 1/1 passed
+
+# Agent-friendly test  
+VERBOSE=0 make test-run-LoggerTest
+# Output: [TEST] RUN LoggerTest
+#         [TEST] RESULT LoggerTest 1/1
+```
+
+**Rationale:** This dual-mode system ensures optimal user experience for both human developers and AI agents, reducing context pollution while maintaining full functionality and debugging capabilities when needed.
+
 ### Makefile Requirements
 
 To ensure reliable, maintainable, and portable builds, all Makefiles in this project must follow these best practices:

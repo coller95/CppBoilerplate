@@ -1,6 +1,9 @@
 # Main Makefile for running all unit tests in subdirectories
 # Supports the flexible Makefile system and provides comprehensive test management
 
+# VERBOSE mode inheritance (VERBOSE=1 human, VERBOSE=0 agent)
+VERBOSE ?= 1
+
 # Auto-discover test subdirectories that have Makefiles
 SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/Makefile' \; -print | sed 's|^\./||')
 
@@ -15,13 +18,14 @@ SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/M
 # Build and run tests for a specific module
 .PHONY: test-run-%
 test-run-%:
+ifeq ($(VERBOSE),1)
 	@echo "🧪 Building and running tests for $*..."
 	@if [ ! -d "$*" ]; then \
 		echo "❌ Error: Test directory '$*' does not exist"; \
 		echo "Available test modules: $(SUBDIRS)"; \
 		exit 1; \
 	fi
-	$(MAKE) -C $* all
+	$(MAKE) -C $* all VERBOSE=$(VERBOSE)
 	@absdir="$$(cd $* && pwd)"; \
 	test_count=0; \
 	passed_count=0; \
@@ -45,6 +49,34 @@ test-run-%:
 			exit 1; \
 		fi; \
 	fi
+else
+	@echo "[TEST] RUN $*"
+	@if [ ! -d "$*" ]; then \
+		echo "[TEST] ERROR: $* not found"; \
+		exit 1; \
+	fi
+	@if $(MAKE) -C $* all VERBOSE=$(VERBOSE) >/dev/null 2>&1; then \
+		absdir="$$(cd $* && pwd)"; \
+		test_count=0; \
+		passed_count=0; \
+		for bin in "$$absdir"/bin/*Test; do \
+			if [ -x "$$bin" ]; then \
+				test_count=$$((test_count + 1)); \
+				if "$$bin" >/dev/null 2>&1; then \
+					passed_count=$$((passed_count + 1)); \
+				fi; \
+			fi; \
+		done; \
+		echo "[TEST] RESULT $* $$passed_count/$$test_count"; \
+		if [ $$passed_count -ne $$test_count ]; then \
+			exit 1; \
+		fi; \
+	else \
+		echo "[TEST] BUILD_ERROR $*"; \
+		$(MAKE) -C $* all VERBOSE=$(VERBOSE); \
+		exit 1; \
+	fi
+endif
 
 # Build tests for a specific module (without running)
 .PHONY: test-make-%

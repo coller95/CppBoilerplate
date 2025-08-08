@@ -2,6 +2,33 @@
 # Provides convenient test targets at the project root level
 
 # ============================================================================
+# OUTPUT MODE CONFIGURATION
+# ============================================================================
+# Inherit VERBOSE setting from main Makefile (VERBOSE=1 human, VERBOSE=0 agent)
+VERBOSE ?= 1
+
+# Output formatting based on mode
+ifeq ($(VERBOSE),1)
+    # Human mode: Colorful, descriptive output
+    TEST_PREFIX = @echo
+    TEST_SUCCESS = "🧪"
+    TEST_BUILD = "🔧"
+    TEST_CLEAN = "🧹"
+    TEST_DEBUG = "🐛"
+    TEST_HELP = "📋"
+    TEST_STATS = "📊"
+else
+    # Agent mode: Concise, structured output
+    TEST_PREFIX = @echo "[TEST]"
+    TEST_SUCCESS = "TEST"
+    TEST_BUILD = "BUILD"
+    TEST_CLEAN = "CLEAN"
+    TEST_DEBUG = "DEBUG"
+    TEST_HELP = "HELP"
+    TEST_STATS = "STATS"
+endif
+
+# ============================================================================
 # PHONY TARGETS - Declare all test targets as phony
 # ============================================================================
 .PHONY: test test-clean test-help test-stats test-debug-all
@@ -13,13 +40,21 @@
 
 # Run all tests with comprehensive reporting
 test:
+ifeq ($(VERBOSE),1)
 	@echo "🧪 Running all tests from project root..."
-	cd tests && $(MAKE) test
+else
+	@echo "[TEST] RUN_ALL"
+endif
+	cd tests && $(MAKE) test VERBOSE=$(VERBOSE)
 
 # Clean all test artifacts
 test-clean:
+ifeq ($(VERBOSE),1)
 	@echo "🧹 Cleaning all test artifacts from project root..."
-	cd tests && $(MAKE) clean
+else
+	@echo "[TEST] CLEAN_ALL"
+endif
+	cd tests && $(MAKE) clean VERBOSE=$(VERBOSE)
 
 # ============================================================================
 # INDIVIDUAL MODULE TARGETS - Work with specific test modules
@@ -27,23 +62,39 @@ test-clean:
 
 # Run tests for a specific module
 test-run-%:
+ifeq ($(VERBOSE),1)
 	@echo "🧪 Running tests for $* from project root..."
-	cd tests && $(MAKE) test-run-$*	
+else
+	@echo "[TEST] RUN $*"
+endif
+	cd tests && $(MAKE) test-run-$* VERBOSE=$(VERBOSE)
 
 # Build tests for a specific module (without running)
 test-make-%:
+ifeq ($(VERBOSE),1)
 	@echo "🔧 Building tests for $* from project root..."
-	cd tests && $(MAKE) test-make-$*
+else
+	@echo "[TEST] BUILD $*"
+endif
+	cd tests && $(MAKE) test-make-$* VERBOSE=$(VERBOSE)
 
 # Clean artifacts for a specific module
 test-clean-%:
+ifeq ($(VERBOSE),1)
 	@echo "🧹 Cleaning test artifacts for $* from project root..."
-	cd tests && $(MAKE) test-clean-$*
+else
+	@echo "[TEST] CLEAN $*"
+endif
+	cd tests && $(MAKE) test-clean-$* VERBOSE=$(VERBOSE)
 
 # Debug configuration for a specific module
 test-debug-%:
+ifeq ($(VERBOSE),1)
 	@echo "🐛 Debug configuration for $* from project root..."
-	cd tests && $(MAKE) test-debug-$*
+else
+	@echo "[TEST] DEBUG $*"
+endif
+	cd tests && $(MAKE) test-debug-$* VERBOSE=$(VERBOSE)
 
 # ============================================================================
 # UTILITY TARGETS - Help and project-wide operations
@@ -51,6 +102,7 @@ test-debug-%:
 
 # Show test help information
 test-help:
+ifeq ($(VERBOSE),1)
 	@echo "📋 CppBoilerplate Test Targets (Project Root)"
 	@echo ""
 	@echo "🎯 Main targets:"
@@ -72,13 +124,26 @@ test-help:
 	@echo "  make test                    # Run all tests with full reporting"
 	@echo ""
 	@echo "ℹ️  For more detailed help, use: cd tests && make help"
+else
+	@echo "[TEST] HELP"
+	@echo "test test-clean test-help test-stats test-debug-all"
+	@echo "test-run-<module> test-make-<module> test-clean-<module> test-debug-<module>"
+endif
 
 # Show test project statistics
 test-stats:
+ifeq ($(VERBOSE),1)
 	@echo "📊 Test Project Statistics (from project root):"
-	cd tests && $(MAKE) stats
+else
+	@echo "[TEST] STATS"
+endif
+	cd tests && $(MAKE) stats VERBOSE=$(VERBOSE)
 
 # Debug all module configurations
 test-debug-all:
+ifeq ($(VERBOSE),1)
 	@echo "🐛 Debug all test module configurations (from project root):"
-	cd tests && $(MAKE) debug-all
+else
+	@echo "[TEST] DEBUG_ALL"
+endif
+	cd tests && $(MAKE) debug-all VERBOSE=$(VERBOSE)

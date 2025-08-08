@@ -4,6 +4,36 @@ include Platform.build
 
 APPNAME = hello_world
 
+# Build output modes
+# VERBOSE=1 for human-friendly output (default)
+# VERBOSE=0 for AI agent-friendly output (concise)
+VERBOSE ?= 1
+
+# Output formatting based on mode
+ifeq ($(VERBOSE),1)
+    # Human mode: Colorful, descriptive output
+    MSG_PREFIX = @echo
+    SUCCESS_MSG = "✅ Successfully built"
+    COMPILE_MSG = "🔨 Compiling"
+    LINK_MSG = "🔗 Linking"
+    CLEAN_MSG = "🧹 Cleaning build artifacts..."
+    COPY_MSG = "📁 Copying executable to APP directory..."
+    LAUNCH_MSG = "🚀 Launching"
+    QUIET = @
+    COMPILE_QUIET = @
+else
+    # Agent mode: Ultra-concise, error-focused output
+    MSG_PREFIX = @echo "[BUILD]"
+    SUCCESS_MSG = "BUILT"
+    COMPILE_MSG = ""
+    LINK_MSG = "LINK"
+    CLEAN_MSG = "CLEAN"
+    COPY_MSG = "COPY"
+    LAUNCH_MSG = "RUN"
+    QUIET = @
+    COMPILE_QUIET = @
+endif
+
 # Directories
 BIN_DIR_debug   = bin/$(BUILD_NAME)/debug
 BIN_DIR_release = bin/$(BUILD_NAME)/release
@@ -53,75 +83,136 @@ all: release
 
 # Build targets
 debug: $(BIN_DIR_debug)/$(APPNAME)
+ifeq ($(VERBOSE),1)
 	@echo "✅ Successfully built debug version of $(APPNAME) for $(BUILD_NAME)"
 	@echo "   Executable: $(BIN_DIR_debug)/$(APPNAME)"
+else
+	@echo "[BUILD] BUILT debug $(APPNAME) $(BUILD_NAME)"
+endif
 
 release: $(BIN_DIR_release)/$(APPNAME)
+ifeq ($(VERBOSE),1)
 	@echo "✅ Successfully built release version of $(APPNAME) for $(BUILD_NAME)"
 	@echo "   Executable: $(BIN_DIR_release)/$(APPNAME)"
+else
+	@echo "[BUILD] BUILT release $(APPNAME) $(BUILD_NAME)"
+endif
 
 # Linking rules
 $(BIN_DIR_debug)/$(APPNAME): $(OBJECTS_debug)
 	@mkdir -p $(BIN_DIR_debug)
+ifeq ($(VERBOSE),1)
 	@echo "🔗 Linking debug executable..."
 	$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
+else
+	@echo "[BUILD] LINK debug $(APPNAME)"
+	@$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
+endif
 
 $(BIN_DIR_release)/$(APPNAME): $(OBJECTS_release)
 	@mkdir -p $(BIN_DIR_release)
+ifeq ($(VERBOSE),1)
 	@echo "🔗 Linking release executable..."
 	$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
+else
+	@echo "[BUILD] LINK release $(APPNAME)"
+	@$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
+endif
 
 
 # Compilation rules for C++ source files
 $(BIN_DIR_debug)/%.o: %.cpp
 	@mkdir -p $(dir $@)
+ifeq ($(VERBOSE),1)
 	@echo "🔨 Compiling (debug): $<"
 	$(CXX) $(CXXFLAGS_debug) -c $< -o $@
+else
+	$(COMPILE_QUIET)$(CXX) $(CXXFLAGS_debug) -c $< -o $@
+endif
 
 $(BIN_DIR_release)/%.o: %.cpp
 	@mkdir -p $(dir $@)
+ifeq ($(VERBOSE),1)
 	@echo "🔨 Compiling (release): $<"
 	$(CXX) $(CXXFLAGS_release) -c $< -o $@
+else
+	$(COMPILE_QUIET)$(CXX) $(CXXFLAGS_release) -c $< -o $@
+endif
 
 # Compilation rules for C source files
 $(BIN_DIR_debug)/%.o: %.c
 	@mkdir -p $(dir $@)
+ifeq ($(VERBOSE),1)
 	@echo "🔨 Compiling C (debug): $<"
 	$(CC) $(CFLAGS_debug) -c $< -o $@
+else
+	$(COMPILE_QUIET)$(CC) $(CFLAGS_debug) -c $< -o $@
+endif
 
 $(BIN_DIR_release)/%.o: %.c
 	@mkdir -p $(dir $@)
+ifeq ($(VERBOSE),1)
 	@echo "🔨 Compiling C (release): $<"
 	$(CC) $(CFLAGS_release) -c $< -o $@
+else
+	$(COMPILE_QUIET)$(CC) $(CFLAGS_release) -c $< -o $@
+endif
 
 # Cleanup targets
 clean:
+ifeq ($(VERBOSE),1)
 	@echo "🧹 Cleaning build artifacts..."
 	rm -f sh *.elf *.gdb
 	rm -rf bin/$(BUILD_NAME)
 	@echo "✅ Clean completed"
+else
+	@echo "[BUILD] CLEAN"
+	@rm -f sh *.elf *.gdb
+	@rm -rf bin/$(BUILD_NAME)
+endif
 
 # Utility targets
 copy:
+ifeq ($(VERBOSE),1)
 	@echo "📁 Copying executable to APP directory..."
 	@mkdir -p APP
 	cp $(BIN_DIR_release)/$(APPNAME) APP/ 2>/dev/null || true
 	@echo "✅ Copy completed"
+else
+	@echo "[BUILD] COPY $(APPNAME)"
+	@mkdir -p APP
+	@cp $(BIN_DIR_release)/$(APPNAME) APP/ 2>/dev/null || true
+endif
 
 clean_copy:
+ifeq ($(VERBOSE),1)
 	@echo "🗑️  Removing copied executable..."
 	rm -rf APP/$(APPNAME)
 	@echo "✅ Cleanup completed"
+else
+	@echo "[BUILD] CLEAN_COPY"
+	@rm -rf APP/$(APPNAME)
+endif
 
 
 # Execution targets
 run_debug: debug
+ifeq ($(VERBOSE),1)
 	@echo "🚀 Launching debug build: $(BIN_DIR_debug)/$(APPNAME)"
 	@$(BIN_DIR_debug)/$(APPNAME)
+else
+	@echo "[BUILD] RUN debug $(APPNAME)"
+	@$(BIN_DIR_debug)/$(APPNAME)
+endif
 
 run_release: release
+ifeq ($(VERBOSE),1)
 	@echo "🚀 Launching release build: $(BIN_DIR_release)/$(APPNAME)"
 	@$(BIN_DIR_release)/$(APPNAME)
+else
+	@echo "[BUILD] RUN release $(APPNAME)"
+	@$(BIN_DIR_release)/$(APPNAME)
+endif
 
 # For backward compatibility, 'run' launches release build
 run: run_release
