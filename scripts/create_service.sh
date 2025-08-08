@@ -124,6 +124,15 @@ std::string $SERVICE::doSomething${SERVICE}() const {
     return "$SERVICE result";
 }
 
+namespace {
+struct ${SERVICE}StaticRegistration {
+    ${SERVICE}StaticRegistration() {
+        IoCContainer::registerGlobal<$SERVICE>([]() { return std::make_shared<$SERVICE>(); });
+    }
+};
+static ${SERVICE}StaticRegistration _${SERVICE_LC}StaticRegistration;
+}
+
 void $SERVICE::registerWith(IoCContainer& container) {
     container.registerType<$SERVICE>([]() { return std::make_shared<$SERVICE>(); });
 }
@@ -162,7 +171,7 @@ cat > "tests/${SERVICE}Test/cases/${SERVICE}RegistrationTest.cpp" <<EOF
 
 TEST(${SERVICE}RegistrationTest, ${SERVICE}IsRegisteredInIoC) {
     IoCContainer container;
-    ${SERVICE_LC}::$SERVICE::registerWith(container);
+    container.importGlobals();
     EXPECT_NO_THROW({
         auto ptr = container.resolve<${SERVICE_LC}::$SERVICE>();
         EXPECT_NE(ptr, nullptr);

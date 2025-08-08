@@ -38,11 +38,10 @@ class Application
 			[this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
 		_container.registerType<print_hello::PrintHello>([]() { return std::make_shared<print_hello::PrintHello>(); });
 		_container.registerType<WebServer>([]() { return std::make_shared<WebServer>("127.0.0.1", 8080); });
-		_container.registerType<servicea::ServiceA>([]() { return std::make_shared<servicea::ServiceA>(); });
-		_container.registerType<serviceb::ServiceB>([]() { return std::make_shared<serviceb::ServiceB>(); });
 		_logger = _container.resolve<logger::Logger>();
 		_printer = _container.resolve<print_hello::PrintHello>();
 		_webServer = _container.resolve<WebServer>();
+		_container.importGlobals();
 		_serviceA = _container.resolve<servicea::ServiceA>();
 		_serviceB = _container.resolve<serviceb::ServiceB>();
 		_logger->start();

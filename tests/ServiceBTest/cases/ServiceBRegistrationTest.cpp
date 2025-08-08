@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <IoCContainer/IoCContainer.h>
-#include <ServiceA/ServiceA.h>
+#include <ServiceB/ServiceB.h>
 
-TEST(ServiceARegistrationTest, ServiceAIsRegisteredInIoC) {
+TEST(ServiceBRegistrationTest, ServiceBIsRegisteredInIoC) {
     IoCContainer container;
     container.importGlobals();
     EXPECT_NO_THROW({
-        auto ptr = container.resolve<servicea::ServiceA>();
+        auto ptr = container.resolve<serviceb::ServiceB>();
         EXPECT_NE(ptr, nullptr);
     });
 }

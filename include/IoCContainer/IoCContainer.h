@@ -1,10 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <functional>
-#include <unordered_map>
 #include <typeindex>
-#include <stdexcept>
+#include <unordered_map>
+#include <functional>
+#include <memory>
 
 /**
  * IoCContainer provides dependency registration and resolution for modular components.
@@ -12,8 +11,10 @@
  */
 class IoCContainer {
 public:
+    using Factory = std::function<std::shared_ptr<void>()>;
+
     IoCContainer() = default;
-    ~IoCContainer();
+    ~IoCContainer() = default;
 
     /**
      * Registers a factory function for a given type T
@@ -21,7 +22,7 @@ public:
      * @param factory The factory function returning a shared_ptr<T>
      */
     template<typename T>
-    void registerType(std::function<std::shared_ptr<T>()> factory);
+    void registerType(Factory factory);
 
     /**
      * Resolves an instance of type T
@@ -31,8 +32,30 @@ public:
     template<typename T>
     std::shared_ptr<T> resolve();
 
+    /**
+     * Registers a factory function for a given type T globally
+     * @tparam T The type to register
+     * @param factory The factory function returning a shared_ptr<T>
+     */
+    template<typename T>
+    static void registerGlobal(Factory factory);
+
+    /**
+     * Imports all globally registered factories into this container
+     */
+    inline void importGlobals() {
+        for (const auto& pair : _globalFactories()) {
+            _factories[pair.first] = pair.second;
+        }
+    }
+
 private:
-    std::unordered_map<std::type_index, std::function<std::shared_ptr<void>()>> _factories;
+    std::unordered_map<std::type_index, Factory> _factories;
+
+    static std::unordered_map<std::type_index, Factory>& _globalFactories() {
+        static std::unordered_map<std::type_index, Factory> instance;
+        return instance;
+    }
 };
 
 #include "IoCContainer.inl"

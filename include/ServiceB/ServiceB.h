@@ -1,9 +1,13 @@
 #pragma once
 #include <string>
+#include <IoCContainer/IoCContainer.h>
 
 namespace serviceb {
 class ServiceB {
 public:
-	std::string doSomethingServiceB() const;
+    ServiceB();
+    std::string doSomethingServiceB() const;
+    // Static registration helper for TDD and decoupling
+    static void registerWith(IoCContainer& container);
 };
 }

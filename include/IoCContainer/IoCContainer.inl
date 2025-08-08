@@ -8,10 +8,8 @@
 // Inline implementations for IoCContainer
 
 template<typename T>
-void IoCContainer::registerType(std::function<std::shared_ptr<T>()> factory) {
-    _factories[std::type_index(typeid(T))] = [factory]() {
-        return std::static_pointer_cast<void>(factory());
-    };
+void IoCContainer::registerType(Factory factory) {
+    _factories[std::type_index(typeid(T))] = factory;
 }
 
 template<typename T>
@@ -21,4 +19,9 @@ std::shared_ptr<T> IoCContainer::resolve() {
         throw std::runtime_error("Type not registered in IoCContainer");
     }
     return std::static_pointer_cast<T>(it->second());
+}
+
+template<typename T>
+void IoCContainer::registerGlobal(Factory factory) {
+    _globalFactories()[std::type_index(typeid(T))] = factory;
 }
