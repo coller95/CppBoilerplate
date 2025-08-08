@@ -77,10 +77,10 @@ void MongooseWebServerImpl::registerPreServeHandler(WebServer::PreServeHandler h
 void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* ev_data) {
     if (ev == MG_EV_HTTP_MSG) {
         auto* hm = (struct mg_http_message*)ev_data;
-        std::string path(hm->uri.buf, hm->uri.len);
+        std::string path(hm->uri.ptr, hm->uri.len);
         std::cout << "[handleEvent] Received request for path: " << path << std::endl;
-        std::string method(hm->method.buf, hm->method.len);
-        std::string body(hm->body.buf, hm->body.len);
+        std::string method(hm->method.ptr, hm->method.len);
+        std::string body(hm->body.ptr, hm->body.len);
         std::string responseBody;
         int statusCode = 200;
         bool handled = false;
@@ -122,8 +122,8 @@ void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* e
                         std::cout << "[handleEvent] Preparing to serve file: " << filePath << std::endl;
                         try {
                             std::cout << "[handleEvent] mg_connection address: " << c << std::endl;
-                            std::cout << "[handleEvent] mg_http_message URI: " << std::string(hm->uri.buf, hm->uri.len) << std::endl;
-                            std::cout << "[handleEvent] mg_http_message Method: " << std::string(hm->method.buf, hm->method.len) << std::endl;
+                            std::cout << "[handleEvent] mg_http_message URI: " << std::string(hm->uri.ptr, hm->uri.len) << std::endl;
+                            std::cout << "[handleEvent] mg_http_message Method: " << std::string(hm->method.ptr, hm->method.len) << std::endl;
                             const char* binMime = ".bin=application/octet-stream";
                             struct mg_http_serve_opts opts = {
                                 /*root_dir*/ mapping.directory.c_str(),
