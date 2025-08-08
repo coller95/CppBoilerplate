@@ -355,6 +355,17 @@ All contributors, including AI assistants, must follow these rules without excep
 
    - Name test cases and mocks clearly. Add comments to clarify the purpose of each test and mock.
 
+## Build and Test Cleanup Before Changes
+
+Before making any changes to the codebase, always clean the existing build and test artifacts to ensure a fresh start. This can be done by running the following commands from the project root:
+
+```bash
+make clean
+make test-clean
+```
+
+This ensures that no stale or outdated artifacts interfere with the new build or tests.
+
 ## Efficient Debug & Test Workflow
 
 1. **Always work from the project root.**
@@ -372,3 +383,5 @@ All contributors, including AI assistants, must follow these rules without excep
 - **Efficiency**: Running only the relevant tests saves time.
 - **Focus**: Limits output to the module you're working on, making debugging easier.
 - **Scalability**: As the project grows, this approach ensures manageable test runs.
+
+**Remember:** For any action requiring changes to development code, you must strictly follow TDD. Write test cases first, always. This is non-negotiable and critical to the project's success.
