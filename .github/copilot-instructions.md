@@ -496,42 +496,125 @@ clean:
 
 **Rationale:** Multithreaded builds significantly reduce build times, especially for large projects with many source files.
 
-### External Library Management
+### Source and Include Management
 
-The project uses a centralized external library management system through `Ldflags.build`:
+The project uses an immutable main Makefile design with configurable source management through `Project.build`:
 
-#### Ldflags.build Configuration File
-- **Purpose**: Centralized configuration for external library dependencies and linking flags
-- **Location**: `Ldflags.build` in the project root
-- **Integration**: Automatically included by the main Makefile using `-include Ldflags.build`
-- **Pattern**: Use `LIB_DIRS += -L/path/to/library` and `LDLIBS += -llibraryname`
+#### Immutable Makefile Design
+- **Core Principle**: The main `Makefile` should **never be modified** for project-specific configurations
+- **Configuration-Driven**: All customizations are done through `.build` files
+- **Generic Logic**: Main Makefile contains only build patterns and logic, no hardcoded paths
+- **Separation of Concerns**: Build logic vs. project configuration are completely separated
 
-#### Library Categories
-- **System Libraries**: Common system-level dependencies (math, threading)
-- **Project External Libraries**: Project-specific libraries (mongoose, gtest/gmock)
-- **Custom Libraries**: Third-party libraries (database, JSON, networking, SSL/TLS)
-- **Cross-Compilation Support**: Architecture-specific library paths using conditional statements
+#### Project.build Configuration File
+- **Purpose**: Centralized configuration for source files, include directories, and external libraries
+- **Location**: `Project.build` in the project root
+- **Integration**: Automatically included by the main Makefile using `-include Project.build`
+- **Comprehensive Setup**: Contains all project-specific configurations in one organized file
+
+#### Key Configuration Sections
+```makefile
+# Source file patterns
+EXTERNAL_CPP_SOURCES = $(wildcard external/*/src/*.cpp)
+EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
+
+# Include directories
+ADDITIONAL_INCLUDES = -Iexternal/mongoose/include
+
+# External libraries
+LIB_DIRS += -L/usr/local/lib
+LDLIBS += -lsqlite3
+
+# Custom sources
+ADDITIONAL_SOURCES += $(YOUR_CUSTOM_SOURCES)
+```
 
 #### Usage Examples
 ```makefile
-# Enable a library by uncommenting:
-LIB_DIRS  += -L/usr/local/lib
-LDLIBS    += -lsqlite3
-
-# Cross-compilation example:
+# Platform-specific configuration:
 ifeq ($(ARCH),aarch64)
+  PLATFORM_SOURCES += src/platform/arm/*.cpp
+  ADDITIONAL_INCLUDES += -Iinclude/platform/arm
   LIB_DIRS += -L/opt/aarch64-toolchain/lib
 endif
+ADDITIONAL_SOURCES += $(PLATFORM_SOURCES)
+
+# Feature-specific configuration:
+ifeq ($(WEBSERVER_BACKEND),mongoose)
+  WEBSERVER_IMPL_SOURCES = $(wildcard src/WebServer/impl/mongoose/*.cpp)
+  ADDITIONAL_INCLUDES += -Iinclude/WebServer/mongoose
+endif
+ADDITIONAL_SOURCES += $(WEBSERVER_IMPL_SOURCES)
+
+# Generated/excluded sources:
+EXCLUDED_SOURCES = src/deprecated/*.cpp
+MAIN_SOURCES := $(filter-out $(EXCLUDED_SOURCES), $(shell find src -name '*.cpp'))
+GENERATED_SOURCES = $(wildcard generated/*.cpp)
+ADDITIONAL_SOURCES += $(GENERATED_SOURCES)
 ```
 
-#### Best Practices
-- **Centralized Management**: All external library configuration in one file
-- **Documentation**: Well-commented sections with usage examples
-- **Optional Include**: Build system works with or without the file
-- **Cross-Platform**: Supports both native and cross-compilation scenarios
-- **Integration**: Works seamlessly with the flexible test Makefile system via `EXTERNAL_DEPS`
+#### When to Use Project.build
+- **External Source Patterns**: Custom external library source discovery
+- **Platform-Specific Sources**: Architecture or OS-specific source files
+- **Generated Sources**: Build-time generated source files
+- **Include Directory Customization**: Non-standard include directory patterns
+- **Source Exclusions**: Exclude specific files from automatic discovery
+- **External Library Dependencies**: All library linking configuration
+- **Cross-Compilation**: Architecture-specific configurations
 
-**Rationale:** Centralized external library management separates dependency configuration from build logic, making it easier to manage different deployment scenarios and cross-compilation targets.
+#### Best Practices
+- **Never Modify Main Makefile**: All project customizations go in `Project.build`
+- **Document Changes**: Comment your customizations in `Project.build`
+- **Use Conditional Logic**: Platform/feature-specific configurations with `ifeq` statements
+- **Incremental Configuration**: Use `+=` to append to existing variables
+- **Organize by Section**: Keep sources, includes, and libraries in their respective sections
+
+**Rationale:** The immutable Makefile design with consolidated `Project.build` ensures that core build logic remains stable and reusable while providing complete flexibility through a single, well-organized configuration file. This approach eliminates redundancy, reduces configuration files, and makes the build system more maintainable and portable across different projects.
+
+### Cross-Compilation and Docker Support
+
+The project provides comprehensive cross-compilation support with Docker-aware platform detection through `Platform.build`:
+
+#### Platform.build Configuration File
+- **Purpose**: Handles platform detection, cross-compilation setup, and Docker containerized builds
+- **Location**: `Platform.build` in the project root
+- **Integration**: Included first by the main Makefile to establish platform context
+- **Docker Support**: Automatically detects and adapts to Docker build environments
+
+#### Cross-Compilation Methods
+```bash
+# Native compilation (auto-detects current architecture)
+make
+
+# Traditional cross-compilation
+CROSS_COMPILE_PREFIX=aarch64-linux-gnu- make
+
+# Docker cross-compilation with environment variable
+docker run --rm -v $(pwd):/workspace -e DOCKER_CROSS_COMPILE=aarch64-linux-gnu- cross-compiler make
+
+# Docker buildx multi-platform builds
+docker buildx build --platform linux/arm64,linux/amd64 .
+```
+
+#### Docker Environment Detection
+- **DOCKER_CROSS_COMPILE**: Override cross-compilation prefix in Docker
+- **DOCKER_BUILDPLATFORM**: Automatic platform detection for buildx
+- **Vendor Detection**: Distinguishes between native, cross, docker, and buildx builds
+- **Build Directory Organization**: Creates architecture-specific directories (e.g., `x86_64-native`, `aarch64-docker`)
+
+#### Supported Architectures
+- **aarch64**: ARM 64-bit (common in modern ARM processors, Apple Silicon)
+- **arm**: ARM 32-bit (embedded systems, older ARM devices)  
+- **x86_64**: Intel/AMD 64-bit (standard desktop/server architecture)
+- **Auto-detection**: Falls back to `uname -m` for unknown architectures
+
+#### Build Name Examples
+- `x86_64-native`: Native x86_64 compilation
+- `aarch64-cross`: Cross-compilation to ARM64
+- `arm-docker`: ARM compilation in Docker container
+- `x86_64-buildx`: Docker buildx multi-platform build
+
+**Rationale:** Docker-aware cross-compilation support enables seamless CI/CD integration, consistent build environments across different development machines, and simplified multi-architecture deployments common in modern containerized applications.
 
 ---
 
@@ -722,7 +805,8 @@ This helps keep the project's standards up to date and ensures all contributors 
 - Place test cases in `cases/` subfolders for scalability
 - Use dependency injection and clear interfaces for testability
 - Run relevant tests after every significant change
-- Configure external libraries through `Ldflags.build` for centralized dependency management
+- **Never modify the main Makefile**: Use `Project.build` for all project-specific configuration
+- Configure sources, includes, and external libraries through `Project.build` for centralized management
 - Use the enhanced test management system: `make test-help` for comprehensive test targets
 
 ---

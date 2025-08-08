@@ -1,6 +1,6 @@
 
 # Modern, robust Makefile for CppBoilerplate
-include Makefile.build
+include Platform.build
 
 APPNAME = hello_world
 
@@ -8,37 +8,34 @@ APPNAME = hello_world
 BIN_DIR_debug   = bin/$(BUILD_NAME)/debug
 BIN_DIR_release = bin/$(BUILD_NAME)/release
 
-# Source file discovery
+# Source file discovery (automatic + configurable)
 MAIN_SOURCES = $(shell find src -name '*.cpp')
-EXTERNAL_CPP_SOURCES = $(wildcard external/*/src/*.cpp)
-WEBSERVER_IMPL_SOURCES = $(wildcard src/WebServer/impl/*.cpp)
-EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
 
-# All source files
-SRCFILES = $(MAIN_SOURCES) $(EXTERNAL_CPP_SOURCES) $(EXTERNAL_C_SOURCES) $(WEBSERVER_IMPL_SOURCES)
+# Include project configuration (sources, includes, libraries)
+-include Project.build
+
+# All source files (main + external + additional from Project.build)
+SRCFILES = $(MAIN_SOURCES) $(EXTERNAL_CPP_SOURCES) $(EXTERNAL_C_SOURCES) $(ADDITIONAL_SOURCES)
 
 # Generate object file names for different build types
 OBJECTS_debug = $(MAIN_SOURCES:src/%.cpp=$(BIN_DIR_debug)/src/%.o) \
 			   $(EXTERNAL_CPP_SOURCES:external/%.cpp=$(BIN_DIR_debug)/external/%.o) \
-			   $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_debug)/external/%.o) \
-			   $(WEBSERVER_IMPL_SOURCES:src/%.cpp=$(BIN_DIR_debug)/src/%.o)
+			   $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_debug)/external/%.o)
 
 OBJECTS_release = $(MAIN_SOURCES:src/%.cpp=$(BIN_DIR_release)/src/%.o) \
 				 $(EXTERNAL_CPP_SOURCES:external/%.cpp=$(BIN_DIR_release)/external/%.o) \
-				 $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_release)/external/%.o) \
-				 $(WEBSERVER_IMPL_SOURCES:src/%.cpp=$(BIN_DIR_release)/src/%.o)
+				 $(EXTERNAL_C_SOURCES:external/%.c=$(BIN_DIR_release)/external/%.o)
 
 # Include dependency files for incremental builds
 -include $(OBJECTS_debug:.o=.d)
 -include $(OBJECTS_release:.o=.d)
 
-# Include directories and library configuration
-INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir)) -Iexternal/mongoose/include
+# Include directories and library configuration (base + configurable)
+INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir)) $(ADDITIONAL_INCLUDES)
 LIB_DIRS     = -Llib 
 LDLIBS       = -lpthread -lrt -lm
 
-# Include additional linker flags if available
--include Ldflags.build
+# Project.build already included above - contains additional library flags
 LDFLAGS = $(LIB_DIRS) $(LDLIBS)
 
 # Compiler settings for C++ files (C++17 standard)
@@ -130,4 +127,4 @@ run_release: release
 run: run_release
 
 # Include test build system
-include test.build
+include Tests.build

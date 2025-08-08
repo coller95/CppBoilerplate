@@ -1,4 +1,4 @@
-# test.build - Makefile fragment for test-related targets
+# Tests.build - Makefile fragment for test-related targets
 # Provides convenient test targets at the project root level
 
 # ============================================================================

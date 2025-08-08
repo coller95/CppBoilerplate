@@ -1,0 +1,148 @@
+# Project.build - Complete Project Configuration
+# ============================================
+# This file provides a centralized location for all project-specific configurations
+# including source files, include directories, and external library dependencies.
+#
+# Usage:
+#   - Uncomment sections for features you need
+#   - Add project-specific configurations following the patterns
+#   - This file is included by the main Makefile automatically
+#
+# Separation of concerns:
+#   - Source file patterns and discovery
+#   - Include directory customization  
+#   - External library linking configuration
+
+# ============================================
+# SOURCE FILE CONFIGURATION
+# ============================================
+
+# External sources (current project setup)
+EXTERNAL_CPP_SOURCES = $(wildcard external/*/src/*.cpp)
+EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
+
+# Example: Platform-specific source inclusions
+# ifeq ($(ARCH),aarch64)
+#   PLATFORM_SOURCES += src/platform/arm/*.cpp
+# else ifeq ($(ARCH),x86_64)
+#   PLATFORM_SOURCES += src/platform/x86/*.cpp
+# endif
+
+# Example: Conditional feature sources
+# ifeq ($(WEBSERVER_BACKEND),mongoose)
+#   WEBSERVER_IMPL_SOURCES = $(wildcard src/WebServer/impl/mongoose/*.cpp)
+# else ifeq ($(WEBSERVER_BACKEND),custom)
+#   WEBSERVER_IMPL_SOURCES = $(wildcard src/WebServer/impl/custom/*.cpp)
+# endif
+
+# Example: Generated or third-party sources
+# GENERATED_SOURCES = $(wildcard generated/*.cpp)
+# THIRDPARTY_SOURCES = $(wildcard thirdparty/*/src/*.cpp)
+
+# Example: Exclude specific files from automatic discovery
+# EXCLUDED_SOURCES = src/platform/windows/*.cpp src/deprecated/*.cpp
+# MAIN_SOURCES := $(filter-out $(EXCLUDED_SOURCES), $(shell find src -name '*.cpp'))
+
+# Additional sources (append custom sources here)
+# ADDITIONAL_SOURCES += $(PLATFORM_SOURCES)
+# ADDITIONAL_SOURCES += $(WEBSERVER_IMPL_SOURCES)
+# ADDITIONAL_SOURCES += $(GENERATED_SOURCES)
+# ADDITIONAL_SOURCES += $(THIRDPARTY_SOURCES)
+
+# ============================================
+# INCLUDE DIRECTORY CONFIGURATION
+# ============================================
+
+# Current project includes
+ADDITIONAL_INCLUDES = -Iexternal/mongoose/include
+
+# Example: Platform-specific include directories
+# ifeq ($(ARCH),aarch64)
+#   PLATFORM_INCLUDES += -Iinclude/platform/arm
+# else ifeq ($(ARCH),x86_64)
+#   PLATFORM_INCLUDES += -Iinclude/platform/x86
+# endif
+
+# Example: Third-party include directories
+# THIRDPARTY_INCLUDES = $(foreach dir,$(wildcard thirdparty/*/include),-I$(dir))
+
+# Example: Generated include directories
+# GENERATED_INCLUDES = -Igenerated/include
+
+# Example: Conditional feature includes
+# ifeq ($(WEBSERVER_BACKEND),mongoose)
+#   WEBSERVER_INCLUDES = -Iinclude/WebServer/mongoose
+# else ifeq ($(WEBSERVER_BACKEND),custom)
+#   WEBSERVER_INCLUDES = -Iinclude/WebServer/custom
+# endif
+
+# Additional includes (append custom includes here)
+# ADDITIONAL_INCLUDES += $(PLATFORM_INCLUDES)
+# ADDITIONAL_INCLUDES += $(THIRDPARTY_INCLUDES)
+# ADDITIONAL_INCLUDES += $(GENERATED_INCLUDES)
+# ADDITIONAL_INCLUDES += $(WEBSERVER_INCLUDES)
+
+# ============================================
+# EXTERNAL LIBRARY CONFIGURATION
+# ============================================
+
+# Example: Database libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lsqlite3
+
+# Example: JSON libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -ljsoncpp
+
+# Example: Networking libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lcurl
+
+# Example: SSL/TLS libraries
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lssl -lcrypto
+
+# Example: Mongoose Web Server (if using external installation)
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lmongoose
+
+# Example: Google Test/Mock (if using system installation instead of external/)
+# LIB_DIRS  += -L/usr/local/lib
+# LDLIBS    += -lgtest -lgtest_main -lgmock -lgmock_main
+
+# ============================================
+# CROSS-COMPILATION CONFIGURATION
+# ============================================
+# When cross-compiling, you may need architecture-specific configurations.
+# Use conditional statements based on BUILD_NAME or ARCH if needed.
+
+# Example: Architecture-specific library paths
+# ifeq ($(ARCH),aarch64)
+#   LIB_DIRS += -L/opt/aarch64-toolchain/lib
+#   ADDITIONAL_SOURCES += src/arch/aarch64/*.cpp
+#   ADDITIONAL_INCLUDES += -Iinclude/arch/aarch64
+# endif
+
+# Example: Vendor-specific configurations
+# ifeq ($(BUILD_NAME),aarch64-linux)
+#   LIB_DIRS += -L/opt/linux-toolchain/lib
+# endif
+
+# ============================================
+# BUILD TYPE CONFIGURATION
+# ============================================
+# Sometimes you need different configurations for debug vs release builds.
+
+# Example: Debug-specific sources and libraries
+# ifeq ($(MAKECMDGOALS),debug)
+#   ADDITIONAL_SOURCES += src/debug/*.cpp
+#   LDLIBS += -ldebug_utils
+# else ifeq ($(MAKECMDGOALS),release)
+#   ADDITIONAL_SOURCES += src/optimized/*.cpp
+#   LDLIBS += -loptimized_utils
+# endif
+
+# ============================================
+# CUSTOM PROJECT CONFIGURATIONS
+# ============================================
+# Add your project-specific configurations below:

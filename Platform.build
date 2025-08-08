@@ -1,0 +1,75 @@
+# Platform.build - Cross-compilation and Architecture Detection
+# ===========================================================
+# This file handles platform detection, cross-compilation setup, and
+# architecture-specific compiler configuration, with support for Docker
+# containerized cross-compilation environments.
+#
+# Features:
+#   - Automatic architecture detection (aarch64, arm, x86_64)
+#   - Cross-compilation prefix handling
+#   - Vendor detection from toolchain prefixes
+#   - Docker-aware cross-compilation support
+#   - Build name generation for directory organization
+#
+# Usage:
+#   - Native compilation: make (auto-detects current architecture)
+#   - Cross-compilation: CROSS_COMPILE_PREFIX=aarch64-linux-gnu- make
+#   - Docker cross-compilation: docker run --rm -v $(pwd):/workspace cross-compiler make
+#   - Multi-arch Docker: docker buildx build --platform linux/arm64,linux/amd64
+
+# Cross-compilation configuration
+CROSS_COMPILE_PREFIX ?=
+
+# Docker environment detection
+ifdef DOCKER_CROSS_COMPILE
+  CROSS_COMPILE_PREFIX := $(DOCKER_CROSS_COMPILE)
+endif
+
+# Compiler selection with cross-compilation support
+CXX = $(CROSS_COMPILE_PREFIX)g++
+CC = $(CROSS_COMPILE_PREFIX)gcc
+
+# Architecture detection logic
+# Prioritize CROSS_COMPILE_PREFIX, then check Docker environment, then auto-detect
+ifeq ($(findstring aarch64,$(CROSS_COMPILE_PREFIX)),aarch64)
+ARCH := aarch64
+else ifneq ($(filter arm,$(CROSS_COMPILE_PREFIX)),)
+ARCH := arm
+else ifneq ($(filter x86_64,$(CROSS_COMPILE_PREFIX)),)
+ARCH := x86_64
+else ifdef DOCKER_BUILDPLATFORM
+  # Docker buildx multi-platform support
+  ifeq ($(DOCKER_BUILDPLATFORM),linux/arm64)
+    ARCH := aarch64
+  else ifeq ($(DOCKER_BUILDPLATFORM),linux/arm/v7)
+    ARCH := arm
+  else ifeq ($(DOCKER_BUILDPLATFORM),linux/amd64)
+    ARCH := x86_64
+  else
+    ARCH := $(shell uname -m)
+  endif
+else
+  # Auto-detect from current system
+  ARCH := $(shell uname -m)
+endif
+
+# Vendor detection from cross-compilation prefix or Docker environment
+ifneq ($(CROSS_COMPILE_PREFIX),)
+  VENDOR := $(word 2,$(subst -, ,$(CROSS_COMPILE_PREFIX)))
+  ifeq ($(VENDOR),)
+    VENDOR := cross
+  endif
+else ifdef DOCKER_CROSS_COMPILE
+  # Docker cross-compilation environment
+  VENDOR := docker
+else ifdef DOCKER_BUILDPLATFORM
+  # Docker buildx environment
+  VENDOR := buildx
+else
+  # Native compilation
+  VENDOR := native
+endif
+
+# Build name for directory organization 
+# Examples: x86_64-native, aarch64-cross, arm-docker, x86_64-buildx
+BUILD_NAME = $(ARCH)-$(VENDOR)
