@@ -252,6 +252,47 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
    - Name test cases and mocks clearly. Add comments to clarify the purpose of each test and mock.
 
+## Test-Driven Development (TDD) Enforcement
+
+To ensure high-quality, maintainable code, **strict adherence to TDD** is mandatory for all development tasks. The following rules must be followed:
+
+1. **Define the Requirement**
+   - Clearly state the feature or bug to address before writing any code.
+
+2. **Write a Failing Test First**
+   - Create a new test in the appropriate `tests/ModuleNameTest/cases/` folder.
+   - Ensure the test reflects the expected behavior of the feature or bugfix.
+   - Confirm the test fails (red) before proceeding to implementation.
+
+3. **Implement Minimal Code**
+   - Write just enough code to make the failing test pass.
+   - Avoid over-engineering or adding unnecessary functionality.
+
+4. **Rebuild and Retest**
+   - Run the test suite after every significant change.
+   - Ensure all tests pass (green) and no regressions occur.
+
+5. **Refactor**
+   - Clean up code and tests for clarity, modularity, and maintainability.
+   - Refactor both tests and production code together to maintain consistency.
+
+6. **Repeat**
+   - For each new requirement or bug, repeat the TDD cycle.
+   - Maintain high test coverage and code quality.
+
+### Prohibited Actions
+- **No direct implementation without a failing test.**
+- **No skipping of test validation after changes.**
+- **No merging of code that has not been tested.**
+
+### Rationale
+Strict TDD ensures:
+- Predictable and reliable code behavior.
+- Early detection of bugs and regressions.
+- Maintainable and scalable codebase.
+
+All contributors, including AI assistants, must follow these rules without exception.
+
 ## Efficient Targeted Test Build & Clean
 
 - The test build system supports running, building, or cleaning tests for a specific test directory:
