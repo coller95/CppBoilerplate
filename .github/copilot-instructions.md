@@ -11,6 +11,24 @@
 
 **Rationale:**
 - Using an enum for backend selection ensures type safety, discoverability, and prevents errors from stringly-typed APIs. It also makes adding new backends straightforward and consistent.
+
+# Endpoint Modularization Convention
+
+## Endpoint Module Structure
+
+- Each endpoint must be a fully independent module, just like services.
+- Each endpoint should have its own folder under `include/`, `src/`, and `tests/`, not grouped under `ApiModule` or any other shared folder.
+- For example, for an endpoint named `EndpointHello`:
+    - `include/EndpointHello/EndpointHello.h`
+    - `src/EndpointHello/EndpointHello.cpp`
+    - `tests/EndpointHelloTest/` (with its own test cases in `cases/`)
+- This structure should be used for all endpoints (e.g., `EndpointA`, `EndpointB`, etc.) to maximize decoupling and modularity.
+- All test cases for endpoints must be placed in their respective test module folders, following the `cases/` subfolder convention.
+- Update all includes, build files, and documentation to reflect this structure when adding or refactoring endpoints.
+
+**Rationale:**
+- This approach maximizes decoupling, modularity, and maintainability, making it easy to add, test, and refactor endpoints independently.
+
 # AI/Assistant Guidance: Evolving Project Conventions
 
 Whenever the user expresses a new idea, workflow, or coding/build convention during development, the AI assistant should ask the user whether they want to add this idea to `copilot-instructions.md` for future reference and consistency. This ensures that evolving best practices and project-specific rules are captured and documented in a single, authoritative place.
