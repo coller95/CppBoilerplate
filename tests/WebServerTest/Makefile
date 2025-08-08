@@ -1,9 +1,8 @@
-
 OBJDIR = obj
 BINDIR = bin
-TEST_SRC = WebServerTest.cpp TestMain.cpp ../../src/WebServer/WebServer.cpp ../../src/WebServer/impl/Factory.cpp ../../src/WebServer/impl/MongooseWebServerImpl.cpp ../../external/mongoose/src/mongoose.c ../../src/IoCContainer/IoCContainer.cpp
-TEST_OBJS = $(OBJDIR)/WebServerTest.o $(OBJDIR)/TestMain.o $(OBJDIR)/WebServer.o $(OBJDIR)/Factory.o $(OBJDIR)/MongooseWebServerImpl.o $(OBJDIR)/mongoose.o $(OBJDIR)/IoCContainer.o
-TEST_DEPS = $(OBJDIR)/WebServerTest.d $(OBJDIR)/TestMain.d $(OBJDIR)/WebServer.d $(OBJDIR)/Factory.d $(OBJDIR)/MongooseWebServerImpl.d $(OBJDIR)/mongoose.d $(OBJDIR)/IoCContainer.d
+TEST_SRC = cases/*.cpp TestMain.cpp ../../src/WebServer/WebServer.cpp ../../src/WebServer/impl/Factory.cpp ../../src/WebServer/impl/MongooseWebServerImpl.cpp ../../external/mongoose/src/mongoose.c ../../src/IoCContainer/IoCContainer.cpp
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/WebServer.o $(OBJDIR)/Factory.o $(OBJDIR)/MongooseWebServerImpl.o $(OBJDIR)/mongoose.o $(OBJDIR)/IoCContainer.o
+TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/WebServer.d $(OBJDIR)/Factory.d $(OBJDIR)/MongooseWebServerImpl.d $(OBJDIR)/mongoose.d $(OBJDIR)/IoCContainer.d
 TEST_BIN = $(BINDIR)/WebServerTest
 
 CXX = g++
@@ -21,7 +20,11 @@ $(OBJDIR):
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: cases/%.cpp | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/TestMain.o: TestMain.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
