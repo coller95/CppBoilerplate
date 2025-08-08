@@ -1,14 +1,16 @@
-# Modern, robust Makefile for unit tests (Google Test)
+# Modern, robust Makefile for ServiceA unit tests (Google Test)
 # All object and dependency files are placed flat in obj/ (not nested)
 
 ROOTDIR = ../..
-SERVICE = ServiceA
 CXX = g++
+CC = gcc
 CXXFLAGS = -std=c++20 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+CFLAGS = -I$(ROOTDIR)/include -g -Wall -Wextra -MMD -MP
 GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
 
 OBJDIR = obj
 BINDIR = bin
+SERVICE = ServiceA
 
 TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp
 TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(SERVICE).o $(OBJDIR)/IoCContainer.o
@@ -42,6 +44,11 @@ $(OBJDIR)/$(SERVICE).o: $(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp | $(OBJDIR)
 $(OBJDIR)/IoCContainer.o: $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Pattern rule for C sources (if any)
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(GTEST_LIBS) -pthread

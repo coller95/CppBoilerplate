@@ -54,6 +54,31 @@
 - Provides safe removal with confirmation to prevent accidental deletion
 - **Cross-check tests guarantee auto-registration works correctly and catch integration issues early**
 
+## Service Generation Script
+
+- Use the `scripts/create_service.sh` script to generate new service modules automatically
+- Usage:
+  - Create: `./scripts/create_service.sh create ServiceName` (must start with "Service" followed by a capitalized name)
+  - Remove: `./scripts/create_service.sh remove ServiceName` (removes an existing service with confirmation)
+- The script creates the complete modular structure:
+  - `include/ServiceName/ServiceName.h`
+  - `src/ServiceName/ServiceName.cpp`
+  - `tests/ServiceNameTest/` with test cases and Makefile
+- Generated tests include **IoC registration verification** that verifies:
+  - The service module is automatically registered with IoCContainer
+  - The service can be resolved and instantiated correctly
+  - All registered services work with dependency injection
+- Follow the script's instructions to implement your service logic and update test assertions
+- Always test the generated service with `make test-run-ServiceNameTest`
+- Use remove function to clean up unwanted services safely
+
+**Rationale:**
+- Ensures consistent service structure across the project
+- Reduces boilerplate and setup time for new services
+- Automatically follows all established conventions and standards
+- Provides safe removal with confirmation to prevent accidental deletion
+- **IoC registration tests guarantee dependency injection works correctly and catch integration issues early**
+
 # AI/Assistant Guidance: Evolving Project Conventions
 
 Whenever the user expresses a new idea, workflow, or coding/build convention during development, the AI assistant should ask the user whether they want to add this idea to `copilot-instructions.md` for future reference and consistency. This ensures that evolving best practices and project-specific rules are captured and documented in a single, authoritative place.
@@ -410,19 +435,62 @@ Strict TDD ensures:
 
 ## Script and Template Generation Conventions (Bash + Makefile)
 
+### Universal Script Standards
+
+- **All generation scripts** (`create_endpoint.sh`, `create_service.sh`, etc.) must follow consistent patterns:
+  - Script location resolution: Use the standard pattern to resolve script directory and run from project root
+  - Argument parsing: Use simple positional arguments: `<create|remove> <ModuleName>`
+  - Module naming: Validate naming conventions (endpoints start with "Endpoint", services start with "Service")
+  - Function-based structure: Separate create and remove logic into dedicated functions
+  - Consistent user experience: Use emojis, clear messaging, and helpful next steps
+
+### Script Implementation Requirements
+
 - Bash scripts must resolve their own location and run from the project root for predictable relative paths:
-  - SCRIPTDIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
-  - PROJECT_ROOT="$(dirname "$SCRIPTDIR")"; cd "$PROJECT_ROOT"
-- Use PROJECT_ROOT-relative paths for all script operations (creating/removing sources, headers, tests).
-- Do not define ROOTDIR inside scripts. Only define ROOTDIR in generated Makefiles as the path from the test folder to the project root (usually `../..`).
+  ```bash
+  SCRIPTDIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
+  PROJECT_ROOT="$(dirname "$SCRIPTDIR")"
+  cd "$PROJECT_ROOT"
+  ```
+- Use PROJECT_ROOT-relative paths for all script operations (creating/removing sources, headers, tests)
+- Do not define ROOTDIR inside scripts. Only define ROOTDIR in generated Makefiles as the path from the test folder to the project root (usually `../..`)
+
+### Makefile Generation Requirements
+
 - Generated test Makefiles must:
-  - Set `SERVICE = <ServiceName>` and reference sources/objects via `$(SERVICE)` (e.g., `$(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp`).
-  - Use `cases/*.cpp` glob for test cases and keep the test runner at the module root.
-  - Place all objects in `obj/` and the binary in `bin/` inside the test module folder.
-  - Use real tabs for all recipe lines.
-- When emitting Makefiles from bash, preserve Makefile variables (`$(...)`) by either:
-  - Using a single-quoted heredoc (preferred): `cat <<'EOF'` so `$` is not expanded by bash, or
-  - Escaping `$` as `\$` if using an unquoted heredoc.
-- If mixing preserved Makefile variables with injected bash variables (e.g., `SERVICE`), either:
-  - Use a single-quoted heredoc and print injected lines separately before/after, or
-  - Keep an unquoted heredoc and escape all Makefile `$` occurrences as `\$` while letting bash expand only the intended variables.
+  - Set `SERVICE = <ModuleName>` (for services) or `SERVICE = <EndpointName>` (for endpoints)
+  - Reference sources/objects via `$(SERVICE)` (e.g., `$(ROOTDIR)/src/$(SERVICE)/$(SERVICE).cpp`)
+  - Use `cases/*.cpp` glob for test cases and keep the test runner at the module root
+  - Place all objects in `obj/` and the binary in `bin/` inside the test module folder
+  - **Use real tabs for all recipe lines** (critical for make compatibility)
+
+### Heredoc Best Practices
+
+- **Always use single-quoted heredoc for Makefiles:** `cat << 'EOF'` to preserve Makefile variables (`$(...)`)
+- This prevents bash from expanding `$` characters, ensuring Makefile variables remain intact
+- After generating the Makefile, use `sed` to replace placeholders: `sed -i "s/ModuleName/$ACTUAL_NAME/g"`
+- **Never mix bash variable expansion with Makefile variables in the same heredoc**
+
+### Template Quality Standards
+
+- Generated code templates must:
+  - Follow Microsoft C++ coding conventions (PascalCase classes, camelCase variables)
+  - Use proper namespace conventions (lowercase module names)
+  - Include comprehensive test coverage with auto-registration verification
+  - Place test cases in `cases/` subfolder for scalability
+  - Generate both basic functionality tests and integration tests (IoC/ApiModule registration)
+
+### Script Documentation Requirements
+
+- Each script must provide:
+  - Clear usage examples in help output
+  - Descriptive creation and removal confirmations
+  - Next steps instructions with specific make commands
+  - Safety confirmations for removal operations
+
+**Rationale:**
+- **Consistency**: All generation scripts follow identical patterns for predictable developer experience
+- **Reliability**: Single-quoted heredocs with real tabs ensure generated Makefiles work correctly
+- **Quality**: Templates automatically follow all project conventions and standards
+- **Safety**: Proper validation and confirmation prevent accidental errors
+- **Maintainability**: Function-based structure makes scripts easy to extend and debug
