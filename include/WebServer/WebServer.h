@@ -6,15 +6,14 @@
 #include <string_view>
 #include <vector>
 #include <cstdint>
-
-class WebServer;
+#include <ApiModule/IEndpointRegistrar.h>
 
 /**
  * WebServer: Extensible HTTP/WebSocket server interface
  * Supports REST, static files, uploads, downloads, and WebSockets.
  */
 
-class WebServer {
+class WebServer : public IEndpointRegistrar {
 public:
     using HttpHandler = std::function<void(std::string_view path, std::string_view method, const std::string& body, std::string& responseBody, int& statusCode)>;
     using PreServeHandler = std::function<void(const std::string& filePath)>;

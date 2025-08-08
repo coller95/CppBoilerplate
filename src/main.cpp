@@ -1,3 +1,4 @@
+#include <ApiModule/ApiModules.h>
 #include <IoCContainer/IoCContainer.h>
 #include <Logger/Logger.h>
 #include <PrintHello/PrintHello.h>
@@ -30,7 +31,7 @@ class Application
 	{
 		// Register dependencies in IoCContainer
 		_container.registerType<logger::Logger>(
-			[this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
+		    [this]() { return std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort); });
 		_container.registerType<print_hello::PrintHello>([]() { return std::make_shared<print_hello::PrintHello>(); });
 		_container.registerType<WebServer>([]() { return std::make_shared<WebServer>("127.0.0.1", 8080); });
 		_logger = _container.resolve<logger::Logger>();
@@ -60,12 +61,8 @@ class Application
 		}
 		_printer->print();
 
-		// Register a demo HTTP handler
-		_webServer->registerHttpHandler("/hello", "GET",
-			[](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
-				statusCode = 200;
-				responseBody = "Hello from WebServer!\n";
-			});
+		// Register all API modules (endpoints) via ApiModules
+		apimodule::ApiModules::registerAll(*_webServer);
 		_webServer->start();
 		std::cout << "WebServer running on http://localhost:8080/hello" << std::endl;
 
