@@ -101,16 +101,17 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
         # Modern, robust Makefile for unit tests (Google Test)
         # All object and dependency files are placed flat in obj/ (not nested)
 
+        ROOTDIR = ../..
         CXX = g++
         CC = gcc
-        CXXFLAGS = -std=c++20 -I../../include -I../../external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
-        CFLAGS = -I../../include -g -Wall -Wextra -MMD -MP
-        GTEST_LIBS = -L../../external/googletest/build/lib -lgtest -lgtest_main
+        CXXFLAGS = -std=c++20 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+        CFLAGS = -I$(ROOTDIR)/include -g -Wall -Wextra -MMD -MP
+        GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
 
         OBJDIR = obj
         BINDIR = bin
 
-        TEST_SRC = cases/*.cpp TestMain.cpp ../../src/ModuleName/ModuleName.cpp
+        TEST_SRC = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/ModuleName/ModuleName.cpp
         TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/ModuleName.o
         TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/ModuleName.d
         TEST_BIN = $(BINDIR)/ModuleNameTest
@@ -134,7 +135,7 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
             $(CXX) $(CXXFLAGS) -c $< -o $@
 
         # Explicit rule for sources outside test dir
-        $(OBJDIR)/ModuleName.o: ../../src/ModuleName/ModuleName.cpp | $(OBJDIR)
+        $(OBJDIR)/ModuleName.o: $(ROOTDIR)/src/ModuleName/ModuleName.cpp | $(OBJDIR)
             mkdir -p $(dir $@)
             $(CXX) $(CXXFLAGS) -c $< -o $@
 
