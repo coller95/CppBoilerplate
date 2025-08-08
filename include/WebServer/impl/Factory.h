@@ -4,5 +4,5 @@
 
 namespace WebServerLib {
 // Factory for creating the default web server implementation
-std::unique_ptr<IWebServerImpl> createDefaultWebServerImpl(uint16_t port);
+std::unique_ptr<IWebServerImpl> createDefaultWebServerImpl(const std::string& ipAddr, uint16_t port);
 }

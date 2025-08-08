@@ -6,7 +6,7 @@
 class ServeStaticWithMimeTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        server = std::make_unique<WebServer>(8080);
+        server = std::make_unique<WebServer>("127.0.0.1", 8080);
     }
 
     void TearDown() override {

@@ -14,7 +14,7 @@ TEST(WebServerTest, UploadFile) {
     const std::string uploadFilePath = std::string("../") + uploadFileName;
     std::remove(uploadFilePath.c_str());
     const std::string fileContent = "Hello, this is an upload test!\n\x00\x01\x02"; // Binary content remains the same
-    WebServer server(9093);
+    WebServer server("127.0.0.1", 9093);
     server.registerHttpHandler("/api/upload", "POST",
         [uploadFilePath](std::string_view, std::string_view, const std::string& body, std::string& responseBody, int& statusCode) {
             const std::string boundary = "----boundary42";

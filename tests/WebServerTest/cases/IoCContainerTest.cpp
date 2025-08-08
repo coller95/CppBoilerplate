@@ -4,7 +4,7 @@
 
 TEST(WebServerTest, IoCContainerCanRegisterAndResolveWebServer) {
     IoCContainer container;
-    container.registerType<WebServer>([]() { return std::make_shared<WebServer>(9199); });
+    container.registerType<WebServer>([]() { return std::make_shared<WebServer>("127.0.0.1", 9199); });
     auto webServer = container.resolve<WebServer>();
     ASSERT_NE(webServer, nullptr);
     EXPECT_FALSE(webServer->isRunning());

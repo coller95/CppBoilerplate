@@ -14,7 +14,7 @@ namespace WebServerLib {
 
 class MongooseWebServerImpl : public IWebServerImpl {
 public:
-    explicit MongooseWebServerImpl(uint16_t port);
+        MongooseWebServerImpl(const std::string& ipAddr, uint16_t port);
     ~MongooseWebServerImpl() override;
 
     void registerHttpHandler(std::string_view path, std::string_view method, WebServer::HttpHandler handler) override;
@@ -48,7 +48,8 @@ private:
         std::string mimeType; // Added to support custom MIME types
     };
 
-    uint16_t _port;
+        std::string _ipAddr;
+        uint16_t _port;
     std::atomic<bool> _running;
     std::unique_ptr<std::thread> _thread;
     struct mg_mgr _mgr;

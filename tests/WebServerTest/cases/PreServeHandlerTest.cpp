@@ -17,7 +17,7 @@ using namespace WebServerLib;
 class PreServeHandlerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        webServer = std::make_unique<WebServer>(8080);
+        webServer = std::make_unique<WebServer>("127.0.0.1", 8080);
     }
 
     void TearDown() override {
@@ -48,7 +48,7 @@ TEST_F(PreServeHandlerTest, PreServeHandlerIsCalled) {
 
     // Map static and start server on a unique port
     const int port = 9094;
-    webServer = std::make_unique<WebServer>(port);
+    webServer = std::make_unique<WebServer>("127.0.0.1", port);
     webServer->registerPreServeHandler([&](const std::string& filePath) {
         handlerCalled = true;
         capturedFilePath = filePath;

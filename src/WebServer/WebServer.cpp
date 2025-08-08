@@ -4,10 +4,12 @@
 
 using namespace WebServerLib;
 
+
 class WebServer::Impl {
 public:
-    explicit Impl(uint16_t port)
-        : _impl(WebServerLib::createDefaultWebServerImpl(port)) {}
+    Impl(const std::string& ipAddr, uint16_t port)
+        : _ipAddr(ipAddr), _port(port), _impl(WebServerLib::createDefaultWebServerImpl(ipAddr, port)) {}
+
     void registerHttpHandler(std::string_view path, std::string_view method, WebServer::HttpHandler handler) {
         _impl->registerHttpHandler(path, method, std::move(handler));
     }
@@ -26,11 +28,16 @@ public:
     void registerPreServeHandler(WebServer::PreServeHandler handler) {
         _impl->registerPreServeHandler(std::move(handler));
     }
+    std::string getBindIp() const { return _ipAddr; }
+    uint16_t getBindPort() const { return _port; }
 private:
+    std::string _ipAddr;
+    uint16_t _port;
     std::unique_ptr<IWebServerImpl> _impl;
 };
 
-WebServer::WebServer(uint16_t port) : _impl(std::make_unique<Impl>(port)) {}
+WebServer::WebServer(const std::string& ipAddr, uint16_t port)
+    : _impl(std::make_unique<Impl>(ipAddr, port)) {}
 WebServer::~WebServer() = default;
 void WebServer::registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler) { _impl->registerHttpHandler(path, method, std::move(handler)); }
 void WebServer::serveStatic(std::string_view urlPrefix, std::string_view directory) { _impl->serveStatic(urlPrefix, directory); }
@@ -44,3 +51,5 @@ void WebServer::serveStaticWithMime(std::string_view urlPrefix, std::string_view
 void WebServer::registerPreServeHandler(PreServeHandler handler) {
     _impl->registerPreServeHandler(std::move(handler));
 }
+std::string WebServer::getBindIp() const { return _impl->getBindIp(); }
+uint16_t WebServer::getBindPort() const { return _impl->getBindPort(); }

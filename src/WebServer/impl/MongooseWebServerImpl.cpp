@@ -1,12 +1,14 @@
+
 #include <WebServer/impl/MongooseWebServerImpl.h>
 #include <iostream>
 #include <cstring>
 #include <fstream>
+#include <string>
 
-using namespace WebServerLib;
+namespace WebServerLib {
 
-MongooseWebServerImpl::MongooseWebServerImpl(uint16_t port)
-    : _port(port), _running(false), _listener(nullptr), _preServeHandler(nullptr) {
+MongooseWebServerImpl::MongooseWebServerImpl(const std::string& ipAddr, uint16_t port)
+    : _ipAddr(ipAddr), _port(port), _running(false), _listener(nullptr), _preServeHandler(nullptr) {
     mg_mgr_init(&_mgr);
 }
 
@@ -150,4 +152,6 @@ void MongooseWebServerImpl::handleEvent(struct mg_connection* c, int ev, void* e
             mg_http_reply(c, 404, "Content-Type: text/plain\r\n", "Not found");
         }
     }
+}
+
 }

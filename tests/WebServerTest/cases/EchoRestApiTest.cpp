@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 TEST(WebServerTest, EchoRestApi) {
-    WebServer server(9091);
+    WebServer server("127.0.0.1", 9091);
     server.registerHttpHandler("/api/echo", "POST",
         [](std::string_view, std::string_view, const std::string& body, std::string& responseBody, int& statusCode) {
             statusCode = 200;
