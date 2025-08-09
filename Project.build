@@ -54,7 +54,9 @@ EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
 # ============================================
 
 # Current project includes
-ADDITIONAL_INCLUDES = -Iexternal/mongoose/include
+ADDITIONAL_INCLUDES = -Iexternal/mongoose/include 
+ADDITIONAL_INCLUDES += -Iexternal/foo/include 
+
 
 # Example: Platform-specific include directories
 # ifeq ($(ARCH),aarch64)

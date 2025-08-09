@@ -7,7 +7,7 @@ APPNAME = hello_world
 # Build output modes
 # VERBOSE=1 for human-friendly output (default)
 # VERBOSE=0 for AI agent-friendly output (concise)
-VERBOSE ?= 1
+VERBOSE ?= 0
 
 # Output formatting based on mode
 ifeq ($(VERBOSE),1)
@@ -60,13 +60,13 @@ OBJECTS_release = $(MAIN_SOURCES:src/%.cpp=$(BIN_DIR_release)/src/%.o) \
 -include $(OBJECTS_debug:.o=.d)
 -include $(OBJECTS_release:.o=.d)
 
-# Include directories and library configuration (base + configurable)
-INCLUDE_DIRS = -Iinclude -Ilib/include $(foreach dir,$(wildcard external/*/include),-I$(dir)) $(ADDITIONAL_INCLUDES)
-LIB_DIRS     = -Llib 
-LDLIBS       = -lpthread -lrt -lm
-
+# Base library configuration (can be extended in Project.build)
+LIB_DIRS     += -Llib 
+LDLIBS       += -lpthread -lrt -lm
 # Project.build already included above - contains additional library flags
-LDFLAGS = $(LIB_DIRS) $(LDLIBS)
+
+# Include directories (base + additional from Project.build)
+INCLUDE_DIRS = -Iinclude -Ilib/include $(ADDITIONAL_INCLUDES)
 
 # Compiler settings for C++ files (C++17 standard)
 CXXFLAGS_base = -std=c++17 -MMD -MP $(INCLUDE_DIRS) -Wall -Wextra
@@ -77,6 +77,9 @@ CXXFLAGS_release = -O2 -DNDEBUG $(CXXFLAGS_base)
 CFLAGS_base = -MMD -MP $(INCLUDE_DIRS) -Wall -Wextra
 CFLAGS_debug = -g -O0 -DDEBUG $(CFLAGS_base)
 CFLAGS_release = -O2 -DNDEBUG $(CFLAGS_base)
+
+# Linker settings (library directories and libraries)
+LDFLAGS = $(LIB_DIRS) $(LDLIBS)
 
 # Default target
 all: release
