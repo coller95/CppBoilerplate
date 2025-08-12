@@ -69,6 +69,40 @@ VERBOSE=0 make debug               # Agent-friendly build
 ./scripts/create_module.sh remove ModuleName
 ```
 
+## **CRITICAL: Test-Driven Development (TDD) Requirements**
+
+⚠️ **MANDATORY TDD DISCIPLINE** - This project strictly enforces Test-Driven Development:
+
+1. **RED-GREEN-REFACTOR CYCLE**:
+   - 🔴 **RED**: Write failing test first (`make test-run-ModuleName`)
+   - 🟢 **GREEN**: Write minimal code to make test pass
+   - 🔵 **REFACTOR**: Improve code while keeping tests green
+
+2. **STRICT RULES**:
+   - **NEVER write implementation code without a failing test first**
+   - **NO exceptions** - applies to new features, bug fixes, and refactoring
+   - Tests must be comprehensive and cover edge cases
+   - All auto-registration functionality must be verified in tests
+
+3. **TDD WORKFLOW**:
+   ```bash
+   # 1. Create failing test in tests/ModuleNameTest/cases/
+   make test-run-ModuleName  # Should fail (RED)
+   
+   # 2. Implement minimal code to pass
+   make test-run-ModuleName  # Should pass (GREEN)
+   
+   # 3. Refactor and ensure tests still pass
+   make test-run-ModuleName  # Should remain green (REFACTOR)
+   ```
+
+4. **WHY TDD IS MANDATORY**:
+   - Ensures robust, testable architecture
+   - Prevents regression bugs
+   - Documents expected behavior
+   - Enables confident refactoring
+   - Maintains code quality at scale
+
 ## High-Level Architecture
 
 This project uses a **modular monolithic architecture** with the following key principles:
@@ -160,11 +194,14 @@ This project uses a **modular monolithic architecture** with the following key p
 
 ### Development Workflow Integration
 
-**Test-Driven Development (TDD)**: Mandatory for all code changes:
-- Write failing tests first in `cases/` subdirectories
-- Implement minimal code to pass tests
-- Use `make test-run-ModuleName` for rapid iteration
-- Comprehensive test coverage with auto-registration verification
+**Test-Driven Development (TDD)**: **MANDATORY** for all code changes and implementations:
+- **ALWAYS write failing tests FIRST** before any implementation code
+- Tests must be written in `cases/` subdirectories for each module
+- Implement **minimal code only** to make tests pass (Red-Green-Refactor cycle)
+- Use `make test-run-ModuleName` for rapid TDD iteration
+- **NO CODE CHANGES WITHOUT TESTS** - this is a strict requirement
+- Comprehensive test coverage including auto-registration verification
+- All new features, bug fixes, and refactoring must follow TDD discipline
 
 **Module Generation Scripts**: Consistent structure across all modules:
 - `create_endpoint.sh`: HTTP endpoints with ApiRouter integration
@@ -183,10 +220,12 @@ This project uses a **modular monolithic architecture** with the following key p
 - Dependency injection eliminates hard dependencies
 - Auto-registration reduces boilerplate and manual wiring
 
-**Testability First**: Every component designed for comprehensive testing:
-- Interface-based design enables complete mocking
+**TDD-First Testability**: Every component designed through Test-Driven Development:
+- **ALL code written following RED-GREEN-REFACTOR TDD cycle**
+- Interface-based design enables complete mocking and test isolation
 - Test isolation prevents cross-module interference
 - Auto-registration verification catches integration issues
+- **Tests written BEFORE implementation ensures robust design**
 
 **Scalability**: Architecture supports growing complexity:
 - New modules integrate automatically via established patterns
@@ -199,3 +238,11 @@ This project uses a **modular monolithic architecture** with the following key p
 - Enhanced test management provides comprehensive project visibility
 
 This architecture enables rapid development of new features while maintaining high code quality, comprehensive test coverage, and clear separation of concerns across all system components.
+
+## **FINAL TDD REMINDER**
+
+⚠️ **MANDATORY**: Every code change in this project MUST follow Test-Driven Development:
+- 🔴 **RED**: Write failing test FIRST  
+- 🟢 **GREEN**: Implement minimal code to pass
+- 🔵 **REFACTOR**: Improve while keeping tests green
+- **NO CODE WITHOUT TESTS** - This is non-negotiable
