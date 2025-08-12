@@ -191,13 +191,107 @@ VERBOSE=1 make debug              # Maps to human mode
 ./scripts/test.sh agent           # Maps to standard mode
 ```
 
-## **Remember: Dual LLM Optimization Strategy! 🚀**
+## **MEMORY MANAGEMENT & CONTEXT CLEARING**
 
-### **Always Apply Both Optimizations:**
+### **Claude Code Memory Management**
+
+**MANDATORY Clear Memory Scenarios:**
+
+1. **Major Module Transitions** (ALWAYS clear):
+   ```bash
+   # When switching between unrelated modules
+   Logger → WebServer → ApiRouter
+   EndpointHello → IocContainer → different endpoint
+   ```
+
+2. **Architecture Changes** (ALWAYS clear):
+   - Modifying core interfaces (ILogger, IWebServer, IApiRouter)
+   - TDD cycles affecting multiple interconnected classes
+   - Dependency injection changes across modules
+
+3. **Context Pollution Indicators** (CLEAR immediately):
+   - Claude references non-existent files/classes
+   - Confusion about recent TDD state or module structure
+   - Outdated build/test suggestions
+   - References to removed or renamed components
+
+**OPTIONAL Clear Memory Scenarios:**
+
+4. **Performance Optimization** (CLEAR for efficiency):
+   - Long sessions (30+ tool calls or 1-2+ hours)
+   - Slower response times indicating context window pressure
+   - Complex debugging sessions with accumulated context
+
+5. **Clean Development Start** (CLEAR for clarity):
+   - Beginning new major features
+   - After completing and testing significant changes
+   - Fresh development sessions
+
+### **Memory Clearing Commands**
+
+```bash
+/clear                              # Complete conversation reset
+```
+
+### **Context State Assessment**
+
+**Good Context State (KEEP memory):**
+- ✅ Accurate module structure understanding
+- ✅ Correct file paths and class references
+- ✅ Current TDD cycle awareness
+- ✅ Build commands work as expected
+- ✅ Understands recent architectural decisions
+
+**Poor Context State (CLEAR memory):**
+- ❌ References deleted/renamed files
+- ❌ Suggests outdated patterns
+- ❌ Confusion about module dependencies
+- ❌ TDD state misunderstanding
+- ❌ Build failures due to incorrect assumptions
+
+### **Memory-Efficient Development Patterns**
+
+**Single Module Focus Strategy:**
+```bash
+# ✅ OPTIMAL - Work within module boundaries
+make test-run-LoggerTest            # Focus on Logger module
+# ... complete all Logger-related TDD work ...
+/clear                             # Clear before switching modules
+make test-run-WebServerTest         # Switch to WebServer module
+```
+
+**TDD Memory Patterns:**
+- **RED-GREEN-REFACTOR within context**: Complete cycles without clearing
+- **Module transition points**: Clear memory between different modules
+- **Interface changes**: Clear before/after major interface modifications
+
+## **Remember: Triple LLM Optimization Strategy! 🚀**
+
+### **Always Apply All Three Optimizations:**
+
 1. **Minimal Mode by Default**: 90-95% token reduction in build output
-2. **One Class Per File**: Precise targeting of individual classes for context efficiency
+2. **One Class Per File**: Precise targeting of individual classes for context efficiency  
+3. **Strategic Memory Management**: Clear context at optimal transition points
 
 ### **Maximum LLM Efficiency Achieved Through:**
 - **Output optimization**: Minimal mode for build/test operations
 - **File organization**: Single-class files for focused analysis/modification
-- **Combined effect**: 10-20x overall context efficiency improvement
+- **Context optimization**: Strategic memory clearing prevents context pollution
+- **Combined effect**: 15-25x overall context efficiency improvement
+
+### **Optimal Development Workflow:**
+```bash
+# 1. Focus on single module with minimal output
+make test-run-ModuleName            # Minimal mode by default
+
+# 2. Complete TDD cycle within module context
+# RED-GREEN-REFACTOR without clearing memory
+
+# 3. Clear memory at module boundaries
+/clear                             # Clear before switching modules
+
+# 4. Target individual class files
+Read src/NextModule/ClassName.h    # Single-class targeting
+
+# Repeat cycle for maximum efficiency
+```

@@ -392,6 +392,89 @@ This architecture enables rapid development of new features while maintaining hi
 
 **Multi-tiered output optimization ensures maximum LLM efficiency** - the `minimal` mode default provides 90-95% token reduction while preserving all essential information for AI-assisted development workflows.
 
+## **MEMORY MANAGEMENT & CONTEXT CLEARING**
+
+### **When to Clear Claude Code Memory**
+
+**MANDATORY Clear Memory Scenarios:**
+
+1. **Major Context Shift** (ALWAYS clear):
+   - Switching from one module to completely different module (e.g., Logger → WebServer → ApiRouter)
+   - Moving between unrelated features or bug fixes
+   - Starting new TDD cycles for different components
+
+2. **Architecture Changes** (ALWAYS clear):
+   - Modifying core interfaces (ILogger, IWebServer, IApiRouter)
+   - Changing dependency relationships between modules
+   - Refactoring that affects multiple interconnected classes
+
+3. **Error Recovery** (CLEAR when needed):
+   - Build failures that require significant debugging context
+   - When Claude Code seems confused about project state
+   - After failed TDD attempts that left incomplete understanding
+
+4. **Context Pollution** (CLEAR when noticed):
+   - Responses reference outdated/incorrect information
+   - Claude mentions files/classes that don't exist
+   - Confusion about current module structure or recent changes
+
+**OPTIONAL Clear Memory Scenarios:**
+
+5. **Long Sessions** (CLEAR for performance):
+   - After 30+ tool calls in single conversation
+   - When context window approaches limits (slower responses)
+   - Working sessions longer than 1-2 hours
+
+6. **Clean Slate Development** (CLEAR for clarity):
+   - Beginning major new features from scratch
+   - Starting fresh development sessions
+   - After completing and testing major changes
+
+### **Memory Clearing Commands**
+
+```bash
+# Clear Claude Code memory
+/clear                              # Complete conversation reset
+
+# Alternative: Start fresh conversation
+# Close current session and start new one
+```
+
+### **Best Practices for Memory Management**
+
+**DO Clear Memory When:**
+- ✅ Context becomes stale or incorrect
+- ✅ Major architectural changes planned
+- ✅ Switching between unrelated modules
+- ✅ Build failures require fresh perspective
+- ✅ Long development sessions (1-2+ hours)
+
+**DON'T Clear Memory When:**
+- ❌ Working on same module/feature incrementally
+- ❌ Following TDD cycle within same class
+- ❌ Making small related changes
+- ❌ Context is still accurate and helpful
+
+**Memory-Efficient Development Patterns:**
+- **Single module focus**: Work on one module at a time to maintain context
+- **TDD discipline**: Complete RED-GREEN-REFACTOR cycles before switching contexts
+- **Incremental changes**: Small, related changes maintain context efficiency
+- **Clear module boundaries**: Use memory clearing as module transition points
+
+### **Context State Indicators**
+
+**Good Context State (keep memory):**
+- Claude accurately describes current module structure
+- References correct file paths and class names
+- Understands recent changes and TDD state
+- Build commands work as expected
+
+**Poor Context State (clear memory):**
+- Claude references non-existent files/classes
+- Confusion about module dependencies
+- Suggests outdated approaches or patterns
+- Repeated build/test failures due to misunderstanding
+
 ## **FINAL REMINDERS**
 
 ### **TDD is MANDATORY**
@@ -407,3 +490,10 @@ This architecture enables rapid development of new features while maintaining hi
 - `./scripts/test.sh` (defaults to minimal mode for best performance)
 - Escalate verbosity only when debugging: `VERBOSE=standard` or `VERBOSE=debug`
 - **Never use `VERBOSE=human` in LLM contexts** - wastes 10-20x more tokens
+
+### **Memory Management is CRITICAL**
+🧠 **Clear memory strategically for optimal development:**
+- Clear between major module transitions or architectural changes
+- Clear when context becomes stale or incorrect
+- Keep memory for incremental work within same module/feature
+- Use `/clear` command when context state indicators suggest confusion
