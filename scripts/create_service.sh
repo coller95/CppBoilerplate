@@ -138,9 +138,12 @@ EOF
 
 # Create Makefile for tests using the flexible template
 cat << 'EOF' > "tests/${SERVICE_NAME}Test/Makefile"
-# Modern, flexible Makefile for unit tests (Google Test)
+# Modern, flexible Makefile for unit tests (Google Test & Google Mock)
 # Supports easy addition of services, modules, and dependencies
-# All object and dependency files are placed flat in obj/ (not nested)
+# Object files are organized by source origin:
+#   obj/test/     - test files (cases/, TestMain.cpp)
+#   obj/src/      - our source code (modules, services, etc.)
+#   obj/external/ - external dependencies
 
 # ============================================================================
 # CONFIGURATION SECTION - Modify this section to add/remove dependencies
@@ -165,24 +168,24 @@ DEPENDENCIES = IoCContainer
 
 CXX = g++
 CC = gcc
-CXXFLAGS = -std=c++17 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+CXXFLAGS = -std=c++17 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -I$(ROOTDIR)/external/googletest/googlemock/include -g -Wall -Wextra -MMD -MP
 CFLAGS = -I$(ROOTDIR)/include -g -Wall -Wextra -MMD -MP
-GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
+GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main -lgmock -lgmock_main
 
 OBJDIR = obj
 BINDIR = bin
 
-# Process dependencies into source files and object files
+# Process dependencies into source files and object files (organized by source origin)
 # Handle both simple format (Name) and complex format (Name:Folder)
 DEP_SOURCES = $(foreach dep,$(DEPENDENCIES),$(ROOTDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).cpp)
-DEP_OBJECTS = $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).o)
+DEP_OBJECTS = $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).o)
 DEP_NAMES = $(foreach dep,$(DEPENDENCIES),$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)))
 DEP_FOLDERS = $(foreach dep,$(DEPENDENCIES),$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep)))
 
-# External dependencies (if any)
+# External dependencies (if any) - organized under obj/external/
 ifdef EXTERNAL_DEPS
 EXT_SOURCES = $(foreach ext,$(EXTERNAL_DEPS),$(ROOTDIR)/external/$(ext)/src/$(ext).cpp)
-EXT_OBJECTS = $(foreach ext,$(EXTERNAL_DEPS),$(OBJDIR)/$(ext).o)
+EXT_OBJECTS = $(foreach ext,$(EXTERNAL_DEPS),$(OBJDIR)/external/$(ext)/$(ext).o)
 EXT_NAMES = $(EXTERNAL_DEPS)
 else
 EXT_SOURCES =
@@ -190,10 +193,13 @@ EXT_OBJECTS =
 EXT_NAMES =
 endif
 
-# Complete source and object lists
+# Complete source and object lists (organized by source origin)
+# Test files: obj/test/
+# Source files: obj/src/
+# External files: obj/external/
 ALL_SOURCES = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp $(DEP_SOURCES) $(EXT_SOURCES)
-TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/TestMain.o $(OBJDIR)/$(PRIMARY_MODULE).o $(DEP_OBJECTS) $(EXT_OBJECTS)
-TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/TestMain.d $(OBJDIR)/$(PRIMARY_MODULE).d $(foreach dep,$(DEP_NAMES),$(OBJDIR)/$(dep).d) $(foreach ext,$(EXT_NAMES),$(OBJDIR)/$(ext).d)
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.o $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).o $(DEP_OBJECTS) $(EXT_OBJECTS)
+TEST_DEPS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.d,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.d $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).d $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).d) $(foreach ext,$(EXT_NAMES),$(OBJDIR)/external/$(ext)/$(ext).d)
 TEST_BIN = $(BINDIR)/$(MODULE_NAME)Test
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
@@ -205,36 +211,39 @@ $(BINDIR):
 	mkdir -p $(BINDIR)
 
 # ============================================================================
-# COMPILATION RULES - Generic patterns that work for any module
+# COMPILATION RULES - Organized by source origin
 # ============================================================================
 
+# Test files: obj/test/
 # Pattern rule for C++ test cases in cases/
-$(OBJDIR)/%.o: cases/%.cpp | $(OBJDIR)
+$(OBJDIR)/test/cases/%.o: cases/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Pattern rule for the test runner
-$(OBJDIR)/TestMain.o: TestMain.cpp | $(OBJDIR)
+$(OBJDIR)/test/TestMain.o: TestMain.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Source files: obj/src/
 # Rule for primary module source
-$(OBJDIR)/$(PRIMARY_MODULE).o: $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp | $(OBJDIR)
+$(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).o: $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Generic rule for dependency modules
-$(OBJDIR)/%.o: $(ROOTDIR)/src/%/%.cpp | $(OBJDIR)
+# Generic rule for dependency modules (single % in target per GNU Make requirements)
+$(OBJDIR)/src/%.o: $(ROOTDIR)/src/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Generic rule for external dependencies
-$(OBJDIR)/%.o: $(ROOTDIR)/external/%/src/%.cpp | $(OBJDIR)
+# External files: obj/external/
+# Generic rule for external C++ dependencies
+$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Pattern rule for C sources (if any)
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
+# Generic rule for external C dependencies
+$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.c | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -255,16 +264,27 @@ debug-config:
 	@echo "MODULE_NAME: $(MODULE_NAME)"
 	@echo "PRIMARY_MODULE: $(PRIMARY_MODULE)"
 	@echo "DEPENDENCIES: $(DEPENDENCIES)"
+	@echo ""
+	@echo "=== Source Dependencies ==="
 	@echo "DEP_NAMES: $(DEP_NAMES)"
 	@echo "DEP_SOURCES: $(DEP_SOURCES)"
 	@echo "DEP_OBJECTS: $(DEP_OBJECTS)"
 ifdef EXTERNAL_DEPS
+	@echo ""
+	@echo "=== External Dependencies ==="
 	@echo "EXTERNAL_DEPS: $(EXTERNAL_DEPS)"
 	@echo "EXT_SOURCES: $(EXT_SOURCES)"
 	@echo "EXT_OBJECTS: $(EXT_OBJECTS)"
 endif
+	@echo ""
+	@echo "=== Object File Organization ==="
 	@echo "TEST_OBJS: $(TEST_OBJS)"
 	@echo "TEST_BIN: $(TEST_BIN)"
+	@echo ""
+	@echo "=== Directory Structure ==="
+	@echo "obj/test/     - test files (cases/, TestMain.cpp)"
+	@echo "obj/src/      - our source code (modules, services, etc.)"
+	@echo "obj/external/ - external dependencies"
 
 run: all
 	@./$(TEST_BIN)

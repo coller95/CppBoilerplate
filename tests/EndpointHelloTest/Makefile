@@ -91,19 +91,19 @@ $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).o: $(ROOTDIR)/src/$(PRIMARY_MO
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Generic rule for dependency modules
-$(OBJDIR)/src/%/%.o: $(ROOTDIR)/src/%/%.cpp | $(OBJDIR)
+# Generic rule for dependency modules (single % in target per GNU Make requirements)
+$(OBJDIR)/src/%.o: $(ROOTDIR)/src/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # External files: obj/external/
-# Generic rule for external dependencies
-$(OBJDIR)/external/%/%.o: $(ROOTDIR)/external/%/src/%.cpp | $(OBJDIR)
+# Generic rule for external C++ dependencies
+$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Generic rule for external C dependencies
-$(OBJDIR)/external/%/%.o: $(ROOTDIR)/external/%/src/%.c | $(OBJDIR)
+$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.c | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
