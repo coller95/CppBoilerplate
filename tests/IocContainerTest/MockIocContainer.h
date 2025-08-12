@@ -10,10 +10,10 @@ namespace ioccontainer {
  */
 class MockIocContainer : public IIocContainer {
 public:
-    // TODO: Add mock methods for your interface
-    // Example:
-    // MOCK_METHOD(bool, initialize, (), (override));
-    // MOCK_METHOD(void, cleanup, (), (override));
+    // Mock methods for the IIocContainer interface
+    MOCK_METHOD(bool, isRegistered, (const std::type_info& type), (const, override));
+    MOCK_METHOD(void, clear, (), (override));
+    MOCK_METHOD(size_t, getRegisteredCount, (), (const, override));
 };
 
 } // namespace ioccontainer
