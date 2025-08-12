@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <ApiRouter/ApiRouter.h>
-#include <ApiModule/ApiModule.h>
 #include "../MockApiRouter.h"
 
 using ::testing::_;
@@ -34,42 +33,42 @@ TEST_F(ApiRouterInterfaceTest, ImplementsIEndpointRegistrarInterface) {
     EXPECT_NE(registrar, nullptr);
 }
 
-TEST_F(ApiRouterInterfaceTest, CompatibilityLayerWorks) {
-    // Test that the compatibility layer (ApiModule namespace) works correctly
+TEST_F(ApiRouterInterfaceTest, ApiRouterGlobalMethodsWork) {
+    // Test that the global static methods work correctly
     
     // Test static methods work
-    EXPECT_NO_THROW(apimodule::ApiModule::initialize());
-    EXPECT_NO_THROW(apimodule::ApiModule::getEndpointCount());
-    EXPECT_NO_THROW(apimodule::ApiModule::getRegisteredEndpoints());
-    EXPECT_NO_THROW(apimodule::ApiModule::getRegisteredModuleCount());
-    EXPECT_NO_THROW(apimodule::ApiModule::createAllModules());
+    EXPECT_NO_THROW(apirouter::ApiRouter::initializeGlobal());
+    EXPECT_NO_THROW(apirouter::ApiRouter::getEndpointCountGlobal());
+    EXPECT_NO_THROW(apirouter::ApiRouter::getRegisteredEndpointsGlobal());
+    EXPECT_NO_THROW(apirouter::ApiRouter::getRegisteredModuleCountGlobal());
+    EXPECT_NO_THROW(apirouter::ApiRouter::createAllModulesGlobal());
     
-    // Test that the compatibility layer delegates to the same singleton
-    size_t directCount = apirouter::ApiRouter::getEndpointCountGlobal();
-    size_t compatCount = apimodule::ApiModule::getEndpointCount();
-    EXPECT_EQ(directCount, compatCount);
+    // Test that the global methods access the same singleton
+    size_t globalCount = apirouter::ApiRouter::getEndpointCountGlobal();
+    size_t instanceCount = apirouter::ApiRouter::getInstance().getEndpointCount();
+    EXPECT_EQ(globalCount, instanceCount);
 }
 
-TEST_F(ApiRouterInterfaceTest, TypeAliasesWork) {
-    // Test that the type aliases in the compatibility layer work
+TEST_F(ApiRouterInterfaceTest, ModuleInterfaceWorks) {
+    // Test that the module interface works correctly
     
-    // Create a test module using the compatibility aliases
-    class TestCompatModule : public apimodule::IApiModule {
+    // Create a test module using the ApiRouter interfaces
+    class TestModule : public apirouter::IApiModule {
     public:
-        void registerEndpoints(apimodule::IEndpointRegistrar& registrar) override {
-            registrar.registerHttpHandler("/compat", "GET",
+        void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override {
+            registrar.registerHttpHandler("/module-test", "GET",
                 [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
-                    responseBody = "Compatibility test";
+                    responseBody = "Module test";
                     statusCode = 200;
                 });
         }
     };
     
     // Should compile and work correctly
-    auto module = std::make_unique<TestCompatModule>();
+    auto module = std::make_unique<TestModule>();
     EXPECT_NE(module, nullptr);
     
-    // Test that it can register with the real router through compatibility layer
+    // Test that it can register with the router
     auto& router = apirouter::ApiRouter::getInstance();
     EXPECT_NO_THROW(module->registerEndpoints(router));
 }

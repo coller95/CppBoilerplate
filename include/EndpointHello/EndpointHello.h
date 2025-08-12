@@ -1,9 +1,9 @@
 #pragma once
-#include <ApiModule/IApiModule.h>
+#include <ApiRouter/IApiRouter.h>
 
 namespace endpointhello {
-    class EndpointHello : public apimodule::IApiModule {
+    class EndpointHello : public apirouter::IApiModule {
     public:
-        void registerEndpoints(apimodule::IEndpointRegistrar& registrar) override;
+        void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
     };
 }

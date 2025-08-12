@@ -17,7 +17,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-# Examples: Logger IoCContainer ServiceA ApiModule:ApiModule
+# Examples: Logger IoCContainer ServiceA ApiRouter
 DEPENDENCIES = ApiRouter IocContainer
 
 # External dependencies - flexible configuration for any external library
