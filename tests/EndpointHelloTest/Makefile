@@ -134,4 +134,7 @@ endif
 clean:
 	rm -rf $(OBJDIR)/* $(BINDIR)/*
 
-.PHONY: all clean debug-config
+run: all
+	./$(TEST_BIN)
+
+.PHONY: all clean debug-config run

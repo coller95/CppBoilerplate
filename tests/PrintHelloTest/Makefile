@@ -39,5 +39,8 @@ $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
 
 -include $(TEST_DEPS)
 
+run: all
+	./$(TEST_BIN)
+	
 clean:
 	rm -rf $(OBJDIR)/* $(BINDIR)/*

@@ -155,48 +155,22 @@ test: all
 ifeq ($(VERBOSE),1)
 	@echo "🧪 Running all unit tests..."
 	@echo "Found test modules: $(SUBDIRS)"
-	@echo ""
 	@total_modules=0; \
 	passed_modules=0; \
-	total_tests=0; \
-	passed_tests=0; \
 	failed_modules=""; \
 	for dir in $(SUBDIRS); do \
 		echo "📁 Testing module: $$dir"; \
 		total_modules=$$((total_modules + 1)); \
-		module_tests=0; \
-		module_passed=0; \
-		module_failed=false; \
-		for bin in $$dir/bin/*Test; do \
-			if [ -x "$$bin" ]; then \
-				module_tests=$$((module_tests + 1)); \
-				total_tests=$$((total_tests + 1)); \
-				echo "  ▶️  Running $$(basename $$bin)..."; \
-				if "$$bin"; then \
-					module_passed=$$((module_passed + 1)); \
-					passed_tests=$$((passed_tests + 1)); \
-					echo "    ✅ PASSED"; \
-				else \
-					echo "    ❌ FAILED"; \
-					module_failed=true; \
-				fi; \
-			fi; \
-		done; \
-		if [ $$module_tests -eq 0 ]; then \
-			echo "  ⚠️  No test executables found"; \
-		elif [ "$$module_failed" = true ]; then \
-			echo "  📊 Module result: $$module_passed/$$module_tests tests passed - ❌ FAILED"; \
-			failed_modules="$$failed_modules $$dir"; \
-		else \
-			echo "  📊 Module result: $$module_passed/$$module_tests tests passed - ✅ PASSED"; \
+		if $(MAKE) -C $$dir run VERBOSE=$(VERBOSE); then \
 			passed_modules=$$((passed_modules + 1)); \
+		else \
+			failed_modules="$$failed_modules $$dir"; \
 		fi; \
 		echo ""; \
 	done; \
 	echo "=========================================="; \
 	echo "📊 FINAL RESULTS:"; \
 	echo "  Modules: $$passed_modules/$$total_modules passed"; \
-	echo "  Tests:   $$passed_tests/$$total_tests passed"; \
 	if [ $$passed_modules -ne $$total_modules ]; then \
 		echo "  ❌ Failed modules:$$failed_modules"; \
 		echo "=========================================="; \
@@ -208,26 +182,9 @@ ifeq ($(VERBOSE),1)
 else
 	@total_modules=0; \
 	passed_modules=0; \
-	total_tests=0; \
-	passed_tests=0; \
 	for dir in $(SUBDIRS); do \
 		total_modules=$$((total_modules + 1)); \
-		module_tests=0; \
-		module_passed=0; \
-		module_failed=false; \
-		for bin in $$dir/bin/*Test; do \
-			if [ -x "$$bin" ]; then \
-				module_tests=$$((module_tests + 1)); \
-				total_tests=$$((total_tests + 1)); \
-				if "$$bin" >/dev/null 2>&1; then \
-					module_passed=$$((module_passed + 1)); \
-					passed_tests=$$((passed_tests + 1)); \
-				else \
-					module_failed=true; \
-				fi; \
-			fi; \
-		done; \
-		if [ "$$module_failed" = false ]; then \
+		if $(MAKE) -C $$dir run VERBOSE=$(VERBOSE) >/dev/null 2>&1; then \
 			passed_modules=$$((passed_modules + 1)); \
 		fi; \
 	done; \
