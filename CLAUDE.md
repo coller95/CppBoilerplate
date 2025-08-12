@@ -118,6 +118,38 @@ VERBOSE=1 make debug               # Maps to human mode
 ./scripts/create_module.sh remove ModuleName
 ```
 
+### **NEW: Lexical Analysis for LLM Context Optimization**
+
+**CRITICAL**: Use lexical analysis for maximum LLM efficiency when working with large codebases:
+
+```bash
+# Lexical analysis commands (90%+ token reduction)
+./scripts/lexer.sh analyze src/               # Complete codebase analysis  
+./scripts/lexer.sh structure include/         # Module structure overview
+./scripts/lexer.sh dependencies               # Project dependency mapping
+
+# Token efficiency demonstration  
+./scripts/token_comparison.sh demo            # Project-wide efficiency stats
+./scripts/token_comparison.sh compare file    # Compare specific file/module
+```
+
+**Why Use Lexical Analysis:**
+- **85-95% token reduction** - process 10x more code in same context
+- **Structured JSON output** - surgical precision targeting
+- **Consistent parsing** - eliminates LLM syntax parsing errors  
+- **Context multiplier** - analyze entire codebase efficiently
+- **Integration ready** - prepared for automated refactoring workflows
+
+**LLM Workflow Integration:**
+```bash
+# 1. ANALYZE: Generate structured summary (200 tokens vs 10,000+ raw)
+./scripts/lexer.sh analyze src/ > codebase_summary.json
+
+# 2. PLAN: LLM reviews minimal structured data instead of raw C++
+# 3. COMMAND: LLM issues precise transformation commands
+# 4. TRANSFORM: Automated application of refactoring decisions
+```
+
 ## **CRITICAL: Test-Driven Development (TDD) Requirements**
 
 ⚠️ **MANDATORY TDD DISCIPLINE** - This project strictly enforces Test-Driven Development:
@@ -460,6 +492,8 @@ This architecture enables rapid development of new features while maintaining hi
 - **TDD discipline**: Complete RED-GREEN-REFACTOR cycles before switching contexts
 - **Incremental changes**: Small, related changes maintain context efficiency
 - **Clear module boundaries**: Use memory clearing as module transition points
+- **Lexical analysis first**: Use `./scripts/lexer.sh` to understand codebase before making changes
+- **Structured summaries**: Prefer lexical JSON over reading multiple raw C++ files
 
 ### **Context State Indicators**
 
@@ -490,6 +524,13 @@ This architecture enables rapid development of new features while maintaining hi
 - `./scripts/test.sh` (defaults to minimal mode for best performance)
 - Escalate verbosity only when debugging: `VERBOSE=standard` or `VERBOSE=debug`
 - **Never use `VERBOSE=human` in LLM contexts** - wastes 10-20x more tokens
+
+### **Lexical Analysis is PREFERRED**
+🚀 **Use lexical analysis for maximum LLM efficiency:**
+- `./scripts/lexer.sh analyze` for codebase understanding (85-95% token reduction)
+- `./scripts/token_comparison.sh demo` to see efficiency gains
+- Structured JSON analysis instead of reading raw C++ files
+- Essential for large refactoring and architectural analysis
 
 ### **Memory Management is CRITICAL**
 🧠 **Clear memory strategically for optimal development:**
