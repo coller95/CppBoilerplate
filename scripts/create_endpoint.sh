@@ -59,12 +59,12 @@ create_endpoint() {
 # Create header file
 cat > "include/$ENDPOINT_NAME/$ENDPOINT_NAME.h" << EOF
 #pragma once
-#include <ApiModule/IApiModule.h>
+#include <ApiRouter/IApiRouter.h>
 
 namespace $NAMESPACE_NAME {
-    class $ENDPOINT_NAME : public apimodule::IApiModule {
+    class $ENDPOINT_NAME : public apirouter::IApiModule {
     public:
-        void registerEndpoints(IEndpointRegistrar& registrar) override;
+        void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
     };
 }
 EOF
@@ -72,15 +72,14 @@ EOF
 # Create source file
 cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
-#include <ApiModule/IEndpointRegistrar.h>
-#include <ApiModule/ApiModule.h>
+#include <ApiRouter/ApiRouter.h>
 #include <string_view>
 #include <string>
 #include <memory>
 
 namespace $NAMESPACE_NAME {
 
-void $ENDPOINT_NAME::registerEndpoints(IEndpointRegistrar& registrar) {
+void $ENDPOINT_NAME::registerEndpoints(apirouter::IEndpointRegistrar& registrar) {
     registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
        [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
            statusCode = 200;
@@ -88,10 +87,10 @@ void $ENDPOINT_NAME::registerEndpoints(IEndpointRegistrar& registrar) {
        });
 }
 
-// Auto-registration: Register this endpoint module with ApiModule
+// Auto-registration: Register this endpoint module with ApiRouter
 namespace {
     static bool registered = []() {
-        apimodule::ApiModule::registerModuleFactory([]() -> std::unique_ptr<apimodule::IApiModule> {
+        apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
             return std::make_unique<$ENDPOINT_NAME>();
         });
         return true;
@@ -105,14 +104,14 @@ EOF
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
-#include <ApiModule/IEndpointRegistrar.h>
+#include <ApiRouter/IApiRouter.h>
 #include <vector>
 #include <string>
 
-class MockEndpointRegistrar : public IEndpointRegistrar {
+class MockEndpointRegistrar : public apirouter::IEndpointRegistrar {
 public:
     std::vector<std::string> registeredPaths;
-    void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler /*handler*/) override {
+    void registerHttpHandler(std::string_view path, std::string_view method, apirouter::HttpHandler /*handler*/) override {
         registeredPaths.push_back(std::string(path) + ":" + std::string(method));
     }
 };
@@ -122,13 +121,9 @@ TEST(${ENDPOINT_NAME}Test, RegisterEndpointsCanBeRegistered) {
     $NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
     endpoint.registerEndpoints(registrar);
     
-    // TODO: Update this test based on your actual endpoints
-    // Example:
-    // ASSERT_EQ(registrar.registeredPaths.size(), 1U);
-    // EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
-    
-    // For now, just verify the method can be called without errors
-    SUCCEED();
+    // Verify that the endpoint registered its handler
+    ASSERT_EQ(registrar.registeredPaths.size(), 1U);
+    EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
 }
 EOF
 
@@ -136,27 +131,27 @@ EOF
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
-#include <ApiModule/ApiModule.h>
-#include <ApiModule/IEndpointRegistrar.h>
+#include <ApiRouter/ApiRouter.h>
+#include <ApiRouter/IApiRouter.h>
 #include <vector>
 #include <string>
 #include <memory>
 
-class MockEndpointRegistrar : public IEndpointRegistrar {
+class MockEndpointRegistrar : public apirouter::IEndpointRegistrar {
 public:
     std::vector<std::string> registeredPaths;
-    void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler /*handler*/) override {
+    void registerHttpHandler(std::string_view path, std::string_view method, apirouter::HttpHandler /*handler*/) override {
         registeredPaths.push_back(std::string(path) + ":" + std::string(method));
     }
 };
 
-TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithApiModule) {
+TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithApiRouter) {
     // Check that at least one module factory is registered
-    size_t moduleCount = apimodule::ApiModule::getRegisteredModuleCount();
+    size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
     ASSERT_GE(moduleCount, 1U) << "No endpoint modules were auto-registered";
     
     // Create instances of all registered modules
-    auto modules = apimodule::ApiModule::createAllModules();
+    auto modules = apirouter::ApiRouter::createAllModulesGlobal();
     ASSERT_EQ(modules.size(), moduleCount) << "Module creation count mismatch";
     
     // Check if any of the modules is $ENDPOINT_NAME
@@ -173,13 +168,10 @@ TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithA
             MockEndpointRegistrar registrar;
             ${ENDPOINT_PART,,}Endpoint->registerEndpoints(registrar);
             
-            // TODO: Update this based on your actual endpoints
-            // Example:
-            // ASSERT_EQ(registrar.registeredPaths.size(), 1U) << "$ENDPOINT_NAME should register exactly one endpoint";
-            // EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET") << "$ENDPOINT_NAME should register /${ENDPOINT_PART,,}:GET endpoint";
+            // Verify that the endpoint registered its handler correctly
+            ASSERT_EQ(registrar.registeredPaths.size(), 1U) << "$ENDPOINT_NAME should register exactly one endpoint";
+            EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET") << "$ENDPOINT_NAME should register /${ENDPOINT_PART,,}:GET endpoint";
             
-            // For now, just verify the method executes without error
-            SUCCEED();
             break;
         }
     }
@@ -187,12 +179,12 @@ TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithA
     ASSERT_TRUE(found${ENDPOINT_NAME}) << "$ENDPOINT_NAME was not found in auto-registered modules";
 }
 
-TEST(${ENDPOINT_NAME}AutoRegistrationTest, ApiModuleCanInstantiateAllRegisteredModules) {
+TEST(${ENDPOINT_NAME}AutoRegistrationTest, ApiRouterCanInstantiateAllRegisteredModules) {
     // Get count of registered module factories
-    size_t moduleCount = apimodule::ApiModule::getRegisteredModuleCount();
+    size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
 
     // Create instances of all registered modules
-    auto modules = apimodule::ApiModule::createAllModules();
+    auto modules = apirouter::ApiRouter::createAllModulesGlobal();
     ASSERT_EQ(modules.size(), moduleCount) << "Not all modules could be instantiated";
     
     // Verify each module can be used to register endpoints
@@ -239,8 +231,8 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-# Examples: Logger IoCContainer ServiceA ApiModule:ApiModule
-DEPENDENCIES = ApiModule IocContainer
+# Examples: Logger IoCContainer ServiceA ApiRouter
+DEPENDENCIES = ApiRouter IocContainer
 
 # External dependencies - flexible configuration for any external library
 # Add external source files that need to be compiled with your tests
@@ -403,7 +395,7 @@ EOF
     echo "1. Edit src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp to implement your endpoints"
     echo "2. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp with proper test assertions"
     echo "3. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp with endpoint verification"
-    echo "4. The endpoint will auto-register with ApiModule (no manual integration needed!)"
+    echo "4. The endpoint will auto-register with ApiRouter (no manual integration needed!)"
     echo "5. To add dependencies, edit the DEPENDENCIES line in tests/${ENDPOINT_NAME}Test/Makefile"
     echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
@@ -449,7 +441,7 @@ remove_endpoint() {
     echo "✅ Endpoint module '$ENDPOINT_NAME' removed successfully!"
     echo ""
     echo "Don't forget to:"
-    echo "1. The endpoint was auto-registered, so no manual removal from ApiModule.cpp needed"
+    echo "1. The endpoint was auto-registered, so no manual removal from ApiRouter.cpp needed"
     echo "2. Clean any build artifacts:"
     echo "   make clean && make test-clean"
     echo ""
