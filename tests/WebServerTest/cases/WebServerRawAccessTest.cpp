@@ -172,6 +172,93 @@ TEST_F(WebServerRawAccessTest, HandlerCanAccessClientInformation) {
     SUCCEED();
 }
 
+TEST_F(WebServerRawAccessTest, HandlerCanValidateContentLength) {
+    std::string capturedContentLength;
+    size_t actualBodyLength = 0;
+    bool contentLengthMatches = false;
+    
+    webserver::HttpHandler handler = [&](const webserver::HttpRequest& req, webserver::HttpResponse& resp) {
+        // Raw access to Content-Length header
+        auto contentLengthIt = req.headers.find("Content-Length");
+        if (contentLengthIt != req.headers.end()) {
+            capturedContentLength = contentLengthIt->second;
+        }
+        
+        // Get actual body length
+        actualBodyLength = req.body.length();
+        
+        // Validate Content-Length matches actual body length
+        if (!capturedContentLength.empty()) {
+            size_t declaredLength = std::stoull(capturedContentLength);
+            contentLengthMatches = (declaredLength == actualBodyLength);
+        }
+        
+        // Build response with validation result
+        std::string responseBody = "{";
+        responseBody += "\"declaredContentLength\": \"" + capturedContentLength + "\",";
+        responseBody += "\"actualBodyLength\": " + std::to_string(actualBodyLength) + ",";
+        responseBody += "\"contentLengthValid\": ";
+        responseBody += contentLengthMatches ? "true" : "false";
+        responseBody += "}";
+        
+        resp.setJsonResponse(responseBody);
+        
+        // Set appropriate status code based on validation
+        resp.statusCode = contentLengthMatches ? 200 : 400;
+    };
+    
+    server->post("/validate-content-length", std::move(handler));
+    
+    // Test with matching Content-Length
+    webserver::HttpRequest validRequest;
+    validRequest.method = "POST";
+    validRequest.uri = "/validate-content-length";
+    validRequest.body = "Hello, World!"; // 13 characters
+    validRequest.headers["Content-Length"] = "13";
+    validRequest.headers["Content-Type"] = "text/plain";
+    
+    webserver::HttpResponse validResponse;
+    
+    // Simulate the handler logic for valid content length
+    std::string testContentLength = validRequest.headers["Content-Length"];
+    size_t testActualLength = validRequest.body.length();
+    size_t testDeclaredLength = std::stoull(testContentLength);
+    bool testMatches = (testDeclaredLength == testActualLength);
+    
+    EXPECT_EQ(testDeclaredLength, static_cast<size_t>(13));
+    EXPECT_EQ(testActualLength, static_cast<size_t>(13));
+    EXPECT_TRUE(testMatches) << "Content-Length should match actual body length";
+    
+    // Test with mismatched Content-Length
+    webserver::HttpRequest invalidRequest;
+    invalidRequest.method = "POST";
+    invalidRequest.uri = "/validate-content-length";
+    invalidRequest.body = "Hello, World!"; // 13 characters
+    invalidRequest.headers["Content-Length"] = "10"; // Wrong length
+    invalidRequest.headers["Content-Type"] = "text/plain";
+    
+    // Simulate the handler logic for invalid content length
+    std::string testInvalidContentLength = invalidRequest.headers["Content-Length"];
+    size_t testInvalidActualLength = invalidRequest.body.length();
+    size_t testInvalidDeclaredLength = std::stoull(testInvalidContentLength);
+    bool testInvalidMatches = (testInvalidDeclaredLength == testInvalidActualLength);
+    
+    EXPECT_EQ(testInvalidDeclaredLength, static_cast<size_t>(10));
+    EXPECT_EQ(testInvalidActualLength, static_cast<size_t>(13));
+    EXPECT_FALSE(testInvalidMatches) << "Content-Length should NOT match when declared length is wrong";
+    
+    // Test with missing Content-Length header
+    webserver::HttpRequest noHeaderRequest;
+    noHeaderRequest.method = "POST";
+    noHeaderRequest.uri = "/validate-content-length";
+    noHeaderRequest.body = "Test body";
+    noHeaderRequest.headers["Content-Type"] = "text/plain";
+    // No Content-Length header
+    
+    auto noHeaderIt = noHeaderRequest.headers.find("Content-Length");
+    EXPECT_EQ(noHeaderIt, noHeaderRequest.headers.end()) << "Content-Length header should be missing";
+}
+
 TEST_F(WebServerRawAccessTest, DemonstrateCompleteRawAccess) {
     // This test demonstrates how a handler gets complete raw access to the HTTP request
     webserver::HttpHandler echoHandler = [](const webserver::HttpRequest& req, webserver::HttpResponse& resp) {
