@@ -1,14 +1,12 @@
 #include <iostream>
 #include <memory>
+#include <ctime>
 #include <Logger/Logger.h>
 #include <Logger/ILogger.h>
 #include <IocContainer/IocContainer.h>
 #include <WebServer/WebServer.h>
 #include <WebServer/IWebServer.h>
-
-// Forward declarations
-void demonstrateGlobalLoggerAccess();
-void demonstrateRegistryListing();
+#include <ApiRouter/ApiRouter.h>
 
 /**
  * Application configuration struct (local to this file for convenience)
@@ -39,40 +37,37 @@ class Application
   public:
 	Application() 
 	{
-		// Initialize IoC container with Logger service
+		// Initialize IoC container and register core services
 		auto& container = ioccontainer::IocContainer::getInstance();
 		
-		// Create logger instance
+		// Create and register logger service
 		auto logger = std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort);
-		
-		// Configure logger
 		logger->setLocalDisplay(true);
-		
-		// Register logger in IoC container for global access
 		container.registerInstance<logger::ILogger>(logger);
 		
-		// Log application startup using the global logger
+		// Log application startup
 		auto globalLogger = container.resolve<logger::ILogger>();
 		globalLogger->logInfo("Application starting up...");
-		globalLogger->logInfo("Logger configured for " + _config.loggerIp + ":" + std::to_string(_config.loggerPort));
 		
-		// Create and configure WebServer
+		// Create and register WebServer
 		_webServer = std::make_unique<webserver::WebServer>(
 			_config.webServerIp, 
 			_config.webServerPort, 
 			_config.webServerBackend
 		);
 		
-		// Create a shared_ptr wrapper for IoC registration (non-owning)
-		// Note: The unique_ptr maintains ownership, this is just for IoC access
+		// Register WebServer in IoC container (non-owning shared_ptr)
 		std::shared_ptr<webserver::IWebServer> webServerPtr(_webServer.get(), [](webserver::IWebServer*){});
 		container.registerInstance<webserver::IWebServer>(webServerPtr);
 		
+		globalLogger->logInfo("Services registered in IoC container");
 		globalLogger->logInfo("WebServer configured for " + _config.webServerIp + ":" + std::to_string(_config.webServerPort));
-		globalLogger->logInfo("WebServer backend: " + _webServer->getBackendName());
 		
-		// Setup basic routes
+		// Initialize ApiRouter and setup routes
+		apirouter::ApiRouter::initializeGlobal();
 		setupWebServerRoutes();
+		
+		globalLogger->logInfo("Application initialization complete");
 	}
 
 	~Application()
@@ -110,62 +105,83 @@ class Application
 	 */
 	int run()
 	{
-		// Access logger through IoC container for global logging
 		auto& container = ioccontainer::IocContainer::getInstance();
 		auto logger = container.resolve<logger::ILogger>();
 		
-		logger->logInfo("Application main loop started");
-		
-		// Try to connect to remote logging server
-		if (logger->start()) {
-			logger->logInfo("Connected to remote logging server");
-		} else {
-			logger->logWarning("Could not connect to remote logging server, using local display only");
+		// Start logger connection
+		if (!logger->start()) {
+			logger->logWarning("Remote logging unavailable, using local display only");
 		}
 		
 		// Start the WebServer
 		logger->logInfo("Starting WebServer...");
-		if (_webServer->start()) {
-			logger->logInfo("WebServer started successfully");
-			logger->logInfo("WebServer listening on " + _webServer->getBindAddress() + ":" + std::to_string(_webServer->getPort()));
-			logger->logInfo("WebServer backend: " + _webServer->getBackendName());
-		} else {
+		if (!_webServer->start()) {
 			logger->logError("Failed to start WebServer");
-			return 1; // Exit with error code
+			return 1;
 		}
 		
-		// Demonstrate different log levels
-		logger->logDebug("This is a debug message");
-		logger->logInfo("Application is running normally");
-		logger->logWarning("This is a sample warning message");
+		// Log system status
+		logger->logInfo("WebServer started successfully on " + _webServer->getBindAddress() + ":" + std::to_string(_webServer->getPort()));
+		logger->logInfo("Backend: " + _webServer->getBackendName());
 		
-		// Demonstrate printf-style logging
-		logger->log("Printf-style logging: User %s has %d points and %.2f%% completion", "Alice", 1250, 87.5);
-		logger->log("System status: Memory usage %d%%, CPU %d%%, Disk %.1fGB free", 67, 23, 45.2);
-		logger->log("Processing file #%d of %d: %s", 7, 10, "data_file.csv");
+		// Log registered services and endpoints
+		logger->logInfo("IoC Container: " + std::to_string(container.getRegisteredCount()) + " services registered");
 		
-		// Log the IoC container registry information using the logger
-		logger->logInfo("=== IoC Container Registry ===");
-		auto servicesInfo = container.getRegisteredServicesInfo();
-		logger->logInfo(servicesInfo);
+		// Log detailed service information
+		auto typeNames = container.getRegisteredTypeNames();
+		logger->logInfo("Registered services:");
+		for (size_t i = 0; i < typeNames.size(); ++i) {
+			std::string typeName = typeNames[i];
+			std::string serviceName = typeName;
+			std::string category = "unknown";
+			
+			// Parse and categorize service types
+			if (typeName.find("Logger") != std::string::npos || typeName.find("ILogger") != std::string::npos) {
+				serviceName = "Logger";
+				category = "logging";
+			} else if (typeName.find("WebServer") != std::string::npos || typeName.find("IWebServer") != std::string::npos) {
+				serviceName = "WebServer";
+				category = "infrastructure";
+			} else if (typeName.find("ApiRouter") != std::string::npos || typeName.find("IApiRouter") != std::string::npos) {
+				serviceName = "ApiRouter";
+				category = "routing";
+			} else if (typeName.find("Service") != std::string::npos) {
+				category = "business";
+			} else if (typeName.find("Manager") != std::string::npos || typeName.find("Handler") != std::string::npos) {
+				category = "management";
+			}
+			
+			logger->logInfo("  " + std::to_string(i + 1) + ". " + serviceName + " (" + category + ")");
+		}
 		
-		// Demonstrate global logger access from a standalone function
-		demonstrateGlobalLoggerAccess();
+		size_t endpointCount = apirouter::ApiRouter::getEndpointCountGlobal();
+		size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
+		logger->logInfo("ApiRouter: " + std::to_string(endpointCount) + " endpoints from " + std::to_string(moduleCount) + " modules");
 		
-		// Demonstrate programmatic registry access
-		demonstrateRegistryListing();
+		// Log detailed endpoint information
+		auto endpoints = apirouter::ApiRouter::getRegisteredEndpointsGlobal();
+		logger->logInfo("Registered endpoints:");
+		for (size_t i = 0; i < endpoints.size(); ++i) {
+			std::string endpoint = endpoints[i];
+			size_t colonPos = endpoint.find(':');
+			std::string path = (colonPos != std::string::npos) ? endpoint.substr(0, colonPos) : endpoint;
+			std::string method = (colonPos != std::string::npos) ? endpoint.substr(colonPos + 1) : "ALL";
+			
+			std::string type = "custom";
+			if (path == "/") type = "homepage";
+			else if (path == "/api/status" || path == "/api/endpoints") type = "system";
+			else if (path == "/hello") type = "module";
+			else if (path.find("/api/") == 0) type = "api";
+			
+			logger->logInfo("  " + std::to_string(i + 1) + ". " + method + " " + path + " (" + type + ")");
+		}
 		
-		// Show WebServer status
-		logger->logInfo("=== WebServer Status ===");
-		logger->logInfo("WebServer is " + std::string(_webServer->isRunning() ? "running" : "stopped"));
-		logger->logInfo("Active connections: " + std::to_string(_webServer->getActiveConnections()));
-		
-		// Keep running until user presses Enter
-		std::cout << "WebServer is running. Visit http://" << _webServer->getBindAddress() << ":" << _webServer->getPort() << std::endl;
-		std::cout << "Press Enter to exit..." << std::endl;
+		// Wait for shutdown signal
+		std::cout << "Server running at http://" << _webServer->getBindAddress() << ":" << _webServer->getPort() << std::endl;
+		std::cout << "Press Enter to stop..." << std::endl;
 		std::cin.get();
 		
-		logger->logInfo("User requested application exit");
+		logger->logInfo("Shutdown requested");
 		return 0;
 	}
 };
@@ -176,140 +192,215 @@ class Application
 void Application::setupWebServerRoutes() {
 	auto& container = ioccontainer::IocContainer::getInstance();
 	auto logger = container.resolve<logger::ILogger>();
+	auto& apiRouter = apirouter::ApiRouter::getInstance();
 	
-	// Basic routes
-	_webServer->get("/", [logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
-		logger->logInfo("GET / - Homepage requested from " + request.remoteIp);
-		response.setHtmlResponse(
-			"<!DOCTYPE html>"
-			"<html><head><title>CppBoilerplate WebServer</title></head>"
-			"<body>"
-			"<h1>Welcome to CppBoilerplate WebServer!</h1>"
-			"<p>This is a C++ web server with modular architecture.</p>"
-			"<ul>"
-			"<li><a href=\"/api/status\">Server Status</a></li>"
-			"<li><a href=\"/api/info\">Server Info</a></li>"
-			"<li><a href=\"/api/logs\">Recent Logs</a></li>"
-			"</ul>"
-			"</body></html>"
-		);
-	});
+	// Register core API endpoints through ApiRouter
+	apiRouter.registerHttpHandler("/", "GET", 
+		[logger](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+			responseBody = 
+				"<!DOCTYPE html>"
+				"<html><head><title>CppBoilerplate Server</title></head>"
+				"<body>"
+				"<h1>CppBoilerplate WebServer</h1>"
+				"<p>Modular C++ web server with dependency injection.</p>"
+				"<ul>"
+				"<li><a href=\"/api/status\">Server Status</a></li>"
+				"<li><a href=\"/api/endpoints\">API Endpoints</a></li>"
+				"<li><a href=\"/api/services\">Registered Services</a></li>"
+				"<li><a href=\"/hello\">Hello Endpoint</a></li>"
+				"</ul>"
+				"</body></html>";
+			statusCode = 200;
+		});
 	
-	_webServer->get("/api/status", [this, logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
-		logger->logInfo("GET /api/status - Status requested from " + request.remoteIp);
-		response.setJsonResponse(
-			"{"
-			"\"status\": \"running\","
-			"\"server\": \"CppBoilerplate WebServer\","
-			"\"backend\": \"" + _webServer->getBackendName() + "\","
-			"\"address\": \"" + _webServer->getBindAddress() + "\","
-			"\"port\": " + std::to_string(_webServer->getPort()) + ","
-			"\"activeConnections\": " + std::to_string(_webServer->getActiveConnections()) +
-			"}"
-		);
-	});
+	apiRouter.registerHttpHandler("/api/status", "GET",
+		[this, &container](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+			size_t endpointCount = apirouter::ApiRouter::getEndpointCountGlobal();
+			size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
+			
+			responseBody = 
+				"{"
+				"\"status\": \"running\","
+				"\"server\": \"CppBoilerplate\","
+				"\"backend\": \"" + _webServer->getBackendName() + "\","
+				"\"address\": \"" + _webServer->getBindAddress() + "\","
+				"\"port\": " + std::to_string(_webServer->getPort()) + ","
+				"\"services\": " + std::to_string(container.getRegisteredCount()) + ","
+				"\"endpoints\": " + std::to_string(endpointCount) + ","
+				"\"modules\": " + std::to_string(moduleCount) +
+				"}";
+			statusCode = 200;
+		});
 	
-	_webServer->get("/api/info", [this, logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
-		logger->logInfo("GET /api/info - Info requested from " + request.remoteIp);
-		
-		auto& container = ioccontainer::IocContainer::getInstance();
-		auto servicesInfo = container.getRegisteredServicesInfo();
-		
-		response.setJsonResponse(
-			"{"
-			"\"application\": \"CppBoilerplate\","
-			"\"webserver\": {"
-			"\"backend\": \"" + _webServer->getBackendName() + "\","
-			"\"address\": \"" + _webServer->getBindAddress() + "\","
-			"\"port\": " + std::to_string(_webServer->getPort()) + ","
-			"\"activeConnections\": " + std::to_string(_webServer->getActiveConnections()) +
-			"},"
-			"\"iocContainer\": {"
-			"\"registeredServices\": " + std::to_string(container.getRegisteredCount()) +
-			"}"
-			"}"
-		);
-	});
-	
-	_webServer->get("/api/logs", [logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
-		logger->logInfo("GET /api/logs - Logs requested from " + request.remoteIp);
-		response.setJsonResponse(
-			"{"
-			"\"message\": \"Log endpoint accessed\","
-			"\"note\": \"Detailed logging implementation would go here\","
-			"\"loggerConnected\": " + std::string(logger->isConnected() ? "true" : "false") + ","
-			"\"localDisplay\": " + std::string(logger->getLocalDisplay() ? "true" : "false") +
-			"}"
-		);
-	});
-	
-	// POST example for testing
-	_webServer->post("/api/echo", [logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
-		logger->logInfo("POST /api/echo - Echo requested from " + request.remoteIp);
-		response.setJsonResponse(
-			"{"
-			"\"method\": \"" + request.method + "\","
-			"\"uri\": \"" + request.uri + "\","
-			"\"body\": \"" + request.body + "\","
-			"\"contentLength\": " + std::to_string(request.body.length()) +
-			"}"
-		);
-	});
-	
-	logger->logInfo("WebServer routes configured successfully");
-}
+	apiRouter.registerHttpHandler("/api/services", "GET",
+		[&container](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+			auto typeNames = container.getRegisteredTypeNames();
+			size_t serviceCount = container.getRegisteredCount();
+			
+			std::string serviceDetails = "[";
+			for (size_t i = 0; i < typeNames.size(); ++i) {
+				if (i > 0) serviceDetails += ",";
+				
+				std::string typeName = typeNames[i];
+				std::string serviceName = typeName;
+				std::string category = "unknown";
+				std::string description = "Registered service";
+				
+				// Parse and categorize service types
+				if (typeName.find("Logger") != std::string::npos || typeName.find("ILogger") != std::string::npos) {
+					serviceName = "Logger";
+					category = "logging";
+					description = "Application logging service with remote and local display capabilities";
+				} else if (typeName.find("WebServer") != std::string::npos || typeName.find("IWebServer") != std::string::npos) {
+					serviceName = "WebServer";
+					category = "infrastructure";
+					description = "HTTP web server with Mongoose backend";
+				} else if (typeName.find("ApiRouter") != std::string::npos || typeName.find("IApiRouter") != std::string::npos) {
+					serviceName = "ApiRouter";
+					category = "routing";
+					description = "API routing and endpoint management service";
+				} else if (typeName.find("Service") != std::string::npos) {
+					category = "business";
+					description = "Business logic service";
+				} else if (typeName.find("Manager") != std::string::npos || typeName.find("Handler") != std::string::npos) {
+					category = "management";
+					description = "System management service";
+				}
+				
+				serviceDetails += 
+					"{"
+					"\"id\": " + std::to_string(i + 1) + ","
+					"\"name\": \"" + serviceName + "\","
+					"\"typeName\": \"" + typeName + "\","
+					"\"category\": \"" + category + "\","
+					"\"description\": \"" + description + "\""
+					"}";
+			}
+			serviceDetails += "]";
+			
+			responseBody = 
+				"{"
+				"\"summary\": {"
+				"\"totalServices\": " + std::to_string(serviceCount) + ","
+				"\"timestamp\": \"" + std::to_string(std::time(nullptr)) + "\""
+				"},"
+				"\"services\": " + serviceDetails + ","
+				"\"categories\": {"
+				"\"logging\": \"Logging and monitoring services\","
+				"\"infrastructure\": \"Core infrastructure services\","
+				"\"routing\": \"Request routing and API management\","
+				"\"business\": \"Business logic and domain services\","
+				"\"management\": \"System and resource management\","
+				"\"unknown\": \"Unclassified services\""
+				"}"
+				"}";
+			statusCode = 200;
+		});
 
-/**
- * Example function that demonstrates global logger access from anywhere in the application
- */
-void demonstrateGlobalLoggerAccess() {
-    // This function can be called from anywhere and will have access to the logger
-    auto& container = ioccontainer::IocContainer::getInstance();
-    
-    try {
-        auto logger = container.resolve<logger::ILogger>();
-        logger->logInfo("This message was logged from a standalone function using global logger access!");
-        logger->logDebug("Demonstrating that the logger is accessible throughout the entire application");
-        
-        // Demonstrate printf-style logging from a global function
-        logger->log("Global function printf-style: timestamp %ld, thread_id %d", 1234567890L, 42);
-        logger->log("From global context: %s operation completed in %.3f seconds", "Database", 2.567);
-    } catch (const ioccontainer::ServiceNotRegisteredException& e) {
-        std::cout << "Logger is not available globally: " << e.what() << std::endl;
-    }
-}
-
-/**
- * Function that demonstrates programmatic access to IoC registry information
- */
-void demonstrateRegistryListing() {
-    auto& container = ioccontainer::IocContainer::getInstance();
-    
-    // Get logger for all output
-    auto logger = container.resolve<logger::ILogger>();
-    
-    logger->logInfo("=== Programmatic IoC Registry Access ===");
-    
-    // Get list of registered type names
-    auto typeNames = container.getRegisteredTypeNames();
-    logger->logInfo("Number of registered services: " + std::to_string(container.getRegisteredCount()));
-    
-    logger->logInfo("Registered type names:");
-    for (size_t i = 0; i < typeNames.size(); ++i) {
-        logger->logInfo("  " + std::to_string(i + 1) + ". " + typeNames[i]);
-    }
-    
-    // Log registry summary
-    logger->logInfo("IoC Registry contains " + std::to_string(typeNames.size()) + " registered service(s)");
-    logger->logInfo("=== End Registry Access ===");
+	apiRouter.registerHttpHandler("/api/endpoints", "GET",
+		[](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
+			auto endpoints = apirouter::ApiRouter::getRegisteredEndpointsGlobal();
+			size_t endpointCount = apirouter::ApiRouter::getEndpointCountGlobal();
+			size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
+			
+			std::string endpointDetails = "[";
+			for (size_t i = 0; i < endpoints.size(); ++i) {
+				if (i > 0) endpointDetails += ",";
+				
+				// Parse endpoint format "path:method"
+				std::string endpoint = endpoints[i];
+				size_t colonPos = endpoint.find(':');
+				std::string path = (colonPos != std::string::npos) ? endpoint.substr(0, colonPos) : endpoint;
+				std::string method = (colonPos != std::string::npos) ? endpoint.substr(colonPos + 1) : "ALL";
+				
+				// Determine endpoint type based on path
+				std::string type = "custom";
+				std::string description = "Custom endpoint";
+				if (path == "/") {
+					type = "homepage";
+					description = "Application homepage with navigation";
+				} else if (path == "/api/status") {
+					type = "system";
+					description = "Server status and statistics";
+				} else if (path == "/api/endpoints") {
+					type = "system";
+					description = "API endpoint listing and details";
+				} else if (path == "/hello") {
+					type = "module";
+					description = "Auto-registered endpoint from EndpointHello module";
+				} else if (path.find("/api/") == 0) {
+					type = "api";
+					description = "API endpoint";
+				}
+				
+				endpointDetails += 
+					"{"
+					"\"id\": " + std::to_string(i + 1) + ","
+					"\"path\": \"" + path + "\","
+					"\"method\": \"" + method + "\","
+					"\"type\": \"" + type + "\","
+					"\"description\": \"" + description + "\","
+					"\"fullEndpoint\": \"" + endpoint + "\""
+					"}";
+			}
+			endpointDetails += "]";
+			
+			responseBody = 
+				"{"
+				"\"summary\": {"
+				"\"totalEndpoints\": " + std::to_string(endpointCount) + ","
+				"\"totalModules\": " + std::to_string(moduleCount) + ","
+				"\"timestamp\": \"" + std::to_string(std::time(nullptr)) + "\""
+				"},"
+				"\"endpoints\": " + endpointDetails + ","
+				"\"categories\": {"
+				"\"homepage\": \"Application entry point\","
+				"\"system\": \"Built-in system endpoints\","
+				"\"api\": \"Custom API endpoints\","
+				"\"module\": \"Auto-registered module endpoints\","
+				"\"custom\": \"Other custom endpoints\""
+				"}"
+				"}";
+			statusCode = 200;
+		});
+	
+	// Register a catch-all handler with WebServer that delegates to ApiRouter
+	_webServer->registerHandler("*", [&apiRouter, logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
+		std::string responseBody;
+		int statusCode = 404;
+		
+		// Try to handle the request through ApiRouter
+		bool handled = apiRouter.handleRequest(
+			request.uri, request.method, request.body, responseBody, statusCode
+		);
+		
+		if (handled) {
+			// Set the response based on content type detection
+			if (responseBody.find("<!DOCTYPE html>") != std::string::npos || 
+				responseBody.find("<html>") != std::string::npos) {
+				response.setHtmlResponse(responseBody);
+			} else if (responseBody.find("{") != std::string::npos && 
+					   responseBody.find("}") != std::string::npos) {
+				response.setJsonResponse(responseBody);
+			} else {
+				response.setPlainTextResponse(responseBody);
+			}
+			response.statusCode = statusCode;
+		} else {
+			// Default 404 response
+			response.statusCode = 404;
+			response.setJsonResponse("{\"error\": \"Not Found\", \"path\": \"" + request.uri + "\"}");
+		}
+		
+		logger->logInfo("Request: " + request.method + " " + request.uri + " -> " + std::to_string(response.statusCode));
+	});
+	
+	logger->logInfo("WebServer integrated with ApiRouter");
 }
 
 /**
  * Main entry point for the application
- *
- * This function initializes and runs the application.
  */
-
 int main()
 {
 	Application app;
