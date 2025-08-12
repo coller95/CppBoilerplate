@@ -358,10 +358,13 @@ endif
 	@echo "TEST_OBJS: $(TEST_OBJS)"
 	@echo "TEST_BIN: $(TEST_BIN)"
 
+run: all
+	@./$(TEST_BIN)
+
 clean:
 	rm -rf $(OBJDIR)/* $(BINDIR)/*
 
-.PHONY: all clean debug-config
+.PHONY: all clean debug-config run
 EOF
 
     # Replace MODULE_NAME_PLACEHOLDER in the Makefile
