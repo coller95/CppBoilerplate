@@ -62,7 +62,9 @@ class Application
 		_logger->logInfo("Application is running normally");
 		_logger->logWarning("This is a sample warning message");
 		
-
+		// Keep running until user presses Enter
+		std::cout << "Press Enter to exit..." << std::endl;
+		std::cin.get();
 		
 		_logger->logInfo("User requested application exit");
 		return 0;
