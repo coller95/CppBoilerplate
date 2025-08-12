@@ -239,7 +239,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-DEPENDENCIES = ApiModule IoCContainer
+DEPENDENCIES = ApiModule IocContainer
 
 # External dependencies (from external/ folder) - uncomment if needed
 # EXTERNAL_DEPS = mongoose foo
