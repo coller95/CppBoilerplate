@@ -336,13 +336,16 @@ EXTERNAL_SOURCES =
 # Examples:
 #   EXTERNAL_INCLUDES = -Iexternal/mongoose/include -Iexternal/sqlite/include
 #   EXTERNAL_INCLUDES = -I/usr/local/include -I../shared/include
-EXTERNAL_INCLUDES = -I$(ROOTDIR)/external/googletest/googletest/include -I$(ROOTDIR)/external/googletest/googlemock/include
+EXTERNAL_INCLUDES = -I$(ROOTDIR)/external/googletest/googletest/include 
+EXTERNAL_INCLUDES += -I$(ROOTDIR)/external/googletest/googlemock/include
 
 # External library paths and libraries
 # Examples:
 #   EXTERNAL_LIBS = -Lexternal/foo/lib -lfoo -lbar
 #   EXTERNAL_LIBS = -L/usr/local/lib -lsqlite3 -lpthread
-EXTERNAL_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main -lgmock -lgmock_main
+EXTERNAL_LIBS = -L$(ROOTDIR)/external/googletest/build/lib 
+EXTERNAL_LIBS += -lgtest -lgtest_main 
+EXTERNAL_LIBS += -lgmock -lgmock_main
 
 # ============================================================================
 # BUILD CONFIGURATION - Usually no changes needed below this line
@@ -370,7 +373,7 @@ EXT_OBJECTS = $(foreach src,$(EXTERNAL_SOURCES),$(OBJDIR)/external/$(notdir $(ba
 # Complete source and object lists (organized by source origin)
 ALL_SOURCES = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp $(DEP_SOURCES) $(EXTERNAL_SOURCES)
 TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.o $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).o $(DEP_OBJECTS) $(EXT_OBJECTS)
-TEST_DEPS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.d,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.d $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).d $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).d) $(foreach src,$(EXTERNAL_SOURCES),$(OBJDIR)/external/$(notdir $(basename $(src))).d)
+TEST_DEPS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.d,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.d $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).d $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).d)
 TEST_BIN = $(BINDIR)/$(MODULE_NAME)Test
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
@@ -409,10 +412,14 @@ $(OBJDIR)/src/%.o: $(ROOTDIR)/src/%.cpp | $(OBJDIR)
 
 # External files: obj/external/
 # Flexible rule for user-defined external sources (any path, any extension)
+# Note: External sources don't generate dependency files to avoid auto-generation issues
+EXTERNAL_CXXFLAGS = $(filter-out -MMD -MP,$(CXXFLAGS))
+EXTERNAL_CFLAGS = $(filter-out -MMD -MP,$(CFLAGS))
+
 $(OBJDIR)/external/%.o: | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(eval SOURCE_FILE := $(filter %/$(notdir $(basename $@)).cpp %/$(notdir $(basename $@)).c,$(EXTERNAL_SOURCES)))
-	$(if $(filter %.cpp,$(SOURCE_FILE)),$(CXX) $(CXXFLAGS) -c $(SOURCE_FILE) -o $@,$(CC) $(CFLAGS) -c $(SOURCE_FILE) -o $@)
+	$(if $(filter %.cpp,$(SOURCE_FILE)),$(CXX) $(EXTERNAL_CXXFLAGS) -c $(SOURCE_FILE) -o $@,$(CC) $(EXTERNAL_CFLAGS) -c $(SOURCE_FILE) -o $@)
 
 # Link the test binary
 $(TEST_BIN): $(TEST_OBJS) | $(BINDIR)
