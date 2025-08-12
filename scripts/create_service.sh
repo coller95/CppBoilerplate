@@ -60,42 +60,57 @@ create_service() {
 cat > "include/$SERVICE_NAME/$SERVICE_NAME.h" << EOF
 #pragma once
 #include <string>
-#include <IoCContainer/IoCContainer.h>
+#include <memory>
+#include <IocContainer/IocContainer.h>
 
 namespace $NAMESPACE_NAME {
 class $SERVICE_NAME {
 public:
     $SERVICE_NAME();
     std::string doSomething${SERVICE_NAME}() const;
+    
     // Static registration helper for TDD and decoupling
-    static void registerWith(IoCContainer& container);
+    static void registerWith(ioccontainer::IocContainer& container);
+    
+    // Factory method for creating instances
+    static std::shared_ptr<$SERVICE_NAME> create();
 };
 }
 EOF
 
 # Create service implementation
 cat > "src/$SERVICE_NAME/$SERVICE_NAME.cpp" << EOF
-#include <IoCContainer/IoCContainer.h>
 #include <$SERVICE_NAME/$SERVICE_NAME.h>
 
 namespace $NAMESPACE_NAME {
+
 $SERVICE_NAME::$SERVICE_NAME() = default;
+
 std::string $SERVICE_NAME::doSomething${SERVICE_NAME}() const {
     return "$SERVICE_NAME result";
 }
 
+std::shared_ptr<$SERVICE_NAME> $SERVICE_NAME::create() {
+    return std::make_shared<$SERVICE_NAME>();
+}
+
+void $SERVICE_NAME::registerWith(ioccontainer::IocContainer& container) {
+    auto instance = create();
+    container.registerInstance<$SERVICE_NAME>(instance);
+}
+
 namespace {
+// Static registration with singleton IoC container using global methods
 struct ${SERVICE_NAME}StaticRegistration {
     ${SERVICE_NAME}StaticRegistration() {
-        IoCContainer::registerGlobal<$SERVICE_NAME>([]() { return std::make_shared<$SERVICE_NAME>(); });
+        ioccontainer::IocContainer::registerGlobal<$SERVICE_NAME>(
+            []() { return $SERVICE_NAME::create(); }
+        );
     }
 };
 static ${SERVICE_NAME}StaticRegistration _${NAMESPACE_NAME}StaticRegistration;
 }
 
-void $SERVICE_NAME::registerWith(IoCContainer& container) {
-    container.registerType<$SERVICE_NAME>([]() { return std::make_shared<$SERVICE_NAME>(); });
-}
 } // namespace $NAMESPACE_NAME
 EOF
 
@@ -123,16 +138,52 @@ EOF
 # Create registration test
 cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp" << EOF
 #include <gtest/gtest.h>
-#include <IoCContainer/IoCContainer.h>
+#include <IocContainer/IocContainer.h>
 #include <$SERVICE_NAME/$SERVICE_NAME.h>
 
-TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}IsRegisteredInIoC) {
-    IoCContainer container;
-    container.importGlobals();
+TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}IsRegisteredInGlobalIoC) {
+    // Verify the service is automatically registered in the global container
+    EXPECT_TRUE(ioccontainer::IocContainer::isRegisteredGlobal<$NAMESPACE_NAME::$SERVICE_NAME>());
+    
+    // Verify we can resolve the service globally
     EXPECT_NO_THROW({
-        auto ptr = container.resolve<$NAMESPACE_NAME::$SERVICE_NAME>();
+        auto ptr = ioccontainer::IocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
         EXPECT_NE(ptr, nullptr);
+        EXPECT_EQ(ptr->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
     });
+}
+
+TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}GlobalMethodsWorkflow) {
+    // Test complete workflow using only global methods
+    
+    // Register an additional instance using global method with instance
+    auto customService = $NAMESPACE_NAME::$SERVICE_NAME::create();
+    ioccontainer::IocContainer::registerGlobal<$NAMESPACE_NAME::$SERVICE_NAME>(customService);
+    
+    // Verify global resolution works
+    auto resolved = ioccontainer::IocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
+    EXPECT_NE(resolved, nullptr);
+    EXPECT_EQ(resolved->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
+}
+
+TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}ManualInstanceRegistrationWorks) {
+    // Test manual registration with getInstance() method for specific containers
+    auto& container = ioccontainer::IocContainer::getInstance();
+    
+    // Verify service can be manually registered using the registerWith helper
+    EXPECT_NO_THROW({
+        $NAMESPACE_NAME::$SERVICE_NAME::registerWith(container);
+    });
+    
+    // Verify manual registration worked
+    EXPECT_TRUE(container.isRegistered<$NAMESPACE_NAME::$SERVICE_NAME>());
+    
+    // Verify we can resolve the manually registered service
+    auto ptr = container.resolve<$NAMESPACE_NAME::$SERVICE_NAME>();
+    EXPECT_NE(ptr, nullptr);
+    
+    // Verify the service works
+    EXPECT_EQ(ptr->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
 }
 EOF
 
@@ -157,7 +208,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-DEPENDENCIES = IoCContainer
+DEPENDENCIES = IocContainer
 
 # External dependencies (from external/ folder) - uncomment if needed
 # EXTERNAL_DEPS = mongoose foo
@@ -313,11 +364,15 @@ EOF
     echo "1. Edit src/$SERVICE_NAME/$SERVICE_NAME.cpp to implement your service logic"
     echo "2. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp with proper test assertions"
     echo "3. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp with IoC verification"
-    echo "4. The service will auto-register with IoCContainer (no manual integration needed!)"
-    echo "5. To add dependencies, edit the DEPENDENCIES line in tests/${SERVICE_NAME}Test/Makefile"
+    echo "4. The service will auto-register with the global IoCContainer (no manual integration needed!)"
+    echo "5. Use global IoC methods for easy access:"
+    echo "   - ioccontainer::IocContainer::registerGlobal<ServiceType>(instance)"
+    echo "   - auto service = ioccontainer::IocContainer::resolveGlobal<ServiceType>()"
+    echo "   - bool exists = ioccontainer::IocContainer::isRegisteredGlobal<ServiceType>()"
+    echo "6. To add dependencies, edit the DEPENDENCIES line in tests/${SERVICE_NAME}Test/Makefile"
     echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
-    echo "6. Test your service:"
+    echo "7. Test your service:"
     echo "   make test-run-${SERVICE_NAME}Test"
     echo ""
 }

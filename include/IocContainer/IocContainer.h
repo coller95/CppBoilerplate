@@ -29,6 +29,47 @@ public:
     static IocContainer& getInstance();
 
     /**
+     * Register a service instance globally using the singleton container
+     * @tparam TInterface The interface type to register for
+     * @param instance Shared pointer to the service instance
+     */
+    template<typename TInterface>
+    static void registerGlobal(std::shared_ptr<TInterface> instance) {
+        getInstance().registerInstance<TInterface>(instance);
+    }
+    
+    /**
+     * Register a service factory globally using the singleton container
+     * @tparam TInterface The interface type to register for
+     * @param factory Factory function that creates the service instance
+     */
+    template<typename TInterface>
+    static void registerGlobal(std::function<std::shared_ptr<TInterface>()> factory) {
+        getInstance().registerInstance<TInterface>(factory());
+    }
+    
+    /**
+     * Resolve a service globally using the singleton container
+     * @tparam TInterface The interface type to resolve
+     * @return Shared pointer to the service instance
+     * @throws ServiceNotRegisteredException if service is not registered
+     */
+    template<typename TInterface>
+    static std::shared_ptr<TInterface> resolveGlobal() {
+        return getInstance().resolve<TInterface>();
+    }
+    
+    /**
+     * Check if a service type is registered globally using the singleton container
+     * @tparam TInterface The interface type to check
+     * @return True if the service is registered
+     */
+    template<typename TInterface>
+    static bool isRegisteredGlobal() {
+        return getInstance().isRegistered<TInterface>();
+    }
+
+    /**
      * Destructor - ensures proper cleanup
      */
     ~IocContainer() override;
