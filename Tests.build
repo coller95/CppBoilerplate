@@ -2,30 +2,74 @@
 # Provides convenient test targets at the project root level
 
 # ============================================================================
-# OUTPUT MODE CONFIGURATION
+# OUTPUT MODE CONFIGURATION (Multi-tiered)
 # ============================================================================
-# Inherit VERBOSE setting from main Makefile (VERBOSE=1 human, VERBOSE=0 agent)
-VERBOSE ?= 1
+# Inherit VERBOSE setting from main Makefile (supports minimal/standard/debug/human/silent)
+VERBOSE ?= minimal
 
-# Output formatting based on mode
+# Map legacy numeric values to named modes for backward compatibility
+ifeq ($(VERBOSE),0)
+    override VERBOSE = minimal
+endif
 ifeq ($(VERBOSE),1)
-    # Human mode: Colorful, descriptive output
+    override VERBOSE = human
+endif
+
+# Output formatting based on multi-tiered mode
+ifeq ($(VERBOSE),human)
+    # Human mode: Colorful, descriptive output with emojis
     TEST_PREFIX = @echo
     TEST_SUCCESS = "🧪"
-    TEST_BUILD = "🔧"
+    TEST_BUILD = "🔧" 
     TEST_CLEAN = "🧹"
     TEST_DEBUG = "🐛"
     TEST_HELP = "📋"
     TEST_STATS = "📊"
-else
-    # Agent mode: Concise, structured output
+else ifeq ($(VERBOSE),debug)
+    # Debug mode: Agent + detailed context for troubleshooting
     TEST_PREFIX = @echo "[TEST]"
-    TEST_SUCCESS = "TEST"
+    TEST_SUCCESS = "RUN"
     TEST_BUILD = "BUILD"
     TEST_CLEAN = "CLEAN"
     TEST_DEBUG = "DEBUG"
     TEST_HELP = "HELP"
     TEST_STATS = "STATS"
+else ifeq ($(VERBOSE),standard)
+    # Standard mode: Balanced agent output
+    TEST_PREFIX = @echo "[TEST]"
+    TEST_SUCCESS = "RUN"
+    TEST_BUILD = "BUILD" 
+    TEST_CLEAN = "CLEAN"
+    TEST_DEBUG = "DEBUG"
+    TEST_HELP = "HELP"
+    TEST_STATS = "STATS"
+else ifeq ($(VERBOSE),minimal)
+    # Minimal mode: Ultra-minimal for best performance
+    TEST_PREFIX = @echo "[TEST]"
+    TEST_SUCCESS = ""
+    TEST_BUILD = ""
+    TEST_CLEAN = "CLEAN_ALL"
+    TEST_DEBUG = ""
+    TEST_HELP = ""
+    TEST_STATS = ""
+else ifeq ($(VERBOSE),silent)
+    # Silent mode: Errors only
+    TEST_PREFIX = @true
+    TEST_SUCCESS = ""
+    TEST_BUILD = ""
+    TEST_CLEAN = ""
+    TEST_DEBUG = ""
+    TEST_HELP = ""
+    TEST_STATS = ""
+else
+    # Fallback to minimal for unknown modes
+    TEST_PREFIX = @echo "[TEST]"
+    TEST_SUCCESS = ""
+    TEST_BUILD = ""
+    TEST_CLEAN = "CLEAN_ALL"
+    TEST_DEBUG = ""
+    TEST_HELP = ""
+    TEST_STATS = ""
 endif
 
 # ============================================================================

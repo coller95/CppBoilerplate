@@ -1,23 +1,46 @@
 #!/bin/bash
 
-# Script to automate the build, test, and run process
-# Usage: 
-#   ./scripts/test.sh           # Default agent mode (VERBOSE=0)
-#   ./scripts/test.sh human     # Human-friendly mode (VERBOSE=1)
-#   ./scripts/test.sh agent     # Explicit agent mode (VERBOSE=0)
-#   VERBOSE=1 ./scripts/test.sh # Environment variable override
+# Script to automate the build, test, and run process with multi-tiered output modes
+# Usage:
+#   ./scripts/test.sh           # Default minimal mode (best performance)
+#   ./scripts/test.sh minimal   # Ultra-minimal output (best performance)
+#   ./scripts/test.sh standard  # Standard agent output (moderate context)
+#   ./scripts/test.sh debug     # Agent + debugging context (troubleshooting)
+#   ./scripts/test.sh human     # Human-friendly output (verbose)
+#   ./scripts/test.sh silent    # Errors only (critical only)
+#
+# Backward compatibility:
+#   ./scripts/test.sh agent     # Maps to standard mode
+#   VERBOSE=0/1 environment     # Maps to minimal/human
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# Handle verbose mode selection
-if [ "$1" = "human" ]; then
-    export VERBOSE=1
-elif [ "$1" = "agent" ]; then
-    export VERBOSE=0
-else
-    # Default to agent mode if no argument provided and VERBOSE not set
-    export VERBOSE=${VERBOSE:-0}
-fi
+# Handle verbose mode selection with multi-tiered support
+case "$1" in
+    "minimal")
+        export VERBOSE=minimal ;;
+    "standard") 
+        export VERBOSE=standard ;;
+    "debug")
+        export VERBOSE=debug ;;
+    "human")
+        export VERBOSE=human ;;
+    "silent")
+        export VERBOSE=silent ;;
+    "agent")
+        # Backward compatibility: agent -> standard
+        export VERBOSE=standard ;;
+    *)
+        # Default to minimal if no argument provided and VERBOSE not set
+        export VERBOSE=${VERBOSE:-minimal}
+        # Map legacy numeric values
+        if [ "$VERBOSE" = "1" ]; then
+            export VERBOSE=human
+        elif [ "$VERBOSE" = "0" ]; then
+            export VERBOSE=minimal
+        fi
+        ;;
+esac
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,25 +49,44 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 function status() {
-  if [ "$VERBOSE" = "1" ]; then
-    echo -e "${YELLOW}==> $1${NC}"
-  else
-    echo -e "${BLUE}[SCRIPT]${NC} $1"
-  fi
+  case "$VERBOSE" in
+    "human")
+      echo -e "${YELLOW}==> $1${NC}" ;;
+    "debug")
+      echo -e "${BLUE}[SCRIPT]${NC} $1" ;;
+    "standard")
+      echo -e "${BLUE}[SCRIPT]${NC} $1" ;;
+    "minimal")
+      echo "[SCRIPT] $1" ;;
+    "silent")
+      # No status output in silent mode
+      ;;
+  esac
 }
 function success() {
-  if [ "$VERBOSE" = "1" ]; then
-    echo -e "${GREEN}$1${NC}"
-  else
-    echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: $1"
-  fi
+  case "$VERBOSE" in
+    "human")
+      echo -e "${GREEN}$1${NC}" ;;
+    "debug")
+      echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: $1" ;;
+    "standard") 
+      echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: $1" ;;
+    "minimal")
+      echo "[SCRIPT] SUCCESS: $1" ;;
+    "silent")
+      # No success output in silent mode
+      ;;
+  esac
 }
 function fail() {
-  if [ "$VERBOSE" = "1" ]; then
-    echo -e "${RED}$1${NC}"
-  else
-    echo -e "${BLUE}[SCRIPT]${NC} ERROR: $1"
-  fi
+  case "$VERBOSE" in
+    "human")
+      echo -e "${RED}$1${NC}" ;;
+    "debug"|"standard"|"minimal")
+      echo -e "${BLUE}[SCRIPT]${NC} ERROR: $1" ;;
+    "silent")
+      echo "[ERROR] $1" ;;
+  esac
 }
 
 status "Cleaning build artifacts..."

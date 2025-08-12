@@ -4,13 +4,27 @@ include Platform.build
 
 APPNAME = hello_world
 
-# Build output modes
-# VERBOSE=1 for human-friendly output (default)
-# VERBOSE=0 for AI agent-friendly output (concise)
-VERBOSE ?= 0
+# Multi-tiered build output modes for LLM context optimization
+# VERBOSE=minimal   - Ultra-minimal output (default, best performance)
+# VERBOSE=standard  - Standard agent output (moderate context)
+# VERBOSE=debug     - Agent + debugging context (troubleshooting)
+# VERBOSE=human     - Full human-friendly output (verbose)
+# VERBOSE=silent    - Errors only (critical only)
+#
+# Backward compatibility:
+# VERBOSE=0 -> minimal, VERBOSE=1 -> human
+VERBOSE ?= minimal
+
+# Map legacy numeric values to named modes
+ifeq ($(VERBOSE),0)
+    override VERBOSE = minimal
+endif
+ifeq ($(VERBOSE),1)
+    override VERBOSE = human
+endif
 
 # Output formatting based on mode
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
     # Human mode: Colorful, descriptive output
     MSG_PREFIX = @echo
     SUCCESS_MSG = "✅ Successfully built"
@@ -21,14 +35,58 @@ ifeq ($(VERBOSE),1)
     LAUNCH_MSG = "🚀 Launching"
     QUIET = @
     COMPILE_QUIET = @
-else
-    # Agent mode: Ultra-concise, error-focused output
+else ifeq ($(VERBOSE),debug)
+    # Debug mode: Agent + compilation context
+    MSG_PREFIX = @echo "[BUILD]"
+    SUCCESS_MSG = "BUILT"
+    COMPILE_MSG = "COMPILE"
+    LINK_MSG = "LINK"
+    CLEAN_MSG = "CLEAN"
+    COPY_MSG = "COPY"
+    LAUNCH_MSG = "RUN"
+    QUIET = @
+    COMPILE_QUIET = @
+else ifeq ($(VERBOSE),standard)
+    # Standard mode: Balanced agent output
     MSG_PREFIX = @echo "[BUILD]"
     SUCCESS_MSG = "BUILT"
     COMPILE_MSG = ""
     LINK_MSG = "LINK"
     CLEAN_MSG = "CLEAN"
     COPY_MSG = "COPY"
+    LAUNCH_MSG = "RUN"
+    QUIET = @
+    COMPILE_QUIET = @
+else ifeq ($(VERBOSE),minimal)
+    # Minimal mode: Ultra-minimal for best performance
+    MSG_PREFIX = @echo "[BUILD]"
+    SUCCESS_MSG = ""
+    COMPILE_MSG = ""
+    LINK_MSG = ""
+    CLEAN_MSG = "CLEAN"
+    COPY_MSG = ""
+    LAUNCH_MSG = "RUN"
+    QUIET = @
+    COMPILE_QUIET = @
+else ifeq ($(VERBOSE),silent)
+    # Silent mode: Errors only
+    MSG_PREFIX = @true
+    SUCCESS_MSG = ""
+    COMPILE_MSG = ""
+    LINK_MSG = ""
+    CLEAN_MSG = ""
+    COPY_MSG = ""
+    LAUNCH_MSG = ""
+    QUIET = @
+    COMPILE_QUIET = @
+else
+    # Fallback to minimal for unknown modes
+    MSG_PREFIX = @echo "[BUILD]"
+    SUCCESS_MSG = ""
+    COMPILE_MSG = ""
+    LINK_MSG = ""
+    CLEAN_MSG = "CLEAN"
+    COPY_MSG = ""
     LAUNCH_MSG = "RUN"
     QUIET = @
     COMPILE_QUIET = @
@@ -86,39 +144,65 @@ all: release
 
 # Build targets
 debug: $(BIN_DIR_debug)/$(APPNAME)
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "✅ Successfully built debug version of $(APPNAME) for $(BUILD_NAME)"
 	@echo "   Executable: $(BIN_DIR_debug)/$(APPNAME)"
-else
+else ifeq ($(VERBOSE),debug)
 	@echo "[BUILD] BUILT debug $(APPNAME) $(BUILD_NAME)"
+else ifeq ($(VERBOSE),standard)
+	@echo "[BUILD] BUILT debug $(APPNAME) $(BUILD_NAME)"
+else ifeq ($(VERBOSE),minimal)
+	@echo "[BUILD] $(APPNAME)"
+else ifneq ($(VERBOSE),silent)
+	@echo "[BUILD] $(APPNAME)"
 endif
 
 release: $(BIN_DIR_release)/$(APPNAME)
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "✅ Successfully built release version of $(APPNAME) for $(BUILD_NAME)"
 	@echo "   Executable: $(BIN_DIR_release)/$(APPNAME)"
-else
+else ifeq ($(VERBOSE),debug)
 	@echo "[BUILD] BUILT release $(APPNAME) $(BUILD_NAME)"
+else ifeq ($(VERBOSE),standard)
+	@echo "[BUILD] BUILT release $(APPNAME) $(BUILD_NAME)"
+else ifeq ($(VERBOSE),minimal)
+	@echo "[BUILD] $(APPNAME)"
+else ifneq ($(VERBOSE),silent)
+	@echo "[BUILD] $(APPNAME)"
 endif
 
 # Linking rules
 $(BIN_DIR_debug)/$(APPNAME): $(OBJECTS_debug)
 	@mkdir -p $(BIN_DIR_debug)
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "🔗 Linking debug executable..."
 	$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
-else
+else ifeq ($(VERBOSE),debug)
 	@echo "[BUILD] LINK debug $(APPNAME)"
+	@$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
+else ifeq ($(VERBOSE),standard)
+	@echo "[BUILD] LINK debug $(APPNAME)"
+	@$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
+else ifneq ($(VERBOSE),silent)
+	@$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
+else
 	@$(CXX) $(CXXFLAGS_debug) -o $@ $^ $(LDFLAGS)
 endif
 
 $(BIN_DIR_release)/$(APPNAME): $(OBJECTS_release)
 	@mkdir -p $(BIN_DIR_release)
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "🔗 Linking release executable..."
 	$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
-else
+else ifeq ($(VERBOSE),debug)
 	@echo "[BUILD] LINK release $(APPNAME)"
+	@$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
+else ifeq ($(VERBOSE),standard)
+	@echo "[BUILD] LINK release $(APPNAME)"
+	@$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
+else ifneq ($(VERBOSE),silent)
+	@$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
+else
 	@$(CXX) $(CXXFLAGS_release) -o $@ $^ $(LDFLAGS)
 endif
 
