@@ -423,6 +423,19 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
 - Never pollute the main build output with test artifacts; keep all test objects, binaries, and dependencies isolated in the test module's `obj/` and `bin/` folders
 - Always use `mkdir -p $(dir $@)` in every object/dependency rule to ensure all parent directories are created, especially for sources outside the test directory
 
+- Organize object files by origin inside each test module for clarity and reliable pattern matching:
+  - `obj/test/...` for test sources (`cases/*.cpp`, `TestMain.cpp`)
+  - `obj/src/...` for project sources compiled for the test
+  - `obj/external/...` for external library sources
+- GNU Make pattern compliance: use a single `%` in the target. Recommended generic rules:
+  - `$(OBJDIR)/src/%.o: $(ROOTDIR)/src/%.cpp`
+  - `$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.cpp`
+  - `$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.c`
+- Each test Makefile must provide `run`, `clean`, and `debug-config` targets. `debug-config` should print: `MODULE_NAME`, `PRIMARY_MODULE`, `DEPENDENCIES`, `DEP_NAMES`, `DEP_SOURCES`, `DEP_OBJECTS`, and, if present, `EXTERNAL_DEPS`, `EXT_SOURCES`, `EXT_OBJECTS`, plus `TEST_OBJS` and `TEST_BIN`.
+- Include Google Mock in test builds in addition to Google Test:
+  - Add `-Iexternal/googletest/googlemock/include` to include paths
+  - Link with `-lgmock -lgmock_main` alongside GTest
+
 ### Test Case Organization
 
 - For every test module (e.g., `tests/ModuleNameTest/`), all test case `.cpp` files **must** be placed in a `cases/` subfolder
@@ -447,6 +460,8 @@ All test modules now use a **flexible Makefile template** that simplifies depend
 - **External library support**: Use `EXTERNAL_DEPS` for dependencies from `external/` folder
 - **Enhanced testing**: Includes both Google Test and Google Mock support
 - **Consistent structure**: All Makefiles follow the same template
+- **GNU Make compliance**: Generic pattern rules must use a single `%` in the target (multi-`%` targets are not allowed)
+- **Object file organization**: Enforce `obj/test`, `obj/src`, and `obj/external` layout for clarity and reliability
 
 #### Usage Examples
 
@@ -806,25 +821,9 @@ All generation scripts (`create_endpoint.sh`, `create_service.sh`, `create_modul
   ```
 - Use PROJECT_ROOT-relative paths for all script operations (creating/removing sources, headers, tests)
 - Do not define ROOTDIR inside scripts. Only define ROOTDIR in generated Makefiles as the path from the test folder to the project root (usually `../..`)
-
-#### Makefile Generation Requirements
-
-Generated test Makefiles must:
-- Use the **flexible Makefile template** with configuration-based dependency management
-- Set `MODULE_NAME = <ModuleName>` in the CONFIGURATION SECTION at the top
-- Specify dependencies using `DEPENDENCIES = ModuleA ModuleB` (simple format) or `ModuleA:FolderA ModuleB` (complex format)
-- Use `EXTERNAL_DEPS = library1 library2` for external dependencies from `external/` folder
-- Include `cases/*.cpp` glob for test cases and keep the test runner at the module root
-- Place all objects in `obj/` and the binary in `bin/` inside the test module folder
-- **Use real tabs for all recipe lines** (critical for make compatibility)
-- Support both Google Test and Google Mock for comprehensive testing capabilities
-
-#### Heredoc Best Practices
-
-- **Always use single-quoted heredoc for Makefiles:** `cat << 'EOF'` to preserve Makefile variables (`$(...)`)
-- This prevents bash from expanding `$` characters, ensuring Makefile variables remain intact
-- After generating the Makefile, use `sed` to replace placeholders: `sed -i "s/ModuleName/$ACTUAL_NAME/g"`
-- **Never mix bash variable expansion with Makefile variables in the same heredoc**
+- Ensure generated Makefiles use real tabs at the start of recipe lines (not spaces)
+- Ensure generated test Makefiles include Google Mock support (add `-Iexternal/googletest/googlemock/include` and link `-lgmock -lgmock_main`)
+- Ensure generated test Makefiles organize objects by origin (`obj/test`, `obj/src`, `obj/external`)
 
 #### Template Quality Standards
 
