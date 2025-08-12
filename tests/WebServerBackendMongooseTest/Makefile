@@ -10,7 +10,7 @@
 # ============================================================================
 
 ROOTDIR = ../..
-MODULE_NAME = Logger
+MODULE_NAME = WebServerBackendMongoose
 
 # Primary module being tested (automatically included)
 PRIMARY_MODULE = $(MODULE_NAME)
@@ -18,14 +18,14 @@ PRIMARY_MODULE = $(MODULE_NAME)
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
 # Examples: Logger IocContainer ServiceA ApiModule:ApiModule
-DEPENDENCIES = 
+DEPENDENCIES = WebServer 
 
 # External dependencies - flexible configuration for any external library
 # Add external source files that need to be compiled with your tests
 # Examples:
 #   EXTERNAL_SOURCES = external/mongoose/src/mongoose.c external/sqlite/sqlite3.c
 #   EXTERNAL_SOURCES = /usr/local/src/mylib.cpp ../shared/utils.cpp
-EXTERNAL_SOURCES =
+EXTERNAL_SOURCES = $(ROOTDIR)/external/mongoose/src/mongoose.c
 
 # External include paths - add any custom include directories
 # Examples:
@@ -33,14 +33,16 @@ EXTERNAL_SOURCES =
 #   EXTERNAL_INCLUDES = -I/usr/local/include -I../shared/include
 EXTERNAL_INCLUDES = -I$(ROOTDIR)/external/googletest/googletest/include 
 EXTERNAL_INCLUDES += -I$(ROOTDIR)/external/googletest/googlemock/include
+EXTERNAL_INCLUDES += -I$(ROOTDIR)/external/mongoose/include
 
 # External library paths and libraries
 # Examples:
 #   EXTERNAL_LIBS = -Lexternal/foo/lib -lfoo -lbar
 #   EXTERNAL_LIBS = -L/usr/local/lib -lsqlite3 -lpthread
 EXTERNAL_LIBS = -L$(ROOTDIR)/external/googletest/build/lib 
-EXTERNAL_LIBS += -lgtest -lgtest_main
+EXTERNAL_LIBS += -lgtest -lgtest_main 
 EXTERNAL_LIBS += -lgmock -lgmock_main
+
 
 # ============================================================================
 # BUILD CONFIGURATION - Usually no changes needed below this line
