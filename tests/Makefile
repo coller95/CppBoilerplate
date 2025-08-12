@@ -55,14 +55,14 @@ else
 		echo "[TEST] ERROR: $* not found"; \
 		exit 1; \
 	fi
-	@if $(MAKE) -C $* all VERBOSE=$(VERBOSE) >/dev/null 2>&1; then \
+	@if $(MAKE) -C $* all VERBOSE=$(VERBOSE) >/dev/null; then \
 		absdir="$$(cd $* && pwd)"; \
 		test_count=0; \
 		passed_count=0; \
 		for bin in "$$absdir"/bin/*Test; do \
 			if [ -x "$$bin" ]; then \
 				test_count=$$((test_count + 1)); \
-				if "$$bin" >/dev/null 2>&1; then \
+				if "$$bin" >/dev/null; then \
 					passed_count=$$((passed_count + 1)); \
 				fi; \
 			fi; \
@@ -132,7 +132,7 @@ ifeq ($(VERBOSE),1)
 	@echo "🔧 Building $@..."
 	$(MAKE) -C $@
 else
-	@$(MAKE) -C $@ >/dev/null 2>&1
+	@$(MAKE) -C $@ >/dev/null
 endif
 
 # Clean all test artifacts
@@ -146,7 +146,7 @@ ifeq ($(VERBOSE),1)
 	@echo "✅ All test artifacts cleaned"
 else
 	@for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir clean >/dev/null 2>&1; \
+		$(MAKE) -C $$dir clean >/dev/null; \
 	done
 endif
 
@@ -184,7 +184,7 @@ else
 	passed_modules=0; \
 	for dir in $(SUBDIRS); do \
 		total_modules=$$((total_modules + 1)); \
-		if $(MAKE) -C $$dir run VERBOSE=$(VERBOSE) >/dev/null 2>&1; then \
+		if $(MAKE) -C $$dir run VERBOSE=$(VERBOSE) >/dev/null; then \
 			passed_modules=$$((passed_modules + 1)); \
 		fi; \
 	done; \
