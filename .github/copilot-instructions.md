@@ -429,9 +429,8 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
   - `obj/external/...` for external library sources
 - GNU Make pattern compliance: use a single `%` in the target. Recommended generic rules:
   - `$(OBJDIR)/src/%.o: $(ROOTDIR)/src/%.cpp`
-  - `$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.cpp`
-  - `$(OBJDIR)/external/%.o: $(ROOTDIR)/external/%/src/%.c`
-- Each test Makefile must provide `run`, `clean`, and `debug-config` targets. `debug-config` should print: `MODULE_NAME`, `PRIMARY_MODULE`, `DEPENDENCIES`, `DEP_NAMES`, `DEP_SOURCES`, `DEP_OBJECTS`, and, if present, `EXTERNAL_DEPS`, `EXT_SOURCES`, `EXT_OBJECTS`, plus `TEST_OBJS` and `TEST_BIN`.
+  - Flexible external rule: `$(OBJDIR)/external/%.o: | $(OBJDIR)` with `$(eval)` to handle any path/extension
+- Each test Makefile must provide `run`, `clean`, and `debug-config` targets. `debug-config` should print: `MODULE_NAME`, `PRIMARY_MODULE`, `DEPENDENCIES`, `DEP_NAMES`, `DEP_SOURCES`, `DEP_OBJECTS`, and, if present, `EXTERNAL_SOURCES`, `EXT_OBJECTS`, `EXTERNAL_INCLUDES`, `EXTERNAL_LIBS`, plus `TEST_OBJS` and `TEST_BIN`.
 - Include Google Mock in test builds in addition to Google Test:
   - Add `-Iexternal/googletest/googlemock/include` to include paths
   - Link with `-lgmock -lgmock_main` alongside GTest
@@ -457,7 +456,7 @@ All test modules now use a **flexible Makefile template** that simplifies depend
 - **Easy dependency management**: Just add module names to the `DEPENDENCIES` variable
 - **Automatic compilation rules**: Generic patterns handle any module type (C++17 standard)
 - **Debug support**: Use `make debug-config` to verify dependency resolution
-- **External library support**: Use `EXTERNAL_DEPS` for dependencies from `external/` folder
+- **Flexible external library support**: Use `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, and `EXTERNAL_LIBS` for maximum flexibility
 - **Enhanced testing**: Includes both Google Test and Google Mock support
 - **Consistent structure**: All Makefiles follow the same template
 - **GNU Make compliance**: Generic pattern rules must use a single `%` in the target (multi-`%` targets are not allowed)
@@ -477,11 +476,22 @@ MODULE_NAME = EndpointUser
 DEPENDENCIES = ApiModule:ApiModule
 ```
 
-**Complex module with multiple dependencies:**
+**Complex module with multiple dependencies and external libraries:**
 ```makefile
 MODULE_NAME = DatabaseManager
 DEPENDENCIES = Logger IoCContainer
-EXTERNAL_DEPS = mongoose
+EXTERNAL_SOURCES = external/sqlite/src/sqlite3.c external/mongoose/src/mongoose.c
+EXTERNAL_INCLUDES = -Iexternal/sqlite/include -Iexternal/mongoose/include  
+EXTERNAL_LIBS = -lssl -lcrypto
+```
+
+**Flexible external source paths:**
+```makefile
+MODULE_NAME = NetworkModule
+DEPENDENCIES = Logger
+EXTERNAL_SOURCES = /usr/local/src/libcurl.cpp ../shared/network_utils.cpp
+EXTERNAL_INCLUDES = -I/usr/local/include -I../shared/include
+EXTERNAL_LIBS = -L/usr/local/lib -lcurl -lpthread
 ```
 
 #### Debugging Dependencies
@@ -490,6 +500,41 @@ Use the built-in debug target to verify your configuration:
 cd tests/ModuleNameTest
 make debug-config
 ```
+
+#### Latest Flexible External Dependency Configuration
+
+The current Makefile template supports maximum flexibility for external dependencies through three dedicated variables:
+
+**EXTERNAL_SOURCES Configuration:**
+```makefile
+# Examples of flexible external source specification:
+EXTERNAL_SOURCES = external/mongoose/src/mongoose.c external/sqlite/sqlite3.c
+EXTERNAL_SOURCES = /usr/local/src/mylib.cpp ../shared/utils.cpp
+EXTERNAL_SOURCES = $(wildcard external/*/src/*.c) $(wildcard external/*/src/*.cpp)
+```
+
+**EXTERNAL_INCLUDES Configuration:**
+```makefile
+# Examples of external include directories:
+EXTERNAL_INCLUDES = -Iexternal/mongoose/include -Iexternal/sqlite/include
+EXTERNAL_INCLUDES = -I/usr/local/include -I../shared/include
+EXTERNAL_INCLUDES = -I$(ROOTDIR)/external/googletest/googletest/include -I$(ROOTDIR)/external/googletest/googlemock/include
+```
+
+**EXTERNAL_LIBS Configuration:**
+```makefile
+# Examples of external library linking:
+EXTERNAL_LIBS = -Lexternal/foo/lib -lfoo -lbar
+EXTERNAL_LIBS = -L/usr/local/lib -lsqlite3 -lpthread
+EXTERNAL_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main -lgmock -lgmock_main
+```
+
+**Key Benefits:**
+- **Any Source Path**: External sources can be from any location, not restricted to `external/` folder
+- **Mixed Extensions**: Supports both `.cpp` and `.c` files automatically
+- **Automatic Compilation**: Uses `$(eval)` technique to dynamically determine source file and compiler
+- **Standard Integration**: Seamlessly integrates with existing `CXXFLAGS`, `CFLAGS`, and `LDLIBS` variables
+- **Debug Support**: All external configuration is displayed in `make debug-config` output
 
 #### Enhanced Test Management System
 
@@ -517,7 +562,7 @@ The project includes a comprehensive test management system accessible both from
 - Comprehensive help system with usage examples
 - Project statistics including module counts and test coverage metrics
 
-**Rationale:** The flexible Makefile system eliminates boilerplate, reduces errors, ensures consistency across all test modules, and makes dependency management trivial for developers. The enhanced test management system provides a seamless experience for both individual module development and project-wide testing operations.
+**Rationale:** The flexible Makefile system with comprehensive external dependency support eliminates boilerplate, reduces errors, ensures consistency across all test modules, and makes dependency management trivial for developers. The latest external configuration approach provides maximum flexibility for any source path, mixed file types, and seamless integration. The enhanced test management system provides a seamless experience for both individual module development and project-wide testing operations.
 
 ### Legacy Makefile Example (for reference)
 ```makefile
@@ -864,6 +909,7 @@ This helps keep the project's standards up to date and ensures all contributors 
   - `./scripts/create_service.sh` for services
   - `./scripts/create_module.sh` for utility/infrastructure modules
 - Use the flexible Makefile system: modify only the DEPENDENCIES line in test Makefiles
+- For external dependencies, use `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, and `EXTERNAL_LIBS` for maximum flexibility
 - Use `make debug-config` to verify dependency resolution in test modules
 - Follow the modular monolithic architecture principles
 - Ensure all Makefiles use real tabs for recipe lines
