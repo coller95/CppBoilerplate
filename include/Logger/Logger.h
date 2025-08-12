@@ -39,8 +39,8 @@ public:
     void logError(std::string_view message) override;
     void logDebug(std::string_view message) override;
     
-    // Additional convenience method for formatted logging (not in interface)
-    void log(std::string_view format, ...);
+    // Printf-style logging method (implements interface)
+    void log(const char* format, ...) override;
     
     // Configuration methods
     void setInterceptStdStreams(bool intercept) override;

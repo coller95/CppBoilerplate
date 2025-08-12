@@ -132,12 +132,12 @@ bool Logger::getLocalDisplay() const {
 Logger::Logger(Logger&& other) noexcept = default;
 Logger& Logger::operator=(Logger&& other) noexcept = default;
 
-void Logger::log(std::string_view format, ...) {
+void Logger::log(const char* format, ...) {
     constexpr size_t BufferSize = 1024;
     char buffer[BufferSize];
     va_list args;
     va_start(args, format);
-    vsnprintf(buffer, BufferSize, format.data(), args);
+    vsnprintf(buffer, BufferSize, format, args);
     va_end(args);
     logInfo(buffer);
 }

@@ -85,6 +85,11 @@ class Application
 		logger->logInfo("Application is running normally");
 		logger->logWarning("This is a sample warning message");
 		
+		// Demonstrate printf-style logging
+		logger->log("Printf-style logging: User %s has %d points and %.2f%% completion", "Alice", 1250, 87.5);
+		logger->log("System status: Memory usage %d%%, CPU %d%%, Disk %.1fGB free", 67, 23, 45.2);
+		logger->log("Processing file #%d of %d: %s", 7, 10, "data_file.csv");
+		
 		// Log the IoC container registry information using the logger
 		logger->logInfo("=== IoC Container Registry ===");
 		auto servicesInfo = container.getRegisteredServicesInfo();
@@ -116,6 +121,10 @@ void demonstrateGlobalLoggerAccess() {
         auto logger = container.resolve<logger::ILogger>();
         logger->logInfo("This message was logged from a standalone function using global logger access!");
         logger->logDebug("Demonstrating that the logger is accessible throughout the entire application");
+        
+        // Demonstrate printf-style logging from a global function
+        logger->log("Global function printf-style: timestamp %ld, thread_id %d", 1234567890L, 42);
+        logger->log("From global context: %s operation completed in %.3f seconds", "Database", 2.567);
     } catch (const ioccontainer::ServiceNotRegisteredException& e) {
         std::cout << "Logger is not available globally: " << e.what() << std::endl;
     }

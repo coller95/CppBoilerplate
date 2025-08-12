@@ -23,6 +23,9 @@ public:
     virtual void logError(std::string_view message) = 0;
     virtual void logDebug(std::string_view message) = 0;
     
+    // Printf-style logging method
+    virtual void log(const char* format, ...) = 0;
+    
     // Configuration methods
     virtual void setInterceptStdStreams(bool intercept) = 0;
     virtual void setLocalDisplay(bool enable) = 0;
