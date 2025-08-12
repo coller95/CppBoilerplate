@@ -1,6 +1,6 @@
 #include <EndpointHello/EndpointHello.h>
 #include <ApiModule/IEndpointRegistrar.h>
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <string_view>
 #include <string>
 #include <memory>
@@ -15,10 +15,10 @@ void EndpointHello::registerEndpoints(IEndpointRegistrar& registrar) {
        });
 }
 
-// Auto-registration: Register this endpoint module with ApiModules
+// Auto-registration: Register this endpoint module with ApiModule
 namespace {
     static bool registered = []() {
-        apimodule::ApiModules::registerModuleFactory([]() -> std::unique_ptr<apimodule::IApiModule> {
+        apimodule::ApiModule::registerModuleFactory([]() -> std::unique_ptr<apimodule::IApiModule> {
             return std::make_unique<EndpointHello>();
         });
         return true;

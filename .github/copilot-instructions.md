@@ -167,7 +167,7 @@ This project follows a **modular monolithic architecture**:
   - `src/EndpointName/EndpointName.cpp` 
   - `tests/EndpointNameTest/` with test cases and Makefile
 - Generated tests include **auto-registration cross-check** that verifies:
-  - The endpoint module is automatically registered with ApiModules
+  - The endpoint module is automatically registered with ApiModule
   - The specific endpoints (e.g., `/endpoint:GET`) are properly registered
   - All registered modules can be instantiated and used correctly
 - Follow the script's instructions to implement your endpoints and update test assertions
@@ -438,7 +438,7 @@ All test modules now use a **flexible Makefile template** that simplifies depend
 - Each test Makefile has a clear **CONFIGURATION SECTION** at the top where dependencies are specified declaratively
 - No need to manually write compilation rules or object file patterns
 - Dependencies are specified in a simple list format: `DEPENDENCIES = ServiceA ServiceB Logger`
-- Special folder structures use the format: `ModuleName:FolderName` (e.g., `ApiModules:ApiModule`)
+- Special folder structures use the format: `ModuleName:FolderName` (e.g., `ApiModule:ApiModule`)
 
 #### Key Features
 - **Easy dependency management**: Just add module names to the `DEPENDENCIES` variable
@@ -459,7 +459,7 @@ DEPENDENCIES = IoCContainer
 **Endpoint with API modules:**
 ```makefile
 MODULE_NAME = EndpointUser
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = ApiModule:ApiModule
 ```
 
 **Complex module with multiple dependencies:**

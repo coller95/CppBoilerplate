@@ -9,7 +9,7 @@ namespace apimodule {
     /**
      * Static class to register all API modules with the registrar.
      */
-    class ApiModules {
+    class ApiModule {
     private:
         using ModuleFactory = std::function<std::unique_ptr<IApiModule>()>;
         static std::vector<ModuleFactory>& getModuleFactories();

@@ -1,5 +1,5 @@
 
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <ApiModule/IApiModule.h>
 #include <iostream>
 #include <vector>
@@ -30,14 +30,14 @@ public:
     int getCount() const { return _count; }
     
     void printEndpointDetails() const {
-        std::cout << "ApiModules: Registered " << _count << " endpoint(s):" << std::endl;
+        std::cout << "ApiModule: Registered " << _count << " endpoint(s):" << std::endl;
         for (const auto& endpoint : _endpoints) {
             std::cout << "  - " << endpoint << std::endl;
         }
     }
 };
 
-void ApiModules::registerAll(IEndpointRegistrar& registrar) {
+void ApiModule::registerAll(IEndpointRegistrar& registrar) {
     EndpointCountingRegistrar countingRegistrar(registrar);
     
     // Automatically register all endpoint modules that have been registered
@@ -53,20 +53,20 @@ void ApiModules::registerAll(IEndpointRegistrar& registrar) {
     countingRegistrar.printEndpointDetails();
 }
 
-std::vector<ApiModules::ModuleFactory>& ApiModules::getModuleFactories() {
+std::vector<ApiModule::ModuleFactory>& ApiModule::getModuleFactories() {
     static std::vector<ModuleFactory> factories;
     return factories;
 }
 
-void ApiModules::registerModuleFactory(ModuleFactory factory) {
+void ApiModule::registerModuleFactory(ModuleFactory factory) {
     getModuleFactories().push_back(factory);
 }
 
-size_t ApiModules::getRegisteredModuleCount() {
+size_t ApiModule::getRegisteredModuleCount() {
     return getModuleFactories().size();
 }
 
-std::vector<std::unique_ptr<IApiModule>> ApiModules::createAllModules() {
+std::vector<std::unique_ptr<IApiModule>> ApiModule::createAllModules() {
     std::vector<std::unique_ptr<IApiModule>> modules;
     const auto& factories = getModuleFactories();
     for (const auto& factory : factories) {

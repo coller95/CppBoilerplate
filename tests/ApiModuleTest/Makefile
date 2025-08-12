@@ -10,9 +10,9 @@ GTEST_LIBS = -L../../external/googletest/build/lib -lgtest -lgtest_main
 OBJDIR = obj
 BINDIR = bin
 
-TEST_SRC = cases/*.cpp ../../src/ApiModule/ApiModules.cpp ../../src/EndpointHello/EndpointHello.cpp
-TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/ApiModules.o $(OBJDIR)/EndpointHello.o
-TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/ApiModules.d $(OBJDIR)/EndpointHello.d
+TEST_SRC = cases/*.cpp ../../src/ApiModule/ApiModule.cpp ../../src/EndpointHello/EndpointHello.cpp
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/ApiModule.o $(OBJDIR)/EndpointHello.o
+TEST_DEPS = $(patsubst %.cpp,$(OBJDIR)/%.d,$(notdir $(basename $(wildcard cases/*.cpp)))) $(OBJDIR)/ApiModule.d $(OBJDIR)/EndpointHello.d
 TEST_BIN = $(BINDIR)/ApiModuleTest
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
@@ -29,10 +29,9 @@ $(OBJDIR)/%.o: cases/%.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Explicit rule for sources outside test dir
-$(OBJDIR)/ApiModules.o: ../../src/ApiModule/ApiModules.cpp | $(OBJDIR)
+$(OBJDIR)/ApiModule.o: ../../src/ApiModule/ApiModule.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
 
 $(OBJDIR)/EndpointHello.o: ../../src/EndpointHello/EndpointHello.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)

@@ -229,7 +229,7 @@ Running without remote logging (no server at 127.0.0.1:9000)
 Hello from printHello!
 ServiceA: ServiceA result
 ServiceB: ServiceB result
-ApiModules: Registered 1 endpoint(s):
+ApiModule: Registered 1 endpoint(s):
   - GET /hello
 MongooseWebServer started on port 8080
 WebServer running on http://localhost:8080/hello
@@ -321,7 +321,7 @@ DEPENDENCIES = IoCContainer
 
 # Complex endpoint with API modules  
 MODULE_NAME = EndpointUser
-DEPENDENCIES = ApiModules:ApiModule Logger
+DEPENDENCIES = ApiModule:ApiModule Logger
 
 # External library integration
 MODULE_NAME = WebServer

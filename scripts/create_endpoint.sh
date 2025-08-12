@@ -6,7 +6,7 @@
 set -e
 
 # Resolve script location and set project root
-SCRIPTDIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
+SCRIPTDIR="$(cd -- "$(dirname "$0")" >/dev/null; pwd -P)"
 PROJECT_ROOT="$(dirname "$SCRIPTDIR")"
 cd "$PROJECT_ROOT"
 
@@ -73,7 +73,7 @@ EOF
 cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
 #include <ApiModule/IEndpointRegistrar.h>
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <string_view>
 #include <string>
 #include <memory>
@@ -88,10 +88,10 @@ void $ENDPOINT_NAME::registerEndpoints(IEndpointRegistrar& registrar) {
        });
 }
 
-// Auto-registration: Register this endpoint module with ApiModules
+// Auto-registration: Register this endpoint module with ApiModule
 namespace {
     static bool registered = []() {
-        apimodule::ApiModules::registerModuleFactory([]() -> std::unique_ptr<apimodule::IApiModule> {
+        apimodule::ApiModule::registerModuleFactory([]() -> std::unique_ptr<apimodule::IApiModule> {
             return std::make_unique<$ENDPOINT_NAME>();
         });
         return true;
@@ -136,7 +136,7 @@ EOF
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <ApiModule/IEndpointRegistrar.h>
 #include <vector>
 #include <string>
@@ -150,13 +150,13 @@ public:
     }
 };
 
-TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithApiModules) {
+TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithApiModule) {
     // Check that at least one module factory is registered
-    size_t moduleCount = apimodule::ApiModules::getRegisteredModuleCount();
+    size_t moduleCount = apimodule::ApiModule::getRegisteredModuleCount();
     ASSERT_GE(moduleCount, 1U) << "No endpoint modules were auto-registered";
     
     // Create instances of all registered modules
-    auto modules = apimodule::ApiModules::createAllModules();
+    auto modules = apimodule::ApiModule::createAllModules();
     ASSERT_EQ(modules.size(), moduleCount) << "Module creation count mismatch";
     
     // Check if any of the modules is $ENDPOINT_NAME
@@ -187,12 +187,12 @@ TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithA
     ASSERT_TRUE(found${ENDPOINT_NAME}) << "$ENDPOINT_NAME was not found in auto-registered modules";
 }
 
-TEST(${ENDPOINT_NAME}AutoRegistrationTest, ApiModulesCanInstantiateAllRegisteredModules) {
+TEST(${ENDPOINT_NAME}AutoRegistrationTest, ApiModuleCanInstantiateAllRegisteredModules) {
     // Get count of registered module factories
-    size_t moduleCount = apimodule::ApiModules::getRegisteredModuleCount();
-    
+    size_t moduleCount = apimodule::ApiModule::getRegisteredModuleCount();
+
     // Create instances of all registered modules
-    auto modules = apimodule::ApiModules::createAllModules();
+    auto modules = apimodule::ApiModule::createAllModules();
     ASSERT_EQ(modules.size(), moduleCount) << "Not all modules could be instantiated";
     
     // Verify each module can be used to register endpoints
@@ -236,7 +236,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = ApiModule IoCContainer
 
 # External dependencies (from external/ folder) - uncomment if needed
 # EXTERNAL_DEPS = mongoose foo
@@ -310,16 +310,6 @@ $(OBJDIR)/%.o: $(ROOTDIR)/src/%/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Explicit rule for ApiModules (since it has a different folder structure)
-$(OBJDIR)/ApiModules.o: $(ROOTDIR)/src/ApiModule/ApiModules.cpp | $(OBJDIR)
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Explicit rule for IoCContainer 
-$(OBJDIR)/IoCContainer.o: $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp | $(OBJDIR)
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
 # Generic rule for external dependencies
 $(OBJDIR)/%.o: $(ROOTDIR)/external/%/src/%.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
@@ -385,7 +375,7 @@ EOF
     echo "1. Edit src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp to implement your endpoints"
     echo "2. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp with proper test assertions"
     echo "3. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp with endpoint verification"
-    echo "4. The endpoint will auto-register with ApiModules (no manual integration needed!)"
+    echo "4. The endpoint will auto-register with ApiModule (no manual integration needed!)"
     echo "5. To add dependencies, edit the DEPENDENCIES line in tests/${ENDPOINT_NAME}Test/Makefile"
     echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
@@ -431,7 +421,7 @@ remove_endpoint() {
     echo "✅ Endpoint module '$ENDPOINT_NAME' removed successfully!"
     echo ""
     echo "Don't forget to:"
-    echo "1. The endpoint was auto-registered, so no manual removal from ApiModules.cpp needed"
+    echo "1. The endpoint was auto-registered, so no manual removal from ApiModule.cpp needed"
     echo "2. Clean any build artifacts:"
     echo "   make clean && make test-clean"
     echo ""

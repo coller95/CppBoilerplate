@@ -1,4 +1,4 @@
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <IoCContainer/IoCContainer.h>
 #include <Logger/Logger.h>
 #include <PrintHello/PrintHello.h>
@@ -72,8 +72,8 @@ class Application
 		std::cout << "ServiceA: " << _serviceA->doSomethingServiceA() << std::endl;
 		std::cout << "ServiceB: " << _serviceB->doSomethingServiceB() << std::endl;
 
-		// Register all API modules (endpoints) via ApiModules
-		apimodule::ApiModules::registerAll(*_webServer);
+		// Register all API modules (endpoints) via ApiModule
+		apimodule::ApiModule::registerAll(*_webServer);
 		_webServer->start();
 		std::cout << "WebServer running on http://localhost:8080/hello" << std::endl;
 

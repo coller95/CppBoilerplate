@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <ApiModule/IEndpointRegistrar.h>
 #include <vector>
 #include <string>
@@ -12,16 +12,16 @@ public:
     }
 };
 
-TEST(ApiModulesTest, RegisterAllRegistersEndpoints) {
+TEST(ApiModuleTest, RegisterAllRegistersEndpoints) {
     MockEndpointRegistrar registrar;
-    apimodule::ApiModules::registerAll(registrar);
+    apimodule::ApiModule::registerAll(registrar);
     
     // Test should pass regardless of how many endpoints are registered
     // This tests that the registerAll method can be called without errors
     // The actual endpoint registration is tested in individual endpoint test modules
     
     // Verify the method completed successfully (no exceptions thrown)
-    SUCCEED() << "ApiModules::registerAll() completed successfully. Registered " 
+    SUCCEED() << "ApiModule::registerAll() completed successfully. Registered " 
               << registrar.registeredPaths.size() << " endpoint(s).";
     
     // Optional: Log what was registered for debugging purposes

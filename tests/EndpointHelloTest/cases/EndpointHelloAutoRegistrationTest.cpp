@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <EndpointHello/EndpointHello.h>
-#include <ApiModule/ApiModules.h>
+#include <ApiModule/ApiModule.h>
 #include <ApiModule/IEndpointRegistrar.h>
 #include <vector>
 #include <string>
@@ -14,13 +14,13 @@ public:
     }
 };
 
-TEST(EndpointHelloAutoRegistrationTest, EndpointHelloIsAutoRegisteredWithApiModules) {
+TEST(EndpointHelloAutoRegistrationTest, EndpointHelloIsAutoRegisteredWithApiModule) {
     // Check that at least one module factory is registered
-    size_t moduleCount = apimodule::ApiModules::getRegisteredModuleCount();
+    size_t moduleCount = apimodule::ApiModule::getRegisteredModuleCount();
     ASSERT_GE(moduleCount, 1U) << "No endpoint modules were auto-registered";
     
     // Create instances of all registered modules
-    auto modules = apimodule::ApiModules::createAllModules();
+    auto modules = apimodule::ApiModule::createAllModules();
     ASSERT_EQ(modules.size(), moduleCount) << "Module creation count mismatch";
     
     // Check if any of the modules is EndpointHello
@@ -51,12 +51,12 @@ TEST(EndpointHelloAutoRegistrationTest, EndpointHelloIsAutoRegisteredWithApiModu
     ASSERT_TRUE(foundEndpointHello) << "EndpointHello was not found in auto-registered modules";
 }
 
-TEST(EndpointHelloAutoRegistrationTest, ApiModulesCanInstantiateAllRegisteredModules) {
+TEST(EndpointHelloAutoRegistrationTest, ApiModuleCanInstantiateAllRegisteredModules) {
     // Get count of registered module factories
-    size_t moduleCount = apimodule::ApiModules::getRegisteredModuleCount();
-    
+    size_t moduleCount = apimodule::ApiModule::getRegisteredModuleCount();
+
     // Create instances of all registered modules
-    auto modules = apimodule::ApiModules::createAllModules();
+    auto modules = apimodule::ApiModule::createAllModules();
     ASSERT_EQ(modules.size(), moduleCount) << "Not all modules could be instantiated";
     
     // Verify each module can be used to register endpoints

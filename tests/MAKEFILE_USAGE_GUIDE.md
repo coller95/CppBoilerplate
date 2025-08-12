@@ -23,7 +23,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = ApiModule:ApiModule
 
 # External dependencies (from external/ folder) - uncomment if needed
 # EXTERNAL_DEPS = mongoose foo
@@ -43,12 +43,12 @@ DEPENDENCIES = IoCContainer
 
 ### 2. Testing an Endpoint
 
-For an endpoint that depends on ApiModules:
+For an endpoint that depends on ApiModule:
 
 ```makefile
 MODULE_NAME = EndpointHello
 PRIMARY_MODULE = $(MODULE_NAME)
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = ApiModule:ApiModule
 ```
 
 ### 3. Testing a Complex Module
@@ -79,7 +79,7 @@ When the class name differs from the folder name:
 ```makefile
 MODULE_NAME = SomeModule
 PRIMARY_MODULE = $(MODULE_NAME)
-DEPENDENCIES = ApiModules:ApiModule IoCContainer:IoCContainer
+DEPENDENCIES = ApiModule:ApiModule IoCContainer:IoCContainer
 ```
 
 ## Dependency Format
@@ -98,11 +98,11 @@ This automatically resolves to:
 ### Custom Folder Dependencies
 For modules where the class name differs from the folder name:
 ```makefile
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = ApiModule:ApiModule
 ```
 
 This resolves to:
-- `../../src/ApiModule/ApiModules.cpp`
+- `../../src/ApiModule/ApiModule.cpp`
 
 ### External Dependencies
 For dependencies from the `external/` folder:
@@ -139,13 +139,13 @@ DEPENDENCIES = IoCContainer
 ### Endpoint Tests
 ```makefile
 MODULE_NAME = EndpointName
-DEPENDENCIES = ApiModules:ApiModule
+DEPENDENCIES = ApiModule:ApiModule
 ```
 
 ### Integration Tests
 ```makefile
 MODULE_NAME = IntegrationTest
-DEPENDENCIES = ServiceA ServiceB IoCContainer Logger ApiModules:ApiModule
+DEPENDENCIES = ServiceA ServiceB IoCContainer Logger ApiModule:ApiModule
 EXTERNAL_DEPS = mongoose
 ```
 

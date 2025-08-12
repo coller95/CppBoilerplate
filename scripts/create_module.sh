@@ -319,7 +319,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-# Examples: Logger IoCContainer ServiceA ApiModules:ApiModule
+# Examples: Logger IoCContainer ServiceA ApiModule:ApiModule
 DEPENDENCIES = 
 
 # External dependencies (from external/ folder) - uncomment if needed
@@ -391,16 +391,6 @@ $(OBJDIR)/$(PRIMARY_MODULE).o: $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE
 
 # Generic rule for dependency modules
 $(OBJDIR)/%.o: $(ROOTDIR)/src/%/%.cpp | $(OBJDIR)
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Explicit rule for ApiModules (since it has a different folder structure)
-$(OBJDIR)/ApiModules.o: $(ROOTDIR)/src/ApiModule/ApiModules.cpp | $(OBJDIR)
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Explicit rule for IoCContainer 
-$(OBJDIR)/IoCContainer.o: $(ROOTDIR)/src/IoCContainer/IoCContainer.cpp | $(OBJDIR)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
