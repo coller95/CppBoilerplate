@@ -38,10 +38,10 @@ TEST_F(WebServerTest, ConstructorWithBackendSelection) {
     EXPECT_EQ("127.0.0.1", mongooseServer.getBindAddress());
     EXPECT_EQ(static_cast<uint16_t>(8091), mongooseServer.getPort());
     
-    webserver::WebServer defaultServer("127.0.0.1", 8092, webserver::WebServer::Backend::_);
-    EXPECT_FALSE(defaultServer.isRunning());
-    EXPECT_EQ("127.0.0.1", defaultServer.getBindAddress());
-    EXPECT_EQ(static_cast<uint16_t>(8092), defaultServer.getPort());
+    webserver::WebServer placeholderServer("127.0.0.1", 8092, webserver::WebServer::Backend::Placeholder);
+    EXPECT_FALSE(placeholderServer.isRunning());
+    EXPECT_EQ("127.0.0.1", placeholderServer.getBindAddress());
+    EXPECT_EQ(static_cast<uint16_t>(8092), placeholderServer.getPort());
 }
 
 TEST_F(WebServerTest, StartAndStopServer) {

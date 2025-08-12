@@ -1,28 +1,10 @@
 #include <WebServer/WebServer.h>
+#include <WebServer/IWebServerBackend.h>
+#include <WebServer/WebServerBackendFactory.h>
 #include <stdexcept>
 #include <algorithm>
 
 namespace webserver {
-
-// Forward declaration for backend implementation
-class IWebServerBackend {
-public:
-    virtual ~IWebServerBackend() = default;
-    virtual bool start() = 0;
-    virtual void stop() = 0;
-    virtual bool isRunning() const = 0;
-    virtual void registerHandler(const std::string& method, const std::string& path, HttpHandler handler) = 0;
-    virtual void registerHandler(const std::string& path, HttpHandler handler) = 0;
-    virtual void serveStatic(const StaticRoute& route) = 0;
-    virtual void serveStaticWithMime(const std::string& urlPrefix, const std::string& localPath, const MimeConfig& mimeConfig) = 0;
-    virtual void serveFile(const std::string& path, const std::string& filePath, const std::string& mimeType) = 0;
-    virtual void setGlobalMimeConfig(const MimeConfig& config) = 0;
-    virtual void registerWebSocketHandler(const std::string& path, WebSocketHandler handler) = 0;
-    virtual bool sendWebSocketMessage(const std::string& connectionId, const std::string& message) = 0;
-    virtual std::string getBindAddress() const = 0;
-    virtual uint16_t getPort() const = 0;
-    virtual size_t getActiveConnections() const = 0;
-};
 
 // Placeholder backend implementation for now
 class PlaceholderBackend : public IWebServerBackend {
@@ -107,18 +89,25 @@ public:
 class WebServer::Impl {
 public:
     std::unique_ptr<IWebServerBackend> backend;
+    Backend currentBackend;
     
-    Impl(const std::string& bindAddress, uint16_t port, Backend backendType) {
+    Impl(const std::string& bindAddress, uint16_t port, Backend backendType) 
+        : currentBackend(backendType) {
+        // Map WebServer::Backend to WebServerBackendFactory::Backend
+        WebServerBackendFactory::Backend factoryBackend;
         switch (backendType) {
             case Backend::Mongoose:
-                // TODO: Implement Mongoose backend
-                backend = std::make_unique<PlaceholderBackend>(bindAddress, port);
+                factoryBackend = WebServerBackendFactory::Backend::Mongoose;
                 break;
-            case Backend::_:
+            case Backend::Placeholder:
+                factoryBackend = WebServerBackendFactory::Backend::Placeholder;
+                break;
             default:
-                backend = std::make_unique<PlaceholderBackend>(bindAddress, port);
+                factoryBackend = WebServerBackendFactory::Backend::Mongoose; // Default fallback
                 break;
         }
+        
+        backend = WebServerBackendFactory::createBackend(factoryBackend, bindAddress, port);
     }
 };
 
@@ -217,6 +206,22 @@ uint16_t WebServer::getPort() const {
 
 size_t WebServer::getActiveConnections() const {
     return _impl->backend->getActiveConnections();
+}
+
+// Backend selection methods
+WebServer::Backend WebServer::getCurrentBackend() const {
+    return _impl->currentBackend;
+}
+
+std::string WebServer::getBackendName() const {
+    switch (_impl->currentBackend) {
+        case Backend::Mongoose:
+            return "Mongoose";
+        case Backend::Placeholder:
+            return "Placeholder";
+        default:
+            return "Unknown";
+    }
 }
 
 } // namespace webserver

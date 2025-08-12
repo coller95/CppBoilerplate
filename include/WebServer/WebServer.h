@@ -28,8 +28,8 @@ public:
      * Supported backend implementations
      */
     enum class Backend {
-        Mongoose,   // Mongoose embedded web server
-        _           // Placeholder for future backends
+        Mongoose,       // Mongoose embedded web server
+        Placeholder     // Placeholder backend for testing
     };
 
     /**
@@ -75,6 +75,10 @@ public:
     std::string getBindAddress() const override;
     uint16_t getPort() const override;
     size_t getActiveConnections() const override;
+    
+    // Backend selection methods
+    Backend getCurrentBackend() const;
+    std::string getBackendName() const;
 
     // Delete copy constructor and assignment operator (RAII best practice)
     WebServer(const WebServer&) = delete;
