@@ -1,12 +1,29 @@
 #include <iostream>
 #include <memory>
 #include <ctime>
+#include <csignal>
+#include <atomic>
+#include <thread>
+#include <chrono>
 #include <Logger/Logger.h>
 #include <Logger/ILogger.h>
 #include <IocContainer/IocContainer.h>
 #include <WebServer/WebServer.h>
 #include <WebServer/IWebServer.h>
 #include <ApiRouter/ApiRouter.h>
+
+/**
+ * Global flag for graceful shutdown
+ */
+std::atomic<bool> g_shutdown_requested{false};
+
+/**
+ * Signal handler for graceful shutdown
+ */
+void signalHandler(int signal) {
+	(void)signal; // Suppress unused parameter warning
+	g_shutdown_requested = true;
+}
 
 /**
  * Application configuration struct (local to this file for convenience)
@@ -176,10 +193,17 @@ class Application
 			logger->logInfo("  " + std::to_string(i + 1) + ". " + method + " " + path + " (" + type + ")");
 		}
 		
+		// Setup signal handlers for graceful shutdown
+		std::signal(SIGINT, signalHandler);
+		std::signal(SIGTERM, signalHandler);
+		
 		// Wait for shutdown signal
 		std::cout << "Server running at http://" << _webServer->getBindAddress() << ":" << _webServer->getPort() << std::endl;
-		std::cout << "Press Enter to stop..." << std::endl;
-		std::cin.get();
+		std::cout << "Press Ctrl+C to stop..." << std::endl;
+		
+		while (!g_shutdown_requested) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
 		
 		logger->logInfo("Shutdown requested");
 		return 0;

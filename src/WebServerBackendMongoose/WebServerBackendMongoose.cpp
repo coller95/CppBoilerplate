@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <functional>
 #include <sstream>
+#include <thread>
+#include <atomic>
 
 namespace webserverbackendmongoose {
 
@@ -16,11 +18,15 @@ class WebServerBackendMongoose::Impl {
 public:
     std::string bindAddress;
     uint16_t port;
-    bool running = false;
+    std::atomic<bool> running{false};
+    std::atomic<bool> shouldStop{false};
     
     // Mongoose-specific members
     struct mg_mgr manager;
     struct mg_connection* connection = nullptr;
+    
+    // Self-contained event processing
+    std::thread eventThread;
     
     // Configuration
     std::string documentRoot = ".";
@@ -57,12 +63,24 @@ public:
             return false;
         }
         
+        // Start internal event processing thread
+        shouldStop = false;
         running = true;
+        eventThread = std::thread(&Impl::eventLoop, this);
+        
         return true;
     }
     
     void stop() {
         if (!running) return;
+        
+        // Signal the event thread to stop
+        shouldStop = true;
+        
+        // Wait for event thread to finish
+        if (eventThread.joinable()) {
+            eventThread.join();
+        }
         
         if (connection) {
             mg_close_conn(connection);
@@ -71,10 +89,10 @@ public:
         running = false;
     }
     
-    // Process events - this should be called periodically
-    void poll(int timeoutMs = 1) {
-        if (running) {
-            mg_mgr_poll(&manager, timeoutMs);
+    // Internal event processing loop (runs in separate thread)
+    void eventLoop() {
+        while (running && !shouldStop) {
+            mg_mgr_poll(&manager, 10); // 10ms timeout for responsive shutdown
         }
     }
     
@@ -140,6 +158,11 @@ public:
         if (handlerIt == httpHandlers.end()) {
             // Try to find path-only handler (matches all methods)
             handlerIt = httpHandlers.find(request.uri);
+        }
+        
+        if (handlerIt == httpHandlers.end()) {
+            // Try to find catch-all handler "*"
+            handlerIt = httpHandlers.find("*");
         }
         
         if (handlerIt != httpHandlers.end()) {

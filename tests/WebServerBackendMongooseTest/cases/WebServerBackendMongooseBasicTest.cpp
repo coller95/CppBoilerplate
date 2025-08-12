@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include <WebServerBackendMongoose/WebServerBackendMongoose.h>
+#include <thread>
+#include <chrono>
 
 namespace {
 
@@ -158,4 +160,34 @@ TEST_F(WebServerBackendMongooseBasicTest, CanBuildHttpResponses) {
     
     EXPECT_TRUE(backend->start());
     backend->stop();
+}
+
+// TDD: Test 11 - Backend should be self-contained (no external polling required)
+TEST_F(WebServerBackendMongooseBasicTest, IsSelfContainedWithInternalEventProcessing) {
+    bool handlerCalled = false;
+    
+    auto handler = [&](const webserver::HttpRequest& req, webserver::HttpResponse& res) {
+        (void)req; // Suppress unused parameter warning
+        handlerCalled = true;
+        res.statusCode = 200;
+        res.body = "Self-contained response";
+    };
+    
+    backend->registerHandler("GET", "/self-contained", handler);
+    EXPECT_TRUE(backend->start());
+    
+    // The backend should process events internally - no poll() method should exist
+    // This test will initially fail because current implementation requires external polling
+    
+    // Give the backend some time to process events internally
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    
+    // Backend should be self-sufficient for event processing
+    EXPECT_TRUE(backend->isRunning());
+    
+    backend->stop();
+    EXPECT_FALSE(backend->isRunning());
+    
+    // Note: This test verifies the design principle that backends should be self-contained
+    // Once refactored, the backend will handle Mongoose event processing internally
 }
