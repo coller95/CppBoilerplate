@@ -150,6 +150,48 @@ VERBOSE=1 make debug               # Maps to human mode
 # 4. TRANSFORM: Automated application of refactoring decisions
 ```
 
+### **NEW: Automated Refactoring Tools**
+
+**CRITICAL**: Use refactoring tools for LLM-driven code extraction and reorganization:
+
+```bash
+# Refactoring analysis and execution (preserves comments and documentation)
+./scripts/refactor.sh analyze src/main.cpp           # Analyze for "One Class Per File" violations
+./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
+./scripts/refactor.sh extract-struct src/main.cpp AppConfig src/AppConfig/
+./scripts/refactor.sh extract-block src/main.cpp function signalHandler src/SignalHandler.cpp
+
+# Precise line-based operations
+./scripts/refactor.sh move-lines src/main.cpp 100 150 src/RouteSetup.cpp
+./scripts/refactor.sh copy-lines src/main.cpp 200 250 backup/main_section.cpp
+
+# Build system integration
+./scripts/refactor.sh update-build-system          # Auto-detect new sources and update configs
+```
+
+**Why Use Refactoring Tools:**
+- **Comment Preservation** - automatically includes documentation comments above functions/classes
+- **"One Class Per File" Enforcement** - detects violations and suggests extraction
+- **LLM Integration** - follows lexer.sh → LLM analysis → refactor.sh execution workflow
+- **Safe Operations** - automatic backups before any file modifications
+- **Build System Sync** - updates Project.build and Tests.build configurations
+- **Context Efficiency** - enables large-scale refactoring within LLM token limits
+
+**LLM Refactoring Workflow:**
+```bash
+# 1. DISCOVER: Find files that need refactoring
+./scripts/refactor.sh analyze src/main.cpp
+
+# 2. EXTRACT: Use lexical analysis to plan extraction
+./scripts/lexer.sh analyze src/main.cpp
+
+# 3. EXECUTE: LLM commands refactor.sh with precise operations  
+./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
+
+# 4. VERIFY: Ensure build still works after refactoring
+make debug VERBOSE=minimal
+```
+
 ## **CRITICAL: Test-Driven Development (TDD) Requirements**
 
 ⚠️ **MANDATORY TDD DISCIPLINE** - This project strictly enforces Test-Driven Development:

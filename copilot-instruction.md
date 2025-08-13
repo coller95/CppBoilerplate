@@ -54,6 +54,56 @@ src/BigFile.cpp              // Multiple implementations in one file
 - **Context multiplier**: Analyze entire codebase in minimal token budget
 - **Ready for automation**: Prepared for refactoring command workflows
 
+### **NEW: Automated Refactoring Tools (CRITICAL for "One Class Per File")**
+
+**MANDATORY**: Use refactoring tools to enforce "One Class Per File" architecture:
+
+```bash
+# 🚀 REFACTORING ANALYSIS - Detect violations first
+./scripts/refactor.sh analyze src/main.cpp           # Detects multi-class files and oversized files
+
+# 🔧 CLASS/STRUCT EXTRACTION - Preserves comments automatically  
+./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
+./scripts/refactor.sh extract-struct src/main.cpp AppConfig src/AppConfig/
+./scripts/refactor.sh extract-block src/main.cpp function signalHandler src/SignalHandler.cpp
+
+# ✂️ PRECISE LINE OPERATIONS - For surgical code movement
+./scripts/refactor.sh move-lines src/main.cpp 100 150 src/RouteSetup.cpp
+./scripts/refactor.sh copy-lines src/main.cpp 200 250 backup/main_section.cpp
+
+# 🔄 BUILD SYSTEM SYNC - Auto-updates Project.build
+./scripts/refactor.sh update-build-system           # Detects new sources and updates configs
+```
+
+**Critical Refactoring Features:**
+- **Comment Preservation**: Automatically includes documentation comments above functions/classes
+- **Backup Safety**: All operations create automatic backups before modifications
+- **"One Class Per File" Detection**: Identifies violations and suggests specific extractions
+- **LLM Integration**: Follows lexer.sh → LLM analysis → refactor.sh execution workflow  
+- **Build Integration**: Updates Project.build and Tests.build automatically
+
+**LLM Refactoring Workflow (OPTIMAL EFFICIENCY):**
+```bash
+# 1. DISCOVER: Analyze file structure with minimal tokens
+./scripts/refactor.sh analyze src/main.cpp          # Identifies refactoring needs
+
+# 2. UNDERSTAND: Use lexical analysis for extraction planning  
+./scripts/lexer.sh analyze src/main.cpp             # JSON structure for precise planning
+
+# 3. EXECUTE: LLM commands refactor.sh with specific operations
+./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
+
+# 4. VERIFY: Ensure changes compile correctly
+make debug VERBOSE=minimal                          # Test extraction success
+```
+
+**Why Refactoring Tools are Essential for LLM Efficiency:**
+- **Enforces optimal file organization**: Automatically creates single-class files
+- **Preserves documentation**: Comments and formatting maintained during extraction
+- **Safe transformation**: Backup system prevents data loss during refactoring
+- **Context reduction**: Large files split into focused, single-purpose files
+- **LLM-friendly output**: Structured operations reduce context pollution
+
 ### **Default Mode Usage**
 
 **ALWAYS use minimal mode by default:**
@@ -300,40 +350,48 @@ make test-run-WebServerTest         # Switch to WebServer module
 - **Module transition points**: Clear memory between different modules
 - **Interface changes**: Clear before/after major interface modifications
 
-## **Remember: Triple LLM Optimization Strategy! 🚀**
+## **Remember: Quadruple LLM Optimization Strategy! 🚀**
 
-### **Always Apply All Three Optimizations:**
+### **Always Apply All Four Optimizations:**
 
 1. **Lexical Analysis First**: 85-95% token reduction for codebase understanding 
 2. **Minimal Mode by Default**: 90-95% token reduction in build output
 3. **One Class Per File**: Precise targeting of individual classes for context efficiency  
-4. **Strategic Memory Management**: Clear context at optimal transition points
+4. **Automated Refactoring**: Enforce file organization with comment preservation
+5. **Strategic Memory Management**: Clear context at optimal transition points
 
 ### **Maximum LLM Efficiency Achieved Through:**
 - **Lexical preprocessing**: Structured JSON analysis instead of raw C++ parsing
 - **Output optimization**: Minimal mode for build/test operations
 - **File organization**: Single-class files for focused analysis/modification
+- **Automated refactoring**: Tools enforce optimal structure with comment preservation
 - **Context optimization**: Strategic memory clearing prevents context pollution
 - **Combined effect**: 20-50x overall context efficiency improvement
 
 ### **Optimal Development Workflow:**
 ```bash
-# 1. ANALYZE: Use lexical analysis first (maximum efficiency)
-./scripts/lexer.sh analyze src/    # 1,500 tokens vs 10,000+ raw C++
+# 1. DISCOVER: Check for refactoring needs first
+./scripts/refactor.sh analyze src/main.cpp    # Identify violations and oversized files
 
-# 2. PLAN: Review structured JSON output for precise targeting
+# 2. ANALYZE: Use lexical analysis for understanding (maximum efficiency)
+./scripts/lexer.sh analyze src/               # 1,500 tokens vs 10,000+ raw C++
 
-# 3. FOCUS: Target single module with minimal output
-make test-run-ModuleName            # Minimal mode by default
+# 3. REFACTOR: Extract classes if violations found
+./scripts/refactor.sh extract-class src/main.cpp ClassName src/ClassName/
 
-# 4. TDD: Complete RED-GREEN-REFACTOR cycle within module context
+# 4. PLAN: Review structured JSON output for precise targeting
+
+# 5. FOCUS: Target single module with minimal output
+make test-run-ModuleName                      # Minimal mode by default
+
+# 6. TDD: Complete RED-GREEN-REFACTOR cycle within module context
 # Work within same context without clearing memory
 
-# 5. TRANSITION: Clear memory at module boundaries  
-/clear                             # Clear before switching modules
+# 7. TRANSITION: Clear memory at module boundaries  
+/clear                                        # Clear before switching modules
 
-# 6. TARGET: Read individual class files after analysis
-Read src/NextModule/ClassName.h    # Single-class targeting
+# 8. TARGET: Read individual class files after analysis
+Read src/NextModule/ClassName.h              # Single-class targeting
 
-# Repeat cycle for maximum efficiency
+# Repeat cycle for maximum efficiency with optimal file organization
 ```
