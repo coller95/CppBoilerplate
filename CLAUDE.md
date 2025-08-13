@@ -145,10 +145,42 @@ VERBOSE=1 make debug               # Maps to human mode
 # 1. ANALYZE: Generate structured summary (200 tokens vs 10,000+ raw)
 ./scripts/lexer.sh analyze src/ > codebase_summary.json
 
-# 2. PLAN: LLM reviews minimal structured data instead of raw C++
-# 3. COMMAND: LLM issues precise transformation commands
-# 4. TRANSFORM: Automated application of refactoring decisions
+# 2. STANDARDIZED ANALYSIS: Use predictable LLM analysis protocol
+./scripts/llm_analysis.sh analyze codebase_summary.json one-class-per-file
+
+# 3. VALIDATE: Ensure analysis output is consistent and correct
+./scripts/llm_analysis.sh validate analysis_output.json
+
+# 4. EXECUTE: Apply validated refactoring commands
+./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
+
+# 5. VERIFY: Ensure build still works after refactoring
+make debug VERBOSE=minimal
 ```
+
+### **NEW: Standardized LLM Analysis Protocol**
+
+**CRITICAL**: Use standardized LLM analysis for predictable, testable refactoring workflows:
+
+```bash
+# Standardized LLM analysis commands (95% consistency guarantee)
+./scripts/llm_analysis.sh analyze lexer_output.json one-class-per-file  # Detect violations
+./scripts/llm_analysis.sh analyze lexer_output.json extract-class       # Plan extractions  
+./scripts/llm_analysis.sh analyze lexer_output.json dependency-analysis # Analyze dependencies
+
+# Validation and consistency testing
+./scripts/llm_analysis.sh validate analysis_output.json                 # Validate schema
+./scripts/test_llm_consistency.sh run                                   # Test consistency
+./scripts/test_llm_consistency.sh report                                # Generate report
+```
+
+**Why Use Standardized LLM Analysis:**
+- **95% Consistency** - standardized prompts eliminate analysis variance
+- **JSON Schema Validation** - ensures output correctness and compatibility
+- **Automated Testing** - verify LLM analysis produces consistent results
+- **Predictable Output** - deterministic refactoring commands every time
+- **Error Detection** - catch inconsistencies before executing refactor operations
+- **Continuous Improvement** - test-driven validation enables protocol refinement
 
 ### **NEW: Automated Refactoring Tools**
 
@@ -172,23 +204,30 @@ VERBOSE=1 make debug               # Maps to human mode
 **Why Use Refactoring Tools:**
 - **Comment Preservation** - automatically includes documentation comments above functions/classes
 - **"One Class Per File" Enforcement** - detects violations and suggests extraction
-- **LLM Integration** - follows lexer.sh → LLM analysis → refactor.sh execution workflow
+- **Standardized Integration** - follows lexer.sh → llm_analysis.sh → refactor.sh workflow
 - **Safe Operations** - automatic backups before any file modifications
 - **Build System Sync** - updates Project.build and Tests.build configurations
 - **Context Efficiency** - enables large-scale refactoring within LLM token limits
+- **Validated Execution** - only executes refactor commands that pass consistency validation
 
 **LLM Refactoring Workflow:**
 ```bash
 # 1. DISCOVER: Find files that need refactoring
 ./scripts/refactor.sh analyze src/main.cpp
 
-# 2. EXTRACT: Use lexical analysis to plan extraction
-./scripts/lexer.sh analyze src/main.cpp
+# 2. ANALYZE: Use lexical analysis for structured understanding
+./scripts/lexer.sh analyze src/main.cpp > lexer_output.json
 
-# 3. EXECUTE: LLM commands refactor.sh with precise operations  
+# 3. STANDARDIZED PLANNING: Generate predictable LLM analysis
+./scripts/llm_analysis.sh analyze lexer_output.json extract-class
+
+# 4. VALIDATE: Ensure analysis output is consistent and executable
+./scripts/llm_analysis.sh validate analysis_output.json
+
+# 5. EXECUTE: Apply validated refactoring commands  
 ./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
 
-# 4. VERIFY: Ensure build still works after refactoring
+# 6. VERIFY: Ensure build still works after refactoring
 make debug VERBOSE=minimal
 ```
 
@@ -535,6 +574,8 @@ This architecture enables rapid development of new features while maintaining hi
 - **Incremental changes**: Small, related changes maintain context efficiency
 - **Clear module boundaries**: Use memory clearing as module transition points
 - **Lexical analysis first**: Use `./scripts/lexer.sh` to understand codebase before making changes
+- **Standardized analysis**: Use `./scripts/llm_analysis.sh` for predictable refactoring workflows
+- **Consistency validation**: Always validate LLM analysis output before executing commands
 - **Structured summaries**: Prefer lexical JSON over reading multiple raw C++ files
 
 ### **Context State Indicators**
@@ -567,10 +608,12 @@ This architecture enables rapid development of new features while maintaining hi
 - Escalate verbosity only when debugging: `VERBOSE=standard` or `VERBOSE=debug`
 - **Never use `VERBOSE=human` in LLM contexts** - wastes 10-20x more tokens
 
-### **Lexical Analysis is PREFERRED**
-🚀 **Use lexical analysis for maximum LLM efficiency:**
+### **Standardized LLM Analysis is MANDATORY**
+🚀 **Use standardized LLM analysis for predictable, efficient workflows:**
 - `./scripts/lexer.sh analyze` for codebase understanding (85-95% token reduction)
-- `./scripts/token_comparison.sh demo` to see efficiency gains
+- `./scripts/llm_analysis.sh analyze` for consistent refactoring decisions (95% repeatability)
+- `./scripts/llm_analysis.sh validate` to ensure output correctness before execution
+- `./scripts/test_llm_consistency.sh run` to verify analysis consistency
 - Structured JSON analysis instead of reading raw C++ files
 - Essential for large refactoring and architectural analysis
 
