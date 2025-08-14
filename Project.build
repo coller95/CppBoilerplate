@@ -18,8 +18,8 @@
 # ============================================
 
 # External sources (current project setup)
-EXTERNAL_CPP_SOURCES = $(wildcard external/*/src/*.cpp)
-EXTERNAL_C_SOURCES = $(wildcard external/*/src/*.c)
+EXTERNAL_CPP_SOURCES = $(wildcard external/mongoose/src/*.cpp)
+EXTERNAL_C_SOURCES = $(wildcard external/mongoose/src/*.c)
 
 # Example: Platform-specific source inclusions
 # ifeq ($(ARCH),aarch64)
