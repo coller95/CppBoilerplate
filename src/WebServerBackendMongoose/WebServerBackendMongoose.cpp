@@ -241,6 +241,23 @@ void WebServerBackendMongoose::registerHandler(const std::string& path, webserve
     _impl->httpHandlers[path] = std::move(handler);
 }
 
+// Convenience methods for common HTTP methods
+void WebServerBackendMongoose::get(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("GET", path, std::move(handler));
+}
+
+void WebServerBackendMongoose::post(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("POST", path, std::move(handler));
+}
+
+void WebServerBackendMongoose::put(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("PUT", path, std::move(handler));
+}
+
+void WebServerBackendMongoose::del(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("DELETE", path, std::move(handler));
+}
+
 // Static file serving
 void WebServerBackendMongoose::serveStatic(const webserver::StaticRoute& route) {
     // Register a catch-all handler for the URL prefix
@@ -263,6 +280,16 @@ void WebServerBackendMongoose::serveStatic(const webserver::StaticRoute& route) 
     
     // Register handler for this static route
     registerHandler(route.urlPrefix + "*", handler);
+}
+
+void WebServerBackendMongoose::serveStatic(const std::string& urlPrefix, const std::string& localPath) {
+    webserver::StaticRoute route;
+    route.urlPrefix = urlPrefix;
+    route.localPath = localPath;
+    route.defaultFile = "index.html";
+    route.allowDirectoryListing = false;
+    route.defaultMimeType = "application/octet-stream";
+    serveStatic(route);
 }
 
 void WebServerBackendMongoose::serveStaticWithMime(const std::string& urlPrefix, const std::string& localPath, const webserver::MimeConfig& mimeConfig) {

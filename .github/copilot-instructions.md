@@ -79,6 +79,43 @@ This project follows a **modular monolithic architecture**:
 
 **Rationale:** Using an enum for backend selection ensures type safety, discoverability, and prevents errors from stringly-typed APIs. It also makes adding new backends straightforward and consistent.
 
+### Generated Module Architecture Guidelines
+
+When working with generated modules or modifying generation scripts, follow these architectural principles:
+
+#### PIMPL Pattern for Generated Code
+- **Use PIMPL idiom** in generated modules to hide implementation dependencies from headers
+- **Purpose**: Keeps headers clean for script generation tooling and avoids exposing backend-specific includes
+- **Justification**: Generation scripts need stable public interfaces without implementation complexity
+
+#### Avoid Redundant Abstraction Layers
+- **Problem**: Don't create multiple interface layers that just forward calls without adding value
+- **Example to Avoid**: `Interface → Wrapper → Backend Interface → Concrete Backend` (4+ layers)
+- **Better Approach**: `Interface → Implementation (PIMPL) → Concrete Backend` (3 layers max)
+- **Focus**: Each layer should add meaningful abstraction, not just delegation
+
+#### Balance Tool Compatibility vs Performance
+- **PIMPL is justified** for script generation and tooling compatibility
+- **Additional interfaces are not justified** if they only forward calls to other interfaces
+- **Performance consideration**: Each abstraction layer adds virtual call overhead
+- **Guideline**: If a layer only delegates to another layer without transformation, consider removing it
+
+#### Generation Script Flexibility
+- **Keep generation scripts simple** - avoid creating unnecessary architectural complexity
+- **Direct backend usage**: Consider if generated code can use concrete implementations directly
+- **Interface segregation**: Only create interfaces that provide genuine abstraction value
+- **Review regularly**: When modifying generation scripts, assess if the current architecture is optimal
+
+#### Architecture Assessment Questions
+When reviewing generated code architecture, ask:
+1. Does each abstraction layer add unique value?
+2. Can we eliminate forwarding-only layers?
+3. Is PIMPL sufficient for dependency hiding?
+4. Are we optimizing for tooling at the expense of runtime performance?
+5. Can concrete implementations be used more directly?
+
+**Rationale:** Generated code should balance tooling requirements (PIMPL for clean headers) with performance considerations (minimal abstraction layers). Each layer should justify its existence through genuine added value, not just code organization.
+
 ---
 
 ## Module Development

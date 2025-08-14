@@ -25,10 +25,10 @@ protected:
 
 } // anonymous namespace
 
-// TDD: Test 1 - Placeholder backend should implement IWebServerBackend interface
-TEST_F(WebServerBackendPlaceholderBasicTest, ImplementsIWebServerBackendInterface) {
-    // Should be castable to IWebServerBackend
-    webserver::IWebServerBackend* basePtr = backend.get();
+// TDD: Test 1 - Placeholder backend should implement IWebServer interface
+TEST_F(WebServerBackendPlaceholderBasicTest, ImplementsIWebServerInterface) {
+    // Should be castable to IWebServer
+    webserver::IWebServer* basePtr = backend.get();
     EXPECT_NE(basePtr, nullptr);
     
     // Should have correct bind info

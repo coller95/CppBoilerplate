@@ -17,23 +17,19 @@ protected:
 
 } // anonymous namespace
 
-TEST_F(WebServerBackendMongooseInterfaceTest, ImplementsIWebServerBackendInterface) {
-    // Verify that WebServerBackendMongoose implements IWebServerBackendMongoose (which extends IWebServerBackend)
+TEST_F(WebServerBackendMongooseInterfaceTest, ImplementsIWebServerInterface) {
+    // Verify that WebServerBackendMongoose implements IWebServer directly
     webserverbackendmongoose::WebServerBackendMongoose module("127.0.0.1", 8080);
-    webserverbackendmongoose::IWebServerBackendMongoose* interface = &module;
+    webserver::IWebServer* interface = &module;
     EXPECT_NE(interface, nullptr);
-    
-    // Should also be castable to IWebServerBackend
-    webserver::IWebServerBackend* backendInterface = &module;
-    EXPECT_NE(backendInterface, nullptr);
 }
 
 TEST_F(WebServerBackendMongooseInterfaceTest, CanBeCastToBaseInterface) {
     // Verify interface hierarchy works correctly
     webserverbackendmongoose::WebServerBackendMongoose module("192.168.1.1", 9090);
     
-    // Should be usable as IWebServerBackend
-    webserver::IWebServerBackend* backend = &module;
+    // Should be usable as IWebServer
+    webserver::IWebServer* backend = &module;
     EXPECT_EQ(backend->getBindAddress(), "192.168.1.1");
     EXPECT_EQ(backend->getPort(), 9090);
     EXPECT_FALSE(backend->isRunning());

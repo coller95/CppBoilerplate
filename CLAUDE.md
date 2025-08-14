@@ -342,6 +342,13 @@ This project uses a **modular monolithic architecture** with the following key p
 - **No Optional Methods**: Avoid methods that some implementations treat as no-ops
 - **Behavioral Consistency**: Interface methods should have consistent behavior across implementations
 
+**Generated Module Architecture Guidelines:**
+- **PIMPL for Script Generation**: Use PIMPL idiom in generated modules to hide implementation dependencies from headers
+- **Avoid Redundant Abstraction Layers**: Don't create multiple interface layers that just forward calls (e.g., Interface → Wrapper → Backend Interface → Concrete Backend)
+- **Keep Generation Scripts Flexible**: When modifying generation scripts, ensure they don't create unnecessary architectural overhead
+- **Balance Tool Compatibility vs Performance**: PIMPL is justified for script generation but avoid additional abstraction layers that add virtual call overhead without value
+- **Direct Backend Usage**: Consider if generated code can use concrete backends directly rather than through wrapper interfaces
+
 ### Module Organization Principles
 
 **One Module, One Responsibility**: Each module has a clear, single purpose:

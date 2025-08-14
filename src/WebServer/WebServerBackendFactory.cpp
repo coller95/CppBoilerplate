@@ -5,7 +5,7 @@
 
 namespace webserver {
 
-std::unique_ptr<IWebServerBackend> WebServerBackendFactory::createBackend(
+std::unique_ptr<IWebServer> WebServerBackendFactory::createBackend(
     Backend backend, 
     const std::string& bindAddress, 
     uint16_t port) {

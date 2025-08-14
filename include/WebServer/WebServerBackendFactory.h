@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <WebServer/IWebServerBackend.h>
 #include <WebServer/IWebServer.h>
 
 namespace webserver {
@@ -16,7 +15,7 @@ public:
         // Future backends can be added here
     };
     
-    static std::unique_ptr<IWebServerBackend> createBackend(
+    static std::unique_ptr<IWebServer> createBackend(
         Backend backend, 
         const std::string& bindAddress, 
         uint16_t port

@@ -1,5 +1,4 @@
 #include <WebServer/WebServer.h>
-#include <WebServer/IWebServerBackend.h>
 #include <WebServer/WebServerBackendFactory.h>
 #include <stdexcept>
 #include <algorithm>
@@ -9,7 +8,7 @@ namespace webserver {
 // PIMPL implementation
 class WebServer::Impl {
 public:
-    std::unique_ptr<IWebServerBackend> backend;
+    std::unique_ptr<IWebServer> backend;
     Backend currentBackend;
     
     Impl(const std::string& bindAddress, uint16_t port, Backend backendType) 

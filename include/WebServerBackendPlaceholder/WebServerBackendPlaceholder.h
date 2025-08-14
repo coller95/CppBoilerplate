@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include <cstdint>
-#include "WebServerBackendPlaceholder/IWebServerBackendPlaceholder.h"
+#include "WebServer/IWebServer.h"
 
 namespace webserverbackendplaceholder {
 
@@ -21,7 +21,7 @@ namespace webserverbackendplaceholder {
  * - Optional simulated latency for testing
  * - RAII resource management
  */
-class WebServerBackendPlaceholder : public IWebServerBackendPlaceholder {
+class WebServerBackendPlaceholder : public webserver::IWebServer {
 public:
     /**
      * Constructor
@@ -35,34 +35,41 @@ public:
      */
     ~WebServerBackendPlaceholder() override;
 
-    // Server lifecycle (from IWebServerBackend)
+    // Server lifecycle (from IWebServer)
     bool start() override;
     void stop() override;
     bool isRunning() const override;
     
-    // HTTP handler registration (from IWebServerBackend)
+    // HTTP handler registration (from IWebServer)
     void registerHandler(const std::string& method, const std::string& path, webserver::HttpHandler handler) override;
     void registerHandler(const std::string& path, webserver::HttpHandler handler) override;
     
-    // Static file serving (from IWebServerBackend)
+    // Convenience methods for common HTTP methods (from IWebServer)
+    void get(const std::string& path, webserver::HttpHandler handler) override;
+    void post(const std::string& path, webserver::HttpHandler handler) override;
+    void put(const std::string& path, webserver::HttpHandler handler) override;
+    void del(const std::string& path, webserver::HttpHandler handler) override;
+    
+    // Static file serving (from IWebServer)
     void serveStatic(const webserver::StaticRoute& route) override;
+    void serveStatic(const std::string& urlPrefix, const std::string& localPath) override;
     void serveStaticWithMime(const std::string& urlPrefix, const std::string& localPath, const webserver::MimeConfig& mimeConfig) override;
     void serveFile(const std::string& path, const std::string& filePath, const std::string& mimeType) override;
     void setGlobalMimeConfig(const webserver::MimeConfig& config) override;
     
-    // WebSocket support (from IWebServerBackend)
+    // WebSocket support (from IWebServer)
     void registerWebSocketHandler(const std::string& path, webserver::WebSocketHandler handler) override;
     bool sendWebSocketMessage(const std::string& connectionId, const std::string& message) override;
     
-    // Server information (from IWebServerBackend)
+    // Server information (from IWebServer)
     std::string getBindAddress() const override;
     uint16_t getPort() const override;
     size_t getActiveConnections() const override;
 
-    // Placeholder-specific methods (from IWebServerBackendPlaceholder)
-    void setSimulatedLatency(int milliseconds) override;
-    size_t getHandlerCount() const override;
-    void clearAllHandlers() override;
+    // Placeholder-specific testing methods
+    void setSimulatedLatency(int milliseconds);
+    size_t getHandlerCount() const;
+    void clearAllHandlers();
 
     // Delete copy constructor and assignment operator (RAII best practice)
     WebServerBackendPlaceholder(const WebServerBackendPlaceholder&) = delete;

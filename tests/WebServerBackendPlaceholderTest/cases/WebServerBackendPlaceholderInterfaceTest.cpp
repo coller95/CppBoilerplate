@@ -20,9 +20,9 @@ protected:
 } // anonymous namespace
 
 TEST_F(WebServerBackendPlaceholderInterfaceTest, ImplementsInterface) {
-    // Verify that WebServerBackendPlaceholder implements IWebServerBackendPlaceholder
+    // Verify that WebServerBackendPlaceholder implements IWebServer directly
     webserverbackendplaceholder::WebServerBackendPlaceholder module("127.0.0.1", 8080);
-    webserverbackendplaceholder::IWebServerBackendPlaceholder* interface = &module;
+    webserver::IWebServer* interface = &module;
     EXPECT_NE(interface, nullptr);
 }
 

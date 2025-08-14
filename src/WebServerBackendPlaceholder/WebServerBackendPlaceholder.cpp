@@ -66,6 +66,23 @@ void WebServerBackendPlaceholder::registerHandler(const std::string& path, webse
     _impl->httpHandlers[path] = std::move(handler);
 }
 
+// Convenience methods for common HTTP methods
+void WebServerBackendPlaceholder::get(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("GET", path, std::move(handler));
+}
+
+void WebServerBackendPlaceholder::post(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("POST", path, std::move(handler));
+}
+
+void WebServerBackendPlaceholder::put(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("PUT", path, std::move(handler));
+}
+
+void WebServerBackendPlaceholder::del(const std::string& path, webserver::HttpHandler handler) {
+    registerHandler("DELETE", path, std::move(handler));
+}
+
 // Static file serving (simulated)
 void WebServerBackendPlaceholder::serveStatic(const webserver::StaticRoute& route) {
     // Simulate static file serving by registering a placeholder handler
@@ -74,6 +91,16 @@ void WebServerBackendPlaceholder::serveStatic(const webserver::StaticRoute& rout
         res.setPlainTextResponse("Simulated static content from: " + route.localPath);
     };
     registerHandler(route.urlPrefix + "*", handler);
+}
+
+void WebServerBackendPlaceholder::serveStatic(const std::string& urlPrefix, const std::string& localPath) {
+    webserver::StaticRoute route;
+    route.urlPrefix = urlPrefix;
+    route.localPath = localPath;
+    route.defaultFile = "index.html";
+    route.allowDirectoryListing = false;
+    route.defaultMimeType = "application/octet-stream";
+    serveStatic(route);
 }
 
 void WebServerBackendPlaceholder::serveStaticWithMime(const std::string& urlPrefix, const std::string& localPath, const webserver::MimeConfig& mimeConfig) {
