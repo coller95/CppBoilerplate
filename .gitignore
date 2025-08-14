@@ -1,6 +1,8 @@
+
 # Build and binary output
 bin/
 obj/
+docs/
 *.o
 *.d
 *.elf
