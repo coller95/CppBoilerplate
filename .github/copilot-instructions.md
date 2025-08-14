@@ -47,7 +47,7 @@ This project follows a **modular monolithic architecture**:
 
 - **Code Formatting:**
   - Indent with tabs, each tab 4 spaces
-  - Place opening braces on the same line as the declaration (K&R style)
+  - Place opening braces on the next line after the declaration
   - Group related declarations and functions together logically
 
 - **Modern C++ Practices:**
