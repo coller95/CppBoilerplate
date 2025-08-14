@@ -21,3 +21,5 @@ sh
 
 test_files
 test_static
+.test_consistency
+.refactor_backups
