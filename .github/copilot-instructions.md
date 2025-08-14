@@ -366,7 +366,7 @@ This project follows a **modular monolithic architecture**:
 - Use PascalCase for class names, structs, enums, and namespaces.
 - Use camelCase for variable names, function parameters, and local functions.
 - Use ALL_CAPS for macros and compile-time constants.
-- Indent with 4 spaces, no tabs.
+- Indent with tabs, each tab 4 spaces.
 - Place opening braces on the same line as the declaration (K&R style).
 - Use explicit types (avoid `auto` except for lambdas and iterators).
 - Prefer smart pointers (`std::unique_ptr`, `std::shared_ptr`) over raw pointers.
