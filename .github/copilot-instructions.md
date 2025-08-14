@@ -46,7 +46,7 @@ This project follows a **modular monolithic architecture**:
   - One file per class: each class should have its own header (.h) and source (.cpp) file, named after the class
 
 - **Code Formatting:**
-  - Indent with 4 spaces, no tabs
+  - Indent with tabs, each tab 4 spaces
   - Place opening braces on the same line as the declaration (K&R style)
   - Group related declarations and functions together logically
 
