@@ -337,10 +337,6 @@ To ensure reliable, maintainable, and portable builds, all Makefiles in this pro
     - Example: `\tmkdir -p $(OBJDIR)` (where `\t` is a real tab character, not spaces).
 
 
-- **Example Pattern:**
-    ```makefile
-
-
 - One file per class: each class should have its own header (.h) and source (.cpp) file, named after the class.
 - Namespace per feature: group related classes and functions in a namespace named after the feature/module.
 
