@@ -99,7 +99,8 @@ BIN_DIR_release = bin/$(BUILD_NAME)/release
 # Source file discovery (automatic + configurable)
 MAIN_SOURCES = $(shell find src -name '*.cpp')
 
-# Include project configuration (sources, includes, libraries)
+# Include build configurations
+-include Compiler.build
 -include Project.build
 
 # All source files (main + external + additional from Project.build)
@@ -126,8 +127,8 @@ LDLIBS       += -lpthread -lrt -lm
 # Include directories (base + additional from Project.build)
 INCLUDE_DIRS = -Iinclude -Ilib/include $(ADDITIONAL_INCLUDES)
 
-# Compiler settings for C++ files (C++17 standard)
-CXXFLAGS_base = -std=c++17 -MMD -MP $(INCLUDE_DIRS) -Wall -Wextra
+# Compiler settings for C++ files (standard defined in Platform.build)
+CXXFLAGS_base = -std=$(CXX_STANDARD) -MMD -MP $(INCLUDE_DIRS) -Wall -Wextra
 CXXFLAGS_debug   = -g -O0 -DDEBUG $(CXXFLAGS_base)
 CXXFLAGS_release = -O2 -DNDEBUG $(CXXFLAGS_base)
 

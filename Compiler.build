@@ -1,0 +1,105 @@
+# Compiler.build - Compiler Configuration and Standards
+# ====================================================
+# This file provides centralized compiler configuration including
+# C++ standards, warning levels, optimization flags, and other
+# compiler-specific settings that should be consistent across
+# all build targets and modules.
+#
+# Usage:
+#   - Modify compiler settings in this file for project-wide changes
+#   - Override settings via command line: make debug CXX_STANDARD=c++20
+#   - This file is included by the main Makefile automatically
+#
+# Separation of concerns:
+#   - Compiler.build: Compiler standards, warnings, optimization
+#   - Platform.build: Cross-compilation, architecture detection
+#   - Project.build: Source files, includes, external libraries
+#   - Tests.build: Test-specific configurations
+
+# ============================================
+# C++ STANDARD CONFIGURATION
+# ============================================
+# Centralized C++ standard definition for consistency across all build targets
+# Common standards: c++11, c++14, c++17, c++20, c++23
+CXX_STANDARD = c++17
+
+# ============================================
+# WARNING CONFIGURATION
+# ============================================
+# Default warning flags (can be overridden)
+WARNING_FLAGS = -Wall -Wextra
+
+# Additional warning flags (uncomment as needed)
+# WARNING_FLAGS += -Wpedantic
+# WARNING_FLAGS += -Wconversion
+# WARNING_FLAGS += -Wsign-conversion
+# WARNING_FLAGS += -Wunused
+# WARNING_FLAGS += -Wshadow
+# WARNING_FLAGS += -Wformat=2
+# WARNING_FLAGS += -Wcast-align
+# WARNING_FLAGS += -Wcast-qual
+# WARNING_FLAGS += -Wctor-dtor-privacy
+# WARNING_FLAGS += -Wdisabled-optimization
+# WARNING_FLAGS += -Wlogical-op
+# WARNING_FLAGS += -Wmissing-declarations
+# WARNING_FLAGS += -Wmissing-include-dirs
+# WARNING_FLAGS += -Wnoexcept
+# WARNING_FLAGS += -Wold-style-cast
+# WARNING_FLAGS += -Woverloaded-virtual
+# WARNING_FLAGS += -Wredundant-decls
+# WARNING_FLAGS += -Wsign-promo
+# WARNING_FLAGS += -Wstrict-null-sentinel
+# WARNING_FLAGS += -Wundef
+# WARNING_FLAGS += -Werror
+
+# ============================================
+# OPTIMIZATION CONFIGURATION
+# ============================================
+# Debug optimization (can be overridden)
+DEBUG_OPT_FLAGS = -O0 -g
+
+# Release optimization (can be overridden)
+RELEASE_OPT_FLAGS = -O2 -DNDEBUG
+
+# Additional optimization flags (uncomment as needed)
+# RELEASE_OPT_FLAGS += -O3          # Maximum optimization
+# RELEASE_OPT_FLAGS += -march=native # Optimize for current CPU
+# RELEASE_OPT_FLAGS += -flto         # Link-time optimization
+# RELEASE_OPT_FLAGS += -ffast-math   # Fast math operations (use with caution)
+
+# ============================================
+# DEBUGGING CONFIGURATION
+# ============================================
+# Debug symbols and debugging aids
+DEBUG_FLAGS = -DDEBUG
+
+# Additional debug flags (uncomment as needed)
+# DEBUG_FLAGS += -fsanitize=address    # Address sanitizer
+# DEBUG_FLAGS += -fsanitize=undefined  # Undefined behavior sanitizer
+# DEBUG_FLAGS += -fsanitize=thread     # Thread sanitizer
+# DEBUG_FLAGS += -fstack-protector-all # Stack protection
+# DEBUG_FLAGS += -D_GLIBCXX_DEBUG      # STL debug mode
+
+# ============================================
+# COMPILER-SPECIFIC CONFIGURATION
+# ============================================
+# GCC-specific flags (automatically detected in Makefile)
+# GCC_FLAGS = -fdiagnostics-color=auto
+
+# Clang-specific flags (automatically detected in Makefile)
+# CLANG_FLAGS = -fcolor-diagnostics
+
+# ============================================
+# CUSTOM COMPILER CONFIGURATIONS
+# ============================================
+# Add project-specific compiler configurations below:
+
+# Example: Enable specific language features
+# CXX_FEATURES = -fcoroutines -fconcepts
+
+# Example: Disable specific warnings for legacy code
+# LEGACY_FLAGS = -Wno-deprecated-declarations
+
+# Example: Profile-guided optimization (PGO)
+# PGO_GENERATE_FLAGS = -fprofile-generate
+# PGO_USE_FLAGS = -fprofile-use

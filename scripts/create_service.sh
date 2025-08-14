@@ -237,9 +237,12 @@ EXTERNAL_LIBS += -lgmock -lgmock_main
 # BUILD CONFIGURATION - Usually no changes needed below this line
 # ============================================================================
 
+# Include compiler configuration
+-include \$(ROOTDIR)/Compiler.build
+
 CXX = g++
 CC = gcc
-CXXFLAGS = -std=c++17 -I$(ROOTDIR)/include $(EXTERNAL_INCLUDES) -g -Wall -Wextra -MMD -MP
+CXXFLAGS = -std=$(CXX_STANDARD) -I$(ROOTDIR)/include $(EXTERNAL_INCLUDES) -g -Wall -Wextra -MMD -MP
 CFLAGS = -I$(ROOTDIR)/include $(EXTERNAL_INCLUDES) -g -Wall -Wextra -MMD -MP
 LDLIBS = $(EXTERNAL_LIBS)
 
