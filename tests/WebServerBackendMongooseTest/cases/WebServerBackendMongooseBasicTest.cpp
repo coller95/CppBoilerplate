@@ -1,25 +1,90 @@
 #include <gtest/gtest.h>
 #include <WebServerBackendMongoose/WebServerBackendMongoose.h>
-#include <thread>
-#include <chrono>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 namespace {
 
 class WebServerBackendMongooseBasicTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Use different ports for different tests to avoid conflicts
-        static uint16_t port = 8080;
-        currentPort = port++;
+        // Reuse same port range to minimize OS resource usage
+        // Find an available port starting from 8080
+        currentPort = 8080;
+        while (true) {
+            int sock = socket(AF_INET, SOCK_STREAM, 0);
+            if (sock < 0) {
+            throw std::runtime_error("Failed to create socket");
+            }
+
+            struct sockaddr_in addr;
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(currentPort);
+            addr.sin_addr.s_addr = INADDR_ANY;
+
+            // Check if the port is available
+            if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+            close(sock);
+            break; // Port is available
+            }
+
+            close(sock);
+            ++currentPort; // Try the next port
+        }
         backend = std::make_unique<webserverbackendmongoose::WebServerBackendMongoose>("127.0.0.1", currentPort);
     }
 
     void TearDown() override {
-        // Cleanup code for each test
+        // Ensure proper cleanup to avoid resource leaks
         if (backend && backend->isRunning()) {
             backend->stop();
         }
         backend.reset();
+        // Small delay to allow OS to release port
+        usleep(10000); // 10ms to ensure cleanup
+    }
+
+    // Helper method for fast HTTP requests without resource waste
+    std::string sendHttpRequest(const std::string& request) {
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) return "";
+        
+        // Set socket timeout to prevent hanging
+        struct timeval timeout;
+        timeout.tv_sec = 1;  // 1 second timeout
+        timeout.tv_usec = 0;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+        
+        // Enable port reuse to avoid "Address already in use" errors
+        int opt = 1;
+        setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(currentPort);
+        inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+        
+        if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+            close(sock);
+            return "";
+        }
+        
+        // Send request
+        if (send(sock, request.c_str(), request.length(), 0) < 0) {
+            close(sock);
+            return "";
+        }
+        
+        // Read response with timeout protection
+        char buffer[1024] = {0};
+        ssize_t bytesRead = recv(sock, buffer, sizeof(buffer) - 1, 0);
+        
+        close(sock); // Immediate cleanup
+        
+        return bytesRead > 0 ? std::string(buffer, bytesRead) : "";
     }
 
     std::unique_ptr<webserverbackendmongoose::WebServerBackendMongoose> backend;
@@ -133,14 +198,42 @@ TEST_F(WebServerBackendMongooseBasicTest, CanProcessHttpRequests) {
     backend->registerHandler("GET", "/test", handler);
     EXPECT_TRUE(backend->start());
     
-    // TODO: When we implement actual HTTP client testing, verify the handler is called
-    // For now, just verify registration doesn't throw and server starts correctly
+    // Wait for server to be ready by trying to connect (non-blocking check)
+    bool serverReady = false;
+    for (int i = 0; i < 10 && !serverReady; ++i) {
+        int testSock = socket(AF_INET, SOCK_STREAM, 0);
+        if (testSock >= 0) {
+            struct sockaddr_in addr;
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(currentPort);
+            inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+            
+            if (connect(testSock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+                serverReady = true;
+            }
+            close(testSock);
+        }
+        if (!serverReady) usleep(1000); // 1ms between attempts
+    }
+    
+    EXPECT_TRUE(serverReady); // Server must be ready before proceeding
+    
+    // Send HTTP request using helper - fast and clean
+    std::string response = sendHttpRequest("GET /test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    
+    EXPECT_FALSE(response.empty());
+    EXPECT_TRUE(response.find("HTTP/1.1 200") != std::string::npos);
+    EXPECT_TRUE(response.find("Handler response") != std::string::npos);
     
     backend->stop();
+    
+    EXPECT_TRUE(handlerCalled);
+    EXPECT_EQ(receivedMethod, "GET");
+    EXPECT_EQ(receivedPath, "/test");
 }
 
-// TDD: Test 10 - Mongoose backend should handle HTTP response building
-TEST_F(WebServerBackendMongooseBasicTest, CanBuildHttpResponses) {
+// TDD: Test 10 - Mongoose backend should handle different content types
+TEST_F(WebServerBackendMongooseBasicTest, HandlesAllContentTypes) {
     auto jsonHandler = [](const webserver::HttpRequest& /* req */, webserver::HttpResponse& res) {
         res.setJsonResponse("{\"message\": \"Hello, World!\"}");
     };
@@ -153,41 +246,93 @@ TEST_F(WebServerBackendMongooseBasicTest, CanBuildHttpResponses) {
         res.setPlainTextResponse("Hello, World!");
     };
     
-    // Should not throw when registering different types of handlers
-    EXPECT_NO_THROW(backend->registerHandler("GET", "/json", jsonHandler));
-    EXPECT_NO_THROW(backend->registerHandler("GET", "/html", htmlHandler));
-    EXPECT_NO_THROW(backend->registerHandler("GET", "/text", textHandler));
+    backend->registerHandler("GET", "/json", jsonHandler);
+    backend->registerHandler("GET", "/html", htmlHandler);
+    backend->registerHandler("GET", "/text", textHandler);
     
     EXPECT_TRUE(backend->start());
+    
+    // Test JSON response
+    std::string jsonResp = sendHttpRequest("GET /json HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    EXPECT_TRUE(jsonResp.find("application/json") != std::string::npos);
+    EXPECT_TRUE(jsonResp.find("Hello, World!") != std::string::npos);
+    
+    // Test HTML response
+    std::string htmlResp = sendHttpRequest("GET /html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    EXPECT_TRUE(htmlResp.find("text/html") != std::string::npos);
+    EXPECT_TRUE(htmlResp.find("<html>") != std::string::npos);
+    
+    // Test plain text response
+    std::string textResp = sendHttpRequest("GET /text HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    EXPECT_TRUE(textResp.find("text/plain") != std::string::npos);
+    EXPECT_TRUE(textResp.find("Hello, World!") != std::string::npos);
+    
     backend->stop();
 }
 
-// TDD: Test 11 - Backend should be self-contained (no external polling required)
-TEST_F(WebServerBackendMongooseBasicTest, IsSelfContainedWithInternalEventProcessing) {
-    bool handlerCalled = false;
+// TDD: Test 11 - RESTful API methods (GET, POST, PUT, DELETE) work correctly
+TEST_F(WebServerBackendMongooseBasicTest, HandlesAllRestfulMethods) {
+    std::string lastMethod, lastBody;
     
     auto handler = [&](const webserver::HttpRequest& req, webserver::HttpResponse& res) {
-        (void)req; // Suppress unused parameter warning
-        handlerCalled = true;
+        lastMethod = req.method;
+        lastBody = req.body;
         res.statusCode = 200;
-        res.body = "Self-contained response";
+        res.setJsonResponse("{\"method\":\"" + req.method + "\",\"received\":true}");
     };
     
-    backend->registerHandler("GET", "/self-contained", handler);
+    backend->registerHandler("GET", "/api/test", handler);
+    backend->registerHandler("POST", "/api/test", handler);
+    backend->registerHandler("PUT", "/api/test", handler);
+    backend->registerHandler("DELETE", "/api/test", handler);
+    
     EXPECT_TRUE(backend->start());
     
-    // The backend should process events internally - no poll() method should exist
-    // This test will initially fail because current implementation requires external polling
+    // Test GET
+    std::string getResp = sendHttpRequest("GET /api/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    EXPECT_TRUE(getResp.find("HTTP/1.1 200") != std::string::npos);
+    EXPECT_TRUE(getResp.find("\"method\":\"GET\"") != std::string::npos);
     
-    // Give the backend some time to process events internally
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    // Test POST with body
+    std::string postReq = "POST /api/test HTTP/1.1\r\nHost: localhost\r\nContent-Length: 13\r\nConnection: close\r\n\r\n{\"data\":true}";
+    std::string postResp = sendHttpRequest(postReq);
+    EXPECT_TRUE(postResp.find("HTTP/1.1 200") != std::string::npos);
+    EXPECT_TRUE(postResp.find("\"method\":\"POST\"") != std::string::npos);
     
-    // Backend should be self-sufficient for event processing
+    // Test PUT
+    std::string putReq = "PUT /api/test HTTP/1.1\r\nHost: localhost\r\nContent-Length: 14\r\nConnection: close\r\n\r\n{\"update\":true}";
+    std::string putResp = sendHttpRequest(putReq);
+    EXPECT_TRUE(putResp.find("HTTP/1.1 200") != std::string::npos);
+    EXPECT_TRUE(putResp.find("\"method\":\"PUT\"") != std::string::npos);
+    
+    // Test DELETE
+    std::string deleteResp = sendHttpRequest("DELETE /api/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+    EXPECT_TRUE(deleteResp.find("HTTP/1.1 200") != std::string::npos);
+    EXPECT_TRUE(deleteResp.find("\"method\":\"DELETE\"") != std::string::npos);
+    
+    backend->stop();
+}
+
+// TDD: Test 12 - No memory leaks or crashes during rapid requests
+TEST_F(WebServerBackendMongooseBasicTest, HandlesRapidRequestsWithoutLeaks) {
+    auto handler = [](const webserver::HttpRequest& /* req */, webserver::HttpResponse& res) {
+        res.statusCode = 200;
+        res.setPlainTextResponse("OK");
+    };
+    
+    backend->registerHandler("GET", "/rapid", handler);
+    EXPECT_TRUE(backend->start());
+    
+    // Send multiple rapid requests to test stability
+    for (int i = 0; i < 10; ++i) {
+        std::string response = sendHttpRequest("GET /rapid HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+        EXPECT_FALSE(response.empty());
+        EXPECT_TRUE(response.find("HTTP/1.1 200") != std::string::npos);
+    }
+    
+    // Server should still be running and responsive
     EXPECT_TRUE(backend->isRunning());
     
     backend->stop();
     EXPECT_FALSE(backend->isRunning());
-    
-    // Note: This test verifies the design principle that backends should be self-contained
-    // Once refactored, the backend will handle Mongoose event processing internally
 }

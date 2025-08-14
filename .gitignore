@@ -9,6 +9,12 @@ docs/
 *.gdb
 *.bin
 
+# Test artifacts and temporary files
+tests/*/bin/
+tests/*/obj/
+tests/*Test/bin/
+tests/*Test/obj/
+
 # Editor and OS files
 *.swp
 *~
