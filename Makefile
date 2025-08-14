@@ -305,5 +305,26 @@ endif
 # For backward compatibility, 'run' launches release build
 run: run_release
 
+# Test mode targets that automatically exit after 5 seconds
+test_debug: debug
+ifeq ($(VERBOSE),1)
+	@echo "🧪 Running debug build in test mode: $(BIN_DIR_debug)/$(APPNAME) --test"
+	@$(BIN_DIR_debug)/$(APPNAME) --test
+else
+	@echo "[BUILD] TEST debug $(APPNAME)"
+	@$(BIN_DIR_debug)/$(APPNAME) --test
+endif
+
+test_release: release
+ifeq ($(VERBOSE),1)
+	@echo "🧪 Running release build in test mode: $(BIN_DIR_release)/$(APPNAME) --test"
+	@$(BIN_DIR_release)/$(APPNAME) --test
+else
+	@echo "[BUILD] TEST release $(APPNAME)"
+	@$(BIN_DIR_release)/$(APPNAME) --test
+endif
+
+test_run: test_debug
+
 # Include test build system
 include Tests.build

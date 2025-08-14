@@ -254,10 +254,10 @@ fi
 
 function run_interactive_build() {
   if [ "$VERBOSE" = "human" ]; then
-    echo -e "${BLUE}🔨 Building main application...${NC}"
+    echo -e "${BLUE}🔨 Building main application (debug + release)...${NC}"
     
     # Show build phases
-    local build_phases=("analyzing" "compiling" "linking" "optimizing")
+    local build_phases=("analyzing" "compiling debug" "linking debug" "compiling release" "linking release" "optimizing")
     for phase in "${build_phases[@]}"; do
       printf "${YELLOW}🔧 Build phase: $phase...                    ${NC}"
       sleep 0.3
@@ -266,61 +266,67 @@ function run_interactive_build() {
     
     local build_start=$(date +%s)
     
-    if make release -j$(nproc); then
+    # Build both debug and release
+    if make debug -j$(nproc) && make release -j$(nproc); then
       local build_end=$(date +%s)
       local build_duration=$((build_end - build_start))
-      echo -e "${GREEN}✅ Build completed successfully in ${build_duration}s${NC}"
+      echo -e "${GREEN}✅ Both builds completed successfully in ${build_duration}s${NC}"
       return 0
     else
       echo -e "${RED}❌ Build failed. Check the output above.${NC}"
       return 1
     fi
   else
-    make release -j$(nproc)
+    make debug -j$(nproc) && make release -j$(nproc)
   fi
 }
 
 function run_interactive_app() {
   if [ "$VERBOSE" = "human" ]; then
     echo ""
-    echo -e "${BLUE}🚀 Launching application...${NC}"
-    echo -e "${YELLOW}⚠️  Application will start - Press Ctrl+C to stop when ready${NC}"
+    echo -e "${BLUE}🚀 Testing both debug and release builds...${NC}"
+    echo -e "${YELLOW}⚠️  Each build will run for 5 seconds then automatically stop${NC}"
     echo ""
     
-    local app_start=$(date +%s)
+    local total_start=$(date +%s)
     
-    if timeout 10s make run_release; then
-      # Application was stopped by timeout (normal for server apps)
-      local app_end=$(date +%s)
-      local app_duration=$((app_end - app_start))
-      echo -e "${GREEN}✅ Application ran successfully for ${app_duration}s${NC}"
-      return 0
-    else
-      local exit_code=$?
-      if [ $exit_code -eq 124 ]; then
-        # Timeout occurred (expected for server applications)
-        echo -e "${GREEN}✅ Application started and ran successfully${NC}"
-        echo -e "${BLUE}ℹ️  Server was automatically stopped after 10s demo${NC}"
-        return 0
-      else
-        echo -e "${RED}❌ Application failed to run. Check the output above.${NC}"
-        return 1
-      fi
+    # Test debug build
+    echo -e "${BLUE}📝 Testing DEBUG build...${NC}"
+    if ! make test_debug; then
+      echo -e "${RED}❌ Debug build failed to run. Check the output above.${NC}"
+      return 1
     fi
+    echo -e "${GREEN}✅ Debug build test completed${NC}"
+    echo ""
+    
+    # Test release build
+    echo -e "${BLUE}🚀 Testing RELEASE build...${NC}"
+    if ! make test_release; then
+      echo -e "${RED}❌ Release build failed to run. Check the output above.${NC}"
+      return 1
+    fi
+    echo -e "${GREEN}✅ Release build test completed${NC}"
+    
+    local total_end=$(date +%s)
+    local total_duration=$((total_end - total_start))
+    echo ""
+    echo -e "${GREEN}🎉 Both builds tested successfully in ${total_duration}s${NC}"
+    return 0
   else
-    make run_release
+    # Test both builds in sequence
+    make test_debug && make test_release
   fi
 }
 
-status "Building the main program..."
+status "Building debug and release versions..."
 if ! run_interactive_build; then
   fail "Build failed."
   exit 1
 fi
 
-status "Running the main program..."
+status "Testing debug and release builds..."
 if ! run_interactive_app; then
-  fail "Application failed to run."
+  fail "Application testing failed."
   exit 1
 fi
 
@@ -354,12 +360,13 @@ function show_final_summary() {
     echo -e "${GREEN}🎉 All checks complete! Your code is working perfectly!${NC}"
     echo ""
     echo -e "${BLUE}📋 Execution Summary:${NC}"
-    echo -e "  ${GREEN}✅ Tests: All passed${NC}"
-    echo -e "  ${GREEN}✅ Build: Successful${NC}"
-    echo -e "  ${GREEN}✅ Run: Application started correctly${NC}"
+    echo -e "  ${GREEN}✅ Tests: All unit tests passed${NC}"
+    echo -e "  ${GREEN}✅ Build: Debug + Release builds successful${NC}"
+    echo -e "  ${GREEN}✅ Debug Test: Application started and ran correctly${NC}"
+    echo -e "  ${GREEN}✅ Release Test: Application started and ran correctly${NC}"
     echo -e "  ${GREEN}✅ Cleanup: Build artifacts removed${NC}"
     echo ""
-    echo -e "${BLUE}🚀 Your application is ready for deployment!${NC}"
+    echo -e "${BLUE}🚀 Both debug and release builds are ready for deployment!${NC}"
     echo ""
   else
     echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: All checks complete"

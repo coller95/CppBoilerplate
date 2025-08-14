@@ -118,9 +118,10 @@ class Application
 
 	/**
 	 * Runs the main application logic.
+	 * @param testMode If true, runs in test mode with automatic shutdown
 	 * @return Exit code (0 for success)
 	 */
-	int run()
+	int run(bool testMode = false)
 	{
 		auto& container = ioccontainer::IocContainer::getInstance();
 		auto logger = container.resolve<logger::ILogger>();
@@ -197,15 +198,36 @@ class Application
 		std::signal(SIGINT, signalHandler);
 		std::signal(SIGTERM, signalHandler);
 		
-		// Wait for shutdown signal
-		std::cout << "Server running at http://" << _webServer->getBindAddress() << ":" << _webServer->getPort() << std::endl;
-		std::cout << "Press Ctrl+C to stop..." << std::endl;
-		
-		while (!g_shutdown_requested) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		if (testMode) {
+			// Test mode: run for 5 seconds then automatically exit
+			logger->logInfo("Running in test mode - will automatically stop after 5 seconds");
+			std::cout << "Server running at http://" << _webServer->getBindAddress() << ":" << _webServer->getPort() << std::endl;
+			std::cout << "Test mode: automatically stopping after 5 seconds..." << std::endl;
+			
+			auto start_time = std::chrono::steady_clock::now();
+			while (!g_shutdown_requested) {
+				auto current_time = std::chrono::steady_clock::now();
+				auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time);
+				
+				if (elapsed.count() >= 5) {
+					logger->logInfo("Test mode timeout reached - shutting down");
+					break;
+				}
+				
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
+		} else {
+			// Normal mode: wait for shutdown signal
+			std::cout << "Server running at http://" << _webServer->getBindAddress() << ":" << _webServer->getPort() << std::endl;
+			std::cout << "Press Ctrl+C to stop..." << std::endl;
+			
+			while (!g_shutdown_requested) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
+			
+			logger->logInfo("Shutdown requested");
 		}
 		
-		logger->logInfo("Shutdown requested");
 		return 0;
 	}
 };
@@ -425,8 +447,14 @@ void Application::setupWebServerRoutes() {
 /**
  * Main entry point for the application
  */
-int main()
+int main(int argc, char* argv[])
 {
+	// Check for test mode argument
+	bool testMode = false;
+	if (argc > 1 && std::string(argv[1]) == "--test") {
+		testMode = true;
+	}
+	
 	Application app;
-	return app.run();
+	return app.run(testMode);
 }
