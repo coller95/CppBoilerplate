@@ -8,8 +8,8 @@
 #include <Logger/Logger.h>
 #include <Logger/ILogger.h>
 #include <IocContainer/IocContainer.h>
-#include <WebServer/WebServer.h>
 #include <WebServer/IWebServer.h>
+#include <WebServer/WebServerBackendFactory.h>
 #include <ApiRouter/ApiRouter.h>
 
 /**
@@ -34,7 +34,7 @@ struct AppConfig
 	int loggerPort = 9000;
 	std::string webServerIp = "127.0.0.1";
 	int webServerPort = 8080;
-	webserver::WebServer::Backend webServerBackend = webserver::WebServer::Backend::Mongoose;
+	webserver::WebServerBackendFactory::Backend webServerBackend = webserver::WebServerBackendFactory::Backend::Mongoose;
 };
 
 /**
@@ -44,7 +44,8 @@ class Application
 {
   private:
 	AppConfig _config;
-	std::unique_ptr<webserver::WebServer> _webServer;
+	std::unique_ptr<webserver::IWebServer> _webServer;
+	std::string _webServerBackendName;
 	
 	/**
 	 * Setup WebServer routes and handlers
@@ -66,12 +67,13 @@ class Application
 		auto globalLogger = container.resolve<logger::ILogger>();
 		globalLogger->logInfo("Application starting up...");
 		
-		// Create and register WebServer
-		_webServer = std::make_unique<webserver::WebServer>(
+		// Create and register WebServer using factory
+		_webServer = webserver::WebServerBackendFactory::createBackend(
+			_config.webServerBackend,
 			_config.webServerIp, 
-			_config.webServerPort, 
-			_config.webServerBackend
+			_config.webServerPort
 		);
+		_webServerBackendName = webserver::WebServerBackendFactory::getBackendName(_config.webServerBackend);
 		
 		// Register WebServer in IoC container (non-owning shared_ptr)
 		std::shared_ptr<webserver::IWebServer> webServerPtr(_webServer.get(), [](webserver::IWebServer*){});
@@ -140,7 +142,7 @@ class Application
 		
 		// Log system status
 		logger->logInfo("WebServer started successfully on " + _webServer->getBindAddress() + ":" + std::to_string(_webServer->getPort()));
-		logger->logInfo("Backend: " + _webServer->getBackendName());
+		logger->logInfo("Backend: " + _webServerBackendName);
 		
 		// Log registered services and endpoints
 		logger->logInfo("IoC Container: " + std::to_string(container.getRegisteredCount()) + " services registered");
@@ -268,7 +270,7 @@ void Application::setupWebServerRoutes() {
 				"{"
 				"\"status\": \"running\","
 				"\"server\": \"CppBoilerplate\","
-				"\"backend\": \"" + _webServer->getBackendName() + "\","
+				"\"backend\": \"" + _webServerBackendName + "\","
 				"\"address\": \"" + _webServer->getBindAddress() + "\","
 				"\"port\": " + std::to_string(_webServer->getPort()) + ","
 				"\"services\": " + std::to_string(container.getRegisteredCount()) + ","
