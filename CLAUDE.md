@@ -124,6 +124,9 @@ VERBOSE=1 make debug               # Maps to human mode
 ./scripts/create_endpoint.sh remove EndpointName
 ./scripts/create_service.sh remove ServiceName
 ./scripts/create_module.sh remove ModuleName
+
+# Generate UML class diagrams and documentation
+./scripts/generate_class_chart.sh                   # Dynamic class charts using Doxygen + Graphviz
 ```
 
 ### **NEW: Lexical Analysis for LLM Context Optimization**
@@ -461,6 +464,14 @@ make debug VERBOSE=debug          # When troubleshooting
 - Source-based inclusion for cross-platform compatibility
 - Abstracted through WebServer interface for pluggability
 
+**Doxygen + Graphviz** (Class Chart Generation): UML diagram generation system
+- Automatic installation detection and configuration
+- Generates interactive HTML documentation with embedded UML diagrams
+- Creates SVG format class hierarchy charts showing relationships
+- Script: `./scripts/generate_class_chart.sh` - Auto-configures Doxyfile for project structure
+- Output: `docs/index.html` (main documentation) and `docs/hierarchy.html` (class diagrams)
+- **Installation**: `sudo apt-get install doxygen graphviz`
+
 ### Development Workflow Integration
 
 **Test-Driven Development (TDD)**: **MANDATORY** for all code changes and implementations:
@@ -476,6 +487,7 @@ make debug VERBOSE=debug          # When troubleshooting
 - `create_endpoint.sh`: HTTP endpoints with ApiRouter integration
 - `create_service.sh`: Business services with IoC registration
 - `create_module.sh`: Utility modules with interface/implementation patterns
+- `generate_class_chart.sh`: UML class diagrams and interactive documentation
 
 **Enhanced Test Management**: Comprehensive test operations from project root:
 - Individual module testing without changing directories

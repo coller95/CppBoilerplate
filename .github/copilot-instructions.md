@@ -129,6 +129,37 @@ This project follows a **modular monolithic architecture**:
 
 **Rationale:** Infrastructure modules require different patterns than services/endpoints, including interfaces for testability, RAII resource management, and mock objects for testing dependent components.
 
+### Class Chart Generation Script
+
+- Use the `scripts/generate_class_chart.sh` script to generate dynamic UML class diagrams automatically
+- Usage: `./scripts/generate_class_chart.sh` (no arguments required)
+- The script generates comprehensive class charts using Doxygen and Graphviz:
+  - Automatically creates or updates `Doxyfile` configuration
+  - Generates HTML documentation with embedded UML diagrams
+  - Creates interactive class hierarchy charts showing relationships
+  - Outputs SVG format diagrams for high-quality visualization
+- Generated documentation is placed in `docs/` directory
+- View results by opening `docs/index.html` in a browser
+- Direct class diagram access via `docs/hierarchy.html`
+
+**Key Features:**
+- **Automatic dependency detection**: Checks for Doxygen and Graphviz installation
+- **Project-specific configuration**: Automatically configures Doxyfile for CppBoilerplate structure
+- **Interactive UML diagrams**: Click-able class relationships and inheritance hierarchies
+- **Integration with documentation**: Embeds UML link directly in main documentation page
+- **High-quality output**: SVG format ensures scalable, crisp diagrams
+
+**Dependencies Required:**
+```bash
+# Install required tools (Ubuntu/Debian)
+sudo apt-get install doxygen graphviz
+
+# Then generate charts
+./scripts/generate_class_chart.sh
+```
+
+**Rationale:** Visual class diagrams provide immediate architectural understanding, help identify design patterns, reveal coupling issues, and serve as living documentation that stays current with code changes. Essential for understanding complex class hierarchies and relationships in modular architectures.
+
 ### Test File Type Standardization
 
 - For all test cases that require file input/output, use binary file types instead of `.txt` files
@@ -908,6 +939,7 @@ This helps keep the project's standards up to date and ensures all contributors 
   - `./scripts/create_endpoint.sh` for endpoints 
   - `./scripts/create_service.sh` for services
   - `./scripts/create_module.sh` for utility/infrastructure modules
+  - `./scripts/generate_class_chart.sh` for UML class diagrams and documentation
 - Use the flexible Makefile system: modify only the DEPENDENCIES line in test Makefiles
 - For external dependencies, use `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, and `EXTERNAL_LIBS` for maximum flexibility
 - Use `make debug-config` to verify dependency resolution in test modules
