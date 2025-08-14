@@ -103,7 +103,7 @@ namespace {
 // Static registration with singleton IoC container using global methods
 struct ${SERVICE_NAME}StaticRegistration {
     ${SERVICE_NAME}StaticRegistration() {
-        ioccontainer::IocContainer::registerGlobal<$SERVICE_NAME>(
+        ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(
             []() { return $SERVICE_NAME::create(); }
         );
     }
@@ -143,11 +143,11 @@ cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp" << E
 
 TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}IsRegisteredInGlobalIoC) {
     // Verify the service is automatically registered in the global container
-    EXPECT_TRUE(ioccontainer::IocContainer::isRegisteredGlobal<$NAMESPACE_NAME::$SERVICE_NAME>());
+    EXPECT_TRUE(ioccontainer::IIocContainer::isRegisteredGlobal<$NAMESPACE_NAME::$SERVICE_NAME>());
     
     // Verify we can resolve the service globally
     EXPECT_NO_THROW({
-        auto ptr = ioccontainer::IocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
+        auto ptr = ioccontainer::IIocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
         EXPECT_NE(ptr, nullptr);
         EXPECT_EQ(ptr->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
     });
@@ -158,17 +158,17 @@ TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}GlobalMethodsWorkflow) {
     
     // Register an additional instance using global method with instance
     auto customService = $NAMESPACE_NAME::$SERVICE_NAME::create();
-    ioccontainer::IocContainer::registerGlobal<$NAMESPACE_NAME::$SERVICE_NAME>(customService);
+    ioccontainer::IIocContainer::registerGlobal<$NAMESPACE_NAME::$SERVICE_NAME>(customService);
     
     // Verify global resolution works
-    auto resolved = ioccontainer::IocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
+    auto resolved = ioccontainer::IIocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
     EXPECT_NE(resolved, nullptr);
     EXPECT_EQ(resolved->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
 }
 
 TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}ManualInstanceRegistrationWorks) {
     // Test manual registration with getInstance() method for specific containers
-    auto& container = ioccontainer::IocContainer::getInstance();
+    auto& container = ioccontainer::IIocContainer::getInstance();
     
     // Verify service can be manually registered using the registerWith helper
     EXPECT_NO_THROW({
@@ -377,9 +377,9 @@ EOF
     echo "3. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp with IoC verification"
     echo "4. The service will auto-register with the global IoCContainer (no manual integration needed!)"
     echo "5. Use global IoC methods for easy access:"
-    echo "   - ioccontainer::IocContainer::registerGlobal<ServiceType>(instance)"
-    echo "   - auto service = ioccontainer::IocContainer::resolveGlobal<ServiceType>()"
-    echo "   - bool exists = ioccontainer::IocContainer::isRegisteredGlobal<ServiceType>()"
+    echo "   - ioccontainer::IIocContainer::registerGlobal<ServiceType>(instance)"
+    echo "   - auto service = ioccontainer::IIocContainer::resolveGlobal<ServiceType>()"
+    echo "   - bool exists = ioccontainer::IIocContainer::isRegisteredGlobal<ServiceType>()"
     echo "6. To add dependencies, edit the DEPENDENCIES line in tests/${SERVICE_NAME}Test/Makefile"
     echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"

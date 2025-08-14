@@ -55,8 +55,8 @@ class Application
   public:
 	Application() 
 	{
-		// Initialize IoC container and register core services
-		auto& container = ioccontainer::IocContainer::getInstance();
+		// Initialize IoC container and register core services through interface
+		auto& container = ioccontainer::IIocContainer::getInstance();
 		
 		// Create and register logger service
 		auto logger = std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort);
@@ -91,8 +91,8 @@ class Application
 
 	~Application()
 	{
-		// Access logger through IoC container for cleanup
-		auto& container = ioccontainer::IocContainer::getInstance();
+		// Access logger through IoC container interface for cleanup
+		auto& container = ioccontainer::IIocContainer::getInstance();
 		
 		try {
 			auto logger = container.resolve<logger::ILogger>();
@@ -125,7 +125,7 @@ class Application
 	 */
 	int run(bool testMode = false)
 	{
-		auto& container = ioccontainer::IocContainer::getInstance();
+		auto& container = ioccontainer::IIocContainer::getInstance();
 		auto logger = container.resolve<logger::ILogger>();
 		
 		// Start logger connection
@@ -238,7 +238,7 @@ class Application
  * Setup WebServer routes and handlers
  */
 void Application::setupWebServerRoutes() {
-	auto& container = ioccontainer::IocContainer::getInstance();
+	auto& container = ioccontainer::IIocContainer::getInstance();
 	auto logger = container.resolve<logger::ILogger>();
 	auto& apiRouter = apirouter::ApiRouter::getInstance();
 	
