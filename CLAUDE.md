@@ -10,6 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./scripts/test.sh                    # Agent mode (concise output)
 ./scripts/test.sh human             # Human mode (colorful, detailed output)
 
+# Quick development workflow - test, build debug, and run
+./scripts/debug.sh                   # Quick debug session (minimal output)
+./scripts/debug.sh human            # Debug session with detailed output
+
 # Individual build commands
 make debug                          # Build debug version
 make release                        # Build optimized release version
@@ -20,6 +24,10 @@ make run                           # Build and run release version
 make clean                         # Clean main project build artifacts
 make test-clean                    # Clean all test artifacts
 ```
+
+**Script Comparison:**
+- **`test.sh`**: Comprehensive testing - runs unit tests, builds both debug & release, tests both builds, then cleans up
+- **`debug.sh`**: Quick development workflow - validates tests, builds debug only, runs debug server (stays running for development)
 
 ### Testing Commands
 ```bash
