@@ -50,17 +50,18 @@ ApiRouter::~ApiRouter() {
 
 // IApiRouter interface implementation
 bool ApiRouter::initialize() {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
-    
-    if (_initialized) {
-        return true; // Already initialized
+    // Copy factories while holding lock, then release lock before calling them
+    std::vector<std::function<std::unique_ptr<IApiModule>()>> factoriesCopy;
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (_initialized) {
+            return true; // Already initialized
+        }
+        factoriesCopy = _moduleFactories;
     }
     
     try {
         // Create instances of all registered modules and have them register their endpoints
-        // With recursive mutex, we can safely call other methods that lock the same mutex
-        std::vector<std::function<std::unique_ptr<IApiModule>()>> factoriesCopy = _moduleFactories;
-        
         for (const auto& factory : factoriesCopy) {
             try {
                 auto module = factory();
@@ -73,7 +74,11 @@ bool ApiRouter::initialize() {
             }
         }
         
-        _initialized = true;
+        // Set initialized flag under lock
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            _initialized = true;
+        }
         return true;
     } catch (const std::exception&) {
         return false;
@@ -81,7 +86,7 @@ bool ApiRouter::initialize() {
 }
 
 bool ApiRouter::handleRequest(std::string_view path, std::string_view method, const std::string& requestBody, std::string& responseBody, int& statusCode) {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     
     // Validate input parameters
     if (path.empty()) {
@@ -107,8 +112,14 @@ bool ApiRouter::handleRequest(std::string_view path, std::string_view method, co
     
     if (it != _endpoints.end()) {
         try {
-            it->second(path, method, requestBody, responseBody, statusCode);
-            return true;
+            if (it->second) {
+                it->second(path, method, requestBody, responseBody, statusCode);
+                return true;
+            } else {
+                statusCode = 500;
+                responseBody = "Internal server error: null handler registered for endpoint";
+                return false;
+            }
         } catch (const std::exception& e) {
             statusCode = 500;
             responseBody = std::string("Internal server error: endpoint handler failed - ") + e.what();
@@ -123,12 +134,12 @@ bool ApiRouter::handleRequest(std::string_view path, std::string_view method, co
 }
 
 size_t ApiRouter::getEndpointCount() const {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _endpoints.size();
 }
 
 std::vector<std::string> ApiRouter::getRegisteredEndpoints() const {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     std::vector<std::string> endpoints;
     endpoints.reserve(_endpoints.size());
     
@@ -141,17 +152,17 @@ std::vector<std::string> ApiRouter::getRegisteredEndpoints() const {
 }
 
 void ApiRouter::registerModuleFactory(std::function<std::unique_ptr<IApiModule>()> factory) {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     _moduleFactories.push_back(std::move(factory));
 }
 
 size_t ApiRouter::getRegisteredModuleCount() const {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     return _moduleFactories.size();
 }
 
 std::vector<std::unique_ptr<IApiModule>> ApiRouter::createAllModules() const {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     std::vector<std::unique_ptr<IApiModule>> modules;
     modules.reserve(_moduleFactories.size());
     
@@ -172,7 +183,7 @@ std::vector<std::unique_ptr<IApiModule>> ApiRouter::createAllModules() const {
 
 // IEndpointRegistrar interface implementation
 void ApiRouter::registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler) {
-    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     
     // Validate input parameters
     if (path.empty() || method.empty()) {

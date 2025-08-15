@@ -109,7 +109,7 @@ private:
     ApiRouter();
 
     // Thread-safe access to endpoints and modules
-    mutable std::recursive_mutex _mutex;
+    mutable std::mutex _mutex;
     
     // Endpoint registry: maps "path:method" to handler functions
     std::unordered_map<std::string, HttpHandler> _endpoints;

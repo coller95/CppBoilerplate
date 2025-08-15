@@ -33,6 +33,119 @@ This project follows a **modular monolithic architecture**:
 - Favor dependency injection and clear interfaces for all modules to enable mocking and isolation in tests
 - Avoid global state and side effects; always pass dependencies explicitly
 
+### **CRITICAL: ApiRouter Auto-Registration Architecture**
+
+**ApiRouter** is the cornerstone of this project's **plugin discovery system** with automatic endpoint registration. Understanding this architecture is essential for all HTTP endpoint development.
+
+#### **Core Concept: Single Source of Truth**
+
+ApiRouter enforces **NO BYPASS POSSIBLE** architecture where ALL HTTP requests must flow through the router:
+
+```cpp
+// MANDATORY: All HTTP traffic routes through ApiRouter
+_webServer->setGlobalRequestHandler([&apiRouter](const auto& request, auto& response) {
+    apiRouter.handleRequest(request.uri, request.method, request.body, responseBody, statusCode);
+});
+```
+
+**Critical Benefits:**
+- **Complete endpoint discoverability** - every endpoint visible via `/api/endpoints`
+- **Centralized request logging** - all HTTP traffic logged uniformly
+- **Consistent error handling** - unified 404/500 response format
+- **Automatic API documentation** - endpoint registry enables docs generation
+
+#### **Two-Phase Initialization Pattern**
+
+**Phase 1: Static Initialization (Automatic)**
+```cpp
+// In each endpoint .cpp file
+namespace {
+    struct EndpointHelloRegistration {
+        EndpointHelloRegistration() {
+            apirouter::ApiRouter::registerModuleFactoryGlobal([]() {
+                return std::make_unique<EndpointHello>();
+            });
+        }
+    };
+    static EndpointHelloRegistration _registration;  // Auto-registers at startup
+}
+```
+
+**Phase 2: Runtime Initialization (Explicit)**
+```cpp
+// In main.cpp
+int main() {
+    apirouter::ApiRouter::initializeGlobal();  // Creates modules, registers endpoints
+    // System ready - all endpoints discoverable
+}
+```
+
+#### **Architecture Layer: Business Logic**
+
+```
+APPLICATION LAYER    ← main.cpp orchestration
+    ↓
+BUSINESS LOGIC       ← ApiRouter + Endpoints (USE MOCKING)
+    ↓
+INFRASTRUCTURE       ← WebServer + Logger (USE ISOLATION)
+```
+
+**Testing Approach**: ApiRouter is business logic, so use **MOCKING strategy**:
+
+```cpp
+// ✅ CORRECT: Mock infrastructure dependencies
+TEST(ApiRouterTest, RoutesToCorrectEndpoint) {
+    MockWebServer mockWebServer;
+    EXPECT_CALL(mockWebServer, setGlobalRequestHandler(_)).Times(1);
+    
+    ApiRouter router;
+    router.configureWebServer(mockWebServer);
+}
+```
+
+#### **Performance & Safety Features**
+
+**Thread Safety:**
+- Meyer's singleton pattern (static initialization safety)
+- Mutex-protected endpoint registry
+- Concurrent registration and routing support
+
+**Exception Safety:**
+- Module factory failures don't break system initialization
+- Handler exceptions return proper 500 errors with details
+- Input validation prevents crashes from malformed requests
+
+**Performance Optimizations:**
+- Standard mutex (not recursive) for better performance
+- Copy-then-release locking strategy
+- Null handler checks prevent crashes
+
+#### **Development Workflow**
+
+```bash
+# 1. Create endpoint (auto-registration included)
+./scripts/create_endpoint.sh create EndpointUser
+
+# 2. Test endpoint with proper mocking
+make test-run-EndpointUserTest
+
+# 3. Verify registration worked
+curl http://localhost:8080/api/endpoints
+```
+
+#### **Common Pitfalls**
+
+**❌ DON'T:**
+- Create WebServer endpoints that bypass ApiRouter
+- Use isolation testing for ApiRouter (it's business logic)
+- Assume `initialize()` processes factories registered after first call
+
+**✅ DO:**
+- Always use auto-registration pattern for endpoints
+- Test ApiRouter with mocked dependencies
+- Handle exceptions gracefully in endpoint handlers
+- Use meaningful HTTP status codes
+
 ---
 
 ## Coding Standards

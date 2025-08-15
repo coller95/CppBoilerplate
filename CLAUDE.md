@@ -669,6 +669,162 @@ This project uses a **modular monolithic architecture** with the following key p
 - Provides structured logging with different severity levels
 - Handles connection failures gracefully
 
+### **CRITICAL: ApiRouter Auto-Registration Architecture**
+
+**ApiRouter** implements a sophisticated **plugin discovery system** with automatic endpoint registration. This is NOT just routing - it's a complete **service discovery architecture**.
+
+#### **Two-Phase Initialization Pattern**
+
+```cpp
+// Phase 1: Static Initialization (Automatic)
+namespace {
+    struct EndpointHelloRegistration {
+        EndpointHelloRegistration() {
+            apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
+                return std::make_unique<EndpointHello>();
+            });
+        }
+    };
+    static EndpointHelloRegistration _registration;  // Auto-registers during static init
+}
+
+// Phase 2: Runtime Initialization (Explicit)
+int main() {
+    apirouter::ApiRouter::initializeGlobal();  // Creates modules, registers endpoints
+    // ALL HTTP requests now route through ApiRouter
+}
+```
+
+#### **Single Source of Truth Enforcement**
+
+**CRITICAL**: ApiRouter enforces **NO BYPASS POSSIBLE** architecture:
+
+```cpp
+// WebServer → ApiRouter delegation (MANDATORY)
+_webServer->setGlobalRequestHandler([&apiRouter](const auto& request, auto& response) {
+    // ALL HTTP requests MUST go through ApiRouter
+    apiRouter.handleRequest(request.uri, request.method, request.body, responseBody, statusCode);
+});
+```
+
+**Why This Matters**:
+- **Zero bypass routes** - impossible to register endpoints outside ApiRouter
+- **Complete discoverability** - all endpoints visible via `getRegisteredEndpoints()`
+- **Centralized logging** - every HTTP request logged and traced
+- **Consistent error handling** - unified 404/500 responses
+- **Automatic documentation** - endpoint registry for API docs
+
+#### **Architecture Layer Classification**
+
+**ApiRouter = Business Logic Layer**
+
+```
+┌─────────────────────────────────┐
+│     APPLICATION LAYER           │  ← main.cpp orchestration
+├─────────────────────────────────┤
+│     BUSINESS LOGIC LAYER        │  ← ApiRouter (USE MOCKING)
+│  • ApiRouter ← ROUTES REQUESTS  │  ← EndpointHello, Services
+│  • EndpointHello                │
+│  • Services                     │
+├─────────────────────────────────┤
+│     INFRASTRUCTURE LAYER        │  ← WebServer, Logger (USE ISOLATION)
+│  • WebServer ← SERVES HTTP      │
+│  • Logger                       │
+│  • IoC Container                │
+└─────────────────────────────────┘
+```
+
+#### **Testing Strategy for ApiRouter**
+
+**Use MOCKING approach** (business logic with dependencies):
+
+```cpp
+// ✅ CORRECT: Mock infrastructure dependencies
+TEST(ApiRouterBusinessLogicTest, RoutesToCorrectEndpoint) {
+    MockWebServer mockWebServer;
+    EXPECT_CALL(mockWebServer, setGlobalRequestHandler(_)).Times(1);
+    
+    ApiRouter router;
+    router.configureWebServer(mockWebServer);  // Test business logic
+}
+
+// ❌ WRONG: Don't isolate ApiRouter itself
+// ApiRouter IS the business logic being tested
+```
+
+#### **Performance Optimizations Applied**
+
+**1. Mutex Simplification:**
+- ✅ **Changed from `std::recursive_mutex` to `std::mutex`**
+- ✅ **Improved locking strategy** - copy-then-release pattern
+- ✅ **Performance gain** - regular mutex is faster
+
+**2. Null Handler Safety:**
+- ✅ **Added null handler checks** before execution
+- ✅ **Graceful degradation** with meaningful error messages
+- ✅ **Crash prevention** from null function pointers
+
+#### **Critical Safety Features**
+
+**Thread Safety:**
+- Thread-safe singleton using Meyer's pattern
+- Mutex-protected endpoint registry
+- Safe concurrent registration and routing
+
+**Exception Safety:**
+- Module factory exceptions don't break initialization
+- Handler exceptions return 500 with error details
+- Input validation prevents crashes
+
+**Auto-Registration Safety:**
+- Static initialization order safety via Meyer's singleton
+- Resilient to module loading failures
+- Factory pattern enables clean dependency injection
+
+#### **Best Practices for ApiRouter Usage**
+
+**DO:**
+- ✅ Use auto-registration pattern for all endpoints
+- ✅ Always route through ApiRouter (no bypass)
+- ✅ Test with mocked dependencies (business logic approach)
+- ✅ Handle exceptions in endpoint handlers
+- ✅ Use meaningful HTTP status codes
+
+**DON'T:**
+- ❌ Create direct WebServer endpoints (bypasses ApiRouter)
+- ❌ Use test isolation approach (ApiRouter is business logic)
+- ❌ Assume initialization is idempotent after factory registration
+- ❌ Ignore auto-registration in testing (singleton state persists)
+
+#### **Development Workflow Integration**
+
+```bash
+# 1. Create new endpoint using generation script
+./scripts/create_endpoint.sh create EndpointUser
+
+# 2. Endpoint auto-registers during static initialization (automatic)
+
+# 3. Test endpoint with proper mocking strategy
+make test-run-EndpointUserTest
+
+# 4. Verify integration via ApiRouter endpoints list
+curl http://localhost:8080/api/endpoints
+```
+
+#### **Troubleshooting Common Issues**
+
+**Problem**: Endpoint not found (404)
+- **Solution**: Verify auto-registration in endpoint .cpp file
+- **Check**: `apirouter::ApiRouter::getRegisteredEndpointsGlobal()`
+
+**Problem**: Tests sharing singleton state
+- **Solution**: Expected behavior - tests should account for shared state
+- **Workaround**: Use manual endpoint registration in tests
+
+**Problem**: Module factory not called
+- **Solution**: Ensure static initialization runs before `initializeGlobal()`
+- **Check**: Link order and static initialization dependencies
+
 ### Architectural Best Practices
 
 **File Organization Principles:**
