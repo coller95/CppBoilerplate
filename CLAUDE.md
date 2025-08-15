@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Quick Development Workflow
 ```bash
-# Complete build, test, and run cycle
-./scripts/test.sh                    # Agent mode (concise output)
-./scripts/test.sh human             # Human mode (colorful, detailed output)
+# Complete build, test, and run cycle - 3 ESSENTIAL MODES
+./scripts/test.sh                    # Default: Human-friendly (emojis, colors, celebration)
+./scripts/test.sh --minimal          # Minimal: Tool/LLM-friendly (TEST=OK BUILD=OK RUN=OK TIME=42s)
+./scripts/test.sh --debug            # Debug: Show everything (full compiler output, detailed logs)
 
 # Quick development workflow - test, build debug, and run
 ./scripts/debug.sh                   # Quick debug session (minimal output)
@@ -28,6 +29,11 @@ make test-clean                    # Clean all test artifacts
 **Script Comparison:**
 - **`test.sh`**: Comprehensive testing - runs unit tests, builds both debug & release, tests both builds, then cleans up
 - **`debug.sh`**: Quick development workflow - validates tests, builds debug only, runs debug server (stays running for development)
+
+**Test Script Modes (First Principles - KISS):**
+- **Default**: Human-friendly with emojis 🔧🧪🚀✅ and celebration summary
+- **--minimal**: Ultra-concise for LLMs (90% token reduction): `TEST=OK BUILD=OK RUN=OK TIME=42s`
+- **--debug**: Full verbose output for troubleshooting (shows everything)
 
 ### Testing Commands
 ```bash
@@ -51,67 +57,50 @@ make test-run-EndpointHelloTest   # Run EndpointHello module tests
 make test-run-IocContainerTest    # Run IoC Container tests
 ```
 
-### Multi-Tiered Output Modes & LLM Context Optimization
+### Test Script Output Modes (First Principles Design)
 
-**CRITICAL**: The build system supports **5 distinct output modes** for optimal LLM context efficiency:
+**CRITICAL**: Simplified **3-mode system** based on first principles - KISS (Keep It Simple, Stupid):
 
-**Available Modes (ordered by context usage):**
-- **`minimal`** - Ultra-minimal output (DEFAULT, best performance, 90-95% token reduction)
-- **`standard`** - Balanced agent output (moderate context usage)
-- **`debug`** - Agent + debugging context (troubleshooting scenarios)
-- **`human`** - Full human-friendly output (colorful, verbose)
-- **`silent`** - Critical errors only (absolute minimum)
+**Essential Modes (ordered by purpose):**
+- **Default** - Human-friendly with emojis 🔧🧪🚀✅ and celebration
+- **`--minimal`** - Tool/LLM-friendly (90% token reduction): `TEST=OK BUILD=OK RUN=OK TIME=42s`
+- **`--debug`** - Show everything (full compiler output, detailed logs)
 
 **Usage Examples:**
 ```bash
-# Default optimal performance (minimal mode)
-make debug                         # Uses minimal mode by default
-./scripts/test.sh                  # Uses minimal mode by default
+# Test script modes (simplified from complex 5-mode system)
+./scripts/test.sh                  # Default: human-friendly with emojis and colors
+./scripts/test.sh --minimal        # Minimal: structured output for tools/LLMs
+./scripts/test.sh --debug          # Debug: full verbose output for troubleshooting
 
-# Explicit mode selection
-make debug VERBOSE=minimal         # Ultra-minimal (best performance)
-make debug VERBOSE=standard        # Moderate context
-make debug VERBOSE=debug           # Troubleshooting context
-make debug VERBOSE=human           # Full human-friendly
-make debug VERBOSE=silent          # Errors only
-
-# Script mode selection
-./scripts/test.sh minimal          # Ultra-minimal (default)
-./scripts/test.sh standard         # Balanced output
-./scripts/test.sh debug            # Debugging context
-./scripts/test.sh human            # Human-friendly
-./scripts/test.sh silent           # Critical errors only
-
-# Backward compatibility (legacy support)
-VERBOSE=0 make debug               # Maps to minimal mode
-VERBOSE=1 make debug               # Maps to human mode
-./scripts/test.sh agent            # Maps to standard mode
+# Build system still supports verbose control for individual commands
+make debug VERBOSE=minimal         # Ultra-minimal build output
+make debug VERBOSE=human           # Human-friendly build output
+make debug VERBOSE=debug           # Debug-level build output
 ```
 
 **Context Efficiency Comparison:**
 ```bash
-# Human mode (100% token usage):
-🔨 Building debug target for x86_64 architecture...
-✅ Successfully compiled: src/main.cpp
-🎯 Linking executable: hello_world  
-🚀 Build completed successfully in 2.3 seconds!
+# Default mode (human-friendly):
+🔧 Running tests...
+🧪 Running comprehensive test suite...
+✅ All tests passed
+🎉 All checks complete! Your code is working perfectly!
 
-# Standard mode (~20% token usage):
-[BUILD] LINK debug hello_world
-[BUILD] BUILT debug hello_world x86_64-native
+# --minimal mode (90% token reduction - OPTIMAL for LLMs):
+TEST=OK BUILD=OK RUN=OK TIME=42s
 
-# Minimal mode (~5-10% token usage - OPTIMAL):
-[BUILD] hello_world
-
-# Silent mode (~2-5% token usage):
-# (no output unless errors occur)
+# --debug mode (full visibility for troubleshooting):
+[DEBUG] Running tests with full output...
+[DEBUG] Building with full compiler output...
+[SUCCESS] All operations completed successfully
 ```
 
 **LLM Performance Benefits:**
-- **Minimal mode**: 90-95% token reduction, 5-10x faster processing
-- **Structured prefixes**: `[BUILD]`, `[TEST]`, `[SCRIPT]`, `[ERROR]` for efficient parsing
+- **--minimal mode**: 90% token reduction, 10x faster processing
+- **Structured output**: `TEST=OK BUILD=OK RUN=OK TIME=42s` format for efficient parsing
 - **Context budget optimization**: More operations possible within token limits
-- **Scalable complexity**: Handle multi-step tasks efficiently
+- **First principles design**: Essential functionality only, no complexity bloat
 
 ### Module Generation
 

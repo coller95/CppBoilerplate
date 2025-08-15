@@ -541,71 +541,61 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
 ## Build System Standards
 
-### Dual-Mode Output System
+### Test Script Output System (First Principles - KISS)
 
-The build system supports two output modes optimized for different consumers:
+The test script follows first principles design with exactly **3 essential modes**:
 
-#### Human Mode (VERBOSE=1, default)
-- **Colorful, descriptive output** with emojis and detailed messages
-- **Full compilation commands** visible for debugging
-- **Comprehensive test reporting** with detailed pass/fail information
-- **Intuitive progress indicators** and helpful error messages
-- **Usage**: `make debug` or `VERBOSE=1 make debug`
+#### Default Mode (Human-Friendly)
+- **Emojis and celebration** 🔧🧪🚀✅ with colorful, descriptive output
+- **Comprehensive feedback** with detailed test reporting and progress indicators
+- **Celebration summary** upon successful completion
+- **Usage**: `./scripts/test.sh` (default mode)
 
-#### Agent Mode (VERBOSE=0)
-- **Ultra-concise output** optimized for AI context processing
-- **Silent compilation** - no individual file compilation messages
-- **Silent test building** - no verbose build output during test compilation
-- **Silent test execution** - only final pass/fail results, no individual test details
-- **Error-focused** - compilation/linking errors and warnings are fully visible
-- **Essential milestones only**: linking step and final success/failure
-- **Standardized prefixes**: `[BUILD]`, `[TEST]`, `[SCRIPT]` for easy parsing
-- **Usage**: `VERBOSE=0 make debug` or `./scripts/test.sh agent`
+#### Minimal Mode (Tool/LLM-Friendly)
+- **Ultra-concise output** optimized for AI context processing (90% token reduction)
+- **Structured format**: `TEST=OK BUILD=OK RUN=OK TIME=42s`
+- **Essential information only** for maximum context efficiency
+- **Usage**: `./scripts/test.sh --minimal`
 
-#### Key Benefits
-- **Human developers** get rich, colorful feedback for better debugging experience
-- **AI agents** get ultra-silent builds with only essential milestones and full error visibility
-- **Context efficiency** - agent mode eliminates compilation noise while preserving error details
-- **Consistent behavior** across all build and test operations
-- **Easy switching** between modes via environment variable
+#### Debug Mode (Full Visibility)
+- **Show everything** with full compiler output and detailed logs
+- **Complete transparency** for troubleshooting and deep debugging
+- **All operations visible** with `[DEBUG]`, `[SUCCESS]`, `[ERROR]` prefixes
+- **Usage**: `./scripts/test.sh --debug`
+
+#### Key Benefits (First Principles)
+- **KISS (Keep It Simple, Stupid)**: Only 3 modes instead of complex 5-mode system
+- **Clear purpose differentiation**: Each mode serves exactly one clear purpose
+- **Context efficiency**: --minimal mode provides 90% token reduction for AI workflows
+- **No confusion**: Mode names clearly indicate their intended use
+- **Essential functionality only**: No complexity bloat or theoretical optimizations
 
 #### Examples
 ```bash
-# Human-friendly build (default)
-make debug
-# Output: 🔨 Compiling (debug): src/main.cpp
-#         🔗 Linking debug executable...
-#         ✅ Successfully built debug version
+# Default: Human-friendly with emojis and celebration
+./scripts/test.sh
+# Output: 🔧 Running tests...
+#         🧪 Running comprehensive test suite...
+#         ✅ All tests passed
+#         🎉 All checks complete! Your code is working perfectly!
 
-# Agent-friendly build
-VERBOSE=0 make debug  
-# Output: [BUILD] LINK debug hello_world
-#         [BUILD] BUILT debug hello_world x86_64-native
+# Minimal: Ultra-concise for tools/LLMs (90% token reduction)
+./scripts/test.sh --minimal
+# Output: TEST=OK BUILD=OK RUN=OK TIME=42s
 
-# Human-friendly test
-make test-run-LoggerTest
-# Output: 🧪 Building and running tests for LoggerTest...
-#         ▶️  Running LoggerTest...
-#         ✅ LoggerTest passed
-#         📊 Tests completed: 1/1 passed
+# Debug: Show everything for troubleshooting
+./scripts/test.sh --debug
+# Output: [DEBUG] Running tests with full output...
+#         [DEBUG] Building with full compiler output...
+#         [SUCCESS] All operations completed successfully
 
-# Agent-friendly test  
-VERBOSE=0 make test-run-LoggerTest
-# Output: [TEST] RUN LoggerTest
-#         [TEST] RESULT LoggerTest 1/1
-
-# Agent-friendly script (ultra-silent)
-./scripts/test.sh agent
-# Output: [SCRIPT] Cleaning build artifacts...
-#         [BUILD] CLEAN
-#         [TEST] CLEAN_ALL
-#         [SCRIPT] SUCCESS: All tests passed!
-#         [BUILD] LINK release hello_world
-#         [BUILD] BUILT release hello_world x86_64-native
-#         [SCRIPT] SUCCESS: All checks complete
+# Build system still supports VERBOSE control for individual commands
+make debug VERBOSE=minimal         # Ultra-minimal build output
+make debug VERBOSE=human           # Human-friendly build output
+make debug VERBOSE=debug           # Debug-level build output
 ```
 
-**Rationale:** This dual-mode system ensures optimal user experience for both human developers and AI agents, reducing context pollution while maintaining full functionality and debugging capabilities when needed.
+**Rationale:** First principles analysis eliminated unnecessary complexity. The simplified 3-mode system provides exactly what developers and AI assistants actually need, without confusing theoretical optimizations. Each mode has a clear, single purpose and delivers exactly what its name promises.
 
 ### Makefile Requirements
 

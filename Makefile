@@ -6,10 +6,8 @@ APPNAME = hello_world
 
 # Multi-tiered build output modes for LLM context optimization
 # VERBOSE=minimal   - Ultra-minimal output (default, best performance)
-# VERBOSE=standard  - Standard agent output (moderate context)
 # VERBOSE=debug     - Agent + debugging context (troubleshooting)
 # VERBOSE=human     - Full human-friendly output (verbose)
-# VERBOSE=silent    - Errors only (critical only)
 #
 # Backward compatibility:
 # VERBOSE=0 -> minimal, VERBOSE=1 -> human
@@ -36,7 +34,7 @@ ifeq ($(VERBOSE),human)
     QUIET = @
     COMPILE_QUIET = @
 else ifeq ($(VERBOSE),debug)
-    # Debug mode: Agent + compilation context
+    # Debug mode: Show everything - full compiler commands visible
     MSG_PREFIX = @echo "[BUILD]"
     SUCCESS_MSG = "BUILT"
     COMPILE_MSG = "COMPILE"
@@ -44,8 +42,8 @@ else ifeq ($(VERBOSE),debug)
     CLEAN_MSG = "CLEAN"
     COPY_MSG = "COPY"
     LAUNCH_MSG = "RUN"
-    QUIET = @
-    COMPILE_QUIET = @
+    QUIET = 
+    COMPILE_QUIET = 
 else ifeq ($(VERBOSE),standard)
     # Standard mode: Balanced agent output
     MSG_PREFIX = @echo "[BUILD]"

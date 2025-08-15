@@ -1,218 +1,209 @@
 #!/bin/bash
 
-# Script to automate the build, test, and run process with multi-tiered output modes
+# ============================================================================
+# CppBoilerplate Test Script - Multi-Mode Build, Test, and Run Automation
+# ============================================================================
+# 
 # Usage:
-#   ./scripts/test.sh           # Default minimal mode (best performance)
-#   ./scripts/test.sh minimal   # Ultra-minimal output (best performance)
-#   ./scripts/test.sh standard  # Standard agent output (moderate context)
-#   ./scripts/test.sh debug     # Agent + debugging context (troubleshooting)
-#   ./scripts/test.sh human     # Human-friendly output (verbose)
-#   ./scripts/test.sh silent    # Errors only (critical only)
+#   ./scripts/test.sh           # Default: minimal mode (agent-friendly)
+#   ./scripts/test.sh minimal   # Ultra-concise: TEST=OK BUILD=OK RUN=OK TIME=42s
+#   ./scripts/test.sh human     # Human-friendly (emojis, colors, detailed)
+#   ./scripts/test.sh debug     # Show everything (full compiler output)
 #
-# Backward compatibility:
-#   ./scripts/test.sh agent     # Maps to standard mode
-#   VERBOSE=0/1 environment     # Maps to minimal/human
+# Author: Generated with Claude Code
+# ============================================================================
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# Handle verbose mode selection with multi-tiered support
+# ============================================================================
+# CONFIGURATION & SETUP
+# ============================================================================
+
+# Mode selection and configuration
+MODE="minimal"
 case "$1" in
-    "minimal")
-        export VERBOSE=minimal ;;
-    "standard") 
-        export VERBOSE=standard ;;
-    "debug")
-        export VERBOSE=debug ;;
-    "human")
-        export VERBOSE=human ;;
-    "silent")
-        export VERBOSE=silent ;;
-    "agent")
-        # Backward compatibility: agent -> standard
-        export VERBOSE=standard ;;
-    *)
-        # Default to minimal if no argument provided and VERBOSE not set
-        export VERBOSE=${VERBOSE:-minimal}
-        # Map legacy numeric values
-        if [ "$VERBOSE" = "1" ]; then
-            export VERBOSE=human
-        elif [ "$VERBOSE" = "0" ]; then
-            export VERBOSE=minimal
-        fi
-        ;;
+    "minimal") MODE="minimal"; export VERBOSE=minimal ;;
+    "human")   MODE="human";   export VERBOSE=human ;;
+    "debug")   MODE="debug";   export VERBOSE=debug ;;
+    *)         MODE="minimal"; export VERBOSE=minimal ;;
 esac
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Color definitions for human mode
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m' # No Color
 
-function status() {
-  case "$VERBOSE" in
-    "human")
-      echo -e "${YELLOW}==> $1${NC}" ;;
-    "debug")
-      echo -e "${BLUE}[SCRIPT]${NC} $1" ;;
-    "standard")
-      echo -e "${BLUE}[SCRIPT]${NC} $1" ;;
-    "minimal")
-      echo "[SCRIPT] $1" ;;
-    "silent")
-      # No status output in silent mode
-      ;;
-  esac
-}
-function success() {
-  case "$VERBOSE" in
-    "human")
-      echo -e "${GREEN}$1${NC}" ;;
-    "debug")
-      echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: $1" ;;
-    "standard") 
-      echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: $1" ;;
-    "minimal")
-      echo "[SCRIPT] SUCCESS: $1" ;;
-    "silent")
-      # No success output in silent mode
-      ;;
-  esac
-}
-function fail() {
-  case "$VERBOSE" in
-    "human")
-      echo -e "${RED}$1${NC}" ;;
-    "debug"|"standard"|"minimal")
-      echo -e "${BLUE}[SCRIPT]${NC} ERROR: $1" ;;
-    "silent")
-      echo "[ERROR] $1" ;;
-  esac
+# Timing for minimal mode
+if [ "$MODE" = "minimal" ]; then
+    readonly START_TIME=$(date +%s)
+fi
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+# Cleanup function for temporary files
+cleanup_temp_files() {
+    # Clean up any remaining temp files that might be left behind
+    find /tmp -name "test_*.log" -user $(whoami) -delete 2>/dev/null || true
+    find /tmp -name "human_test.log" -user $(whoami) -delete 2>/dev/null || true
 }
 
-function run_with_progress() {
-  local cmd="$1"
-  local desc="$2"
-  
-  if [ "$VERBOSE" = "human" ]; then
-    echo -e "${YELLOW}⏳ $desc${NC}"
-    
-    # Run command in background and show progress
-    $cmd &
-    local pid=$!
-    
-    # Show progress dots while command runs
-    while kill -0 $pid 2>/dev/null; do
-      echo -n "."
-      sleep 1
-    done
-    echo "" # New line after dots
-    
-    # Wait for command to complete and get exit status
-    wait $pid
-    return $?
-  else
-    # For non-human modes, run normally
-    $cmd
-  fi
+# Set up cleanup trap
+trap cleanup_temp_files EXIT
+
+# Clean build artifacts
+cleanup() {
+    local verbose_flag="$1"
+    make clean ${verbose_flag:+VERBOSE=$verbose_flag} >/dev/null 2>&1
+    make test-clean ${verbose_flag:+VERBOSE=$verbose_flag} >/dev/null 2>&1
 }
 
-function discover_test_modules() {
-  local test_modules=()
-  
-  if [ -d "tests" ]; then
-    echo -e "${BLUE}🔍 Discovering test modules...${NC}"
+# Run tests with specified verbosity
+run_tests() {
+    local verbose_flag="$1"
+    make test ${verbose_flag:+VERBOSE=$verbose_flag} ${verbose_flag:+-j$(nproc)}
+}
+
+# Build both debug and release
+build_all() {
+    local verbose_flag="$1"
+    make debug ${verbose_flag:+VERBOSE=$verbose_flag} ${verbose_flag:+-j$(nproc)}
+    make release ${verbose_flag:+VERBOSE=$verbose_flag} ${verbose_flag:+-j$(nproc)}
+}
+
+# Test both debug and release applications
+test_applications() {
+    local verbose_flag="$1"
+    make test_debug ${verbose_flag:+VERBOSE=$verbose_flag}
+    make test_release ${verbose_flag:+VERBOSE=$verbose_flag}
+}
+
+# Discover available test modules
+discover_test_modules() {
+    local modules=()
+    
+    if [ ! -d "tests" ]; then
+        echo "ERROR: Tests directory not found" >&2
+        exit 1
+    fi
     
     for dir in tests/*/; do
-      if [ -d "$dir" ]; then
-        local module_name=$(basename "$dir")
-        # Validate it's a real test module by checking make target exists
-        if make -n test-run-$module_name >/dev/null 2>&1; then
-          test_modules+=("$module_name")
-          echo -e "  ${GREEN}📦${NC} Found: $module_name"
+        if [ -d "$dir" ]; then
+            local module_name=$(basename "$dir")
+            if make -n test-run-$module_name >/dev/null 2>&1; then
+                modules+=("$module_name")
+            fi
         fi
-      fi
     done
     
-    # Sort modules for consistent ordering
-    if [ ${#test_modules[@]} -gt 0 ]; then
-      IFS=$'\n' test_modules=($(sort <<<"${test_modules[*]}")); unset IFS
-      echo -e "${GREEN}✅ Discovered ${#test_modules[@]} test modules${NC}"
-    else
-      echo -e "${RED}❌ No valid test modules found${NC}"
-      return 1
+    if [ ${#modules[@]} -eq 0 ]; then
+        echo "ERROR: No valid test modules found" >&2
+        exit 1
     fi
-  else
-    echo -e "${RED}❌ Tests directory not found${NC}"
-    return 1
-  fi
-  
-  # Return the array via a global variable (bash limitation workaround)
-  DISCOVERED_TEST_MODULES=("${test_modules[@]}")
+    
+    # Sort for consistent ordering
+    IFS=$'\n' modules=($(sort <<<"${modules[*]}")); unset IFS
+    
+    # Return via global variable (bash limitation workaround)
+    TEST_MODULES=("${modules[@]}")
 }
 
-function run_interactive_test() {
-  local module="$1"
-  local current="$2"
-  local total="$3"
-  
-  printf "${YELLOW}[$current/$total] Running $module[initializing]...                    ${NC}"
-  
-  # Show different phases of test execution
-  local phases=("compiling" "linking" "executing" "test.suite")
-  for phase in "${phases[@]}"; do
-    printf "\r${YELLOW}[$current/$total] Running $module[$phase]...                    ${NC}"
-    sleep 0.3
-  done
-  
-  # Run the actual test
-  if make test-run-$module VERBOSE=minimal >/dev/null 2>&1; then
-    printf "\r${GREEN}✅ [$current/$total] $module passed                                        ${NC}\n"
-    return 0
-  else
-    printf "\r${RED}❌ [$current/$total] $module failed                                        ${NC}\n"
-    return 1
-  fi
+# ============================================================================
+# MODE-SPECIFIC HANDLERS
+# ============================================================================
+
+# Minimal mode: Ultra-concise output for agents/LLMs
+run_minimal_mode() {
+    # Clean (silent)
+    cleanup
+    
+    # Test (capture result)
+    if run_tests >/dev/null 2>&1; then
+        echo -n "TEST=OK "
+    else
+        echo -n "TEST=FAIL "
+        exit 1
+    fi
+    
+    # Build (capture result)
+    if build_all >/dev/null 2>&1; then
+        echo -n "BUILD=OK "
+    else
+        echo -n "BUILD=FAIL "
+        exit 1
+    fi
+    
+    # Run (capture result)
+    if test_applications >/dev/null 2>&1; then
+        echo -n "RUN=OK "
+    else
+        echo -n "RUN=FAIL "
+        exit 1
+    fi
+    
+    # Final cleanup (silent)
+    cleanup
+    
+    # Output timing
+    local end_time=$(date +%s)
+    local duration=$((end_time - START_TIME))
+    echo "TIME=${duration}s"
 }
 
-function run_detailed_tests() {
-  if [ "$VERBOSE" = "human" ]; then
+# Human mode: Rich interactive experience
+run_human_mode() {
+    echo -e "${BLUE}🧹 Cleaning main project and test artifacts...${NC}"
+    cleanup human
+    echo -e "${GREEN}✅ Clean completed${NC}"
+
     echo -e "${BLUE}🧪 Running comprehensive test suite with detailed progress...${NC}"
     echo ""
     
-    # Dynamically discover test modules
-    if ! discover_test_modules; then
-      echo -e "${RED}Failed to discover test modules. Exiting.${NC}"
-      return 1
-    fi
+    # Discover test modules with rich feedback
+    echo -e "${BLUE}🔍 Discovering test modules...${NC}"
+    discover_test_modules
     
-    local test_modules=("${DISCOVERED_TEST_MODULES[@]}")
-    local total=${#test_modules[@]}
-    local current=0
-    local start_time=$(date +%s)
+    for module in "${TEST_MODULES[@]}"; do
+        echo -e "  ${GREEN}📦${NC} Found: $module"
+    done
+    echo -e "${GREEN}✅ Discovered ${#TEST_MODULES[@]} test modules${NC}"
     
+    # Show execution plan
+    local total=${#TEST_MODULES[@]}
     echo ""
     echo -e "${BLUE}📋 Test Execution Plan:${NC}"
-    for module in "${test_modules[@]}"; do
-      echo -e "  ${YELLOW}▶${NC} $module"
+    for module in "${TEST_MODULES[@]}"; do
+        echo -e "  ${YELLOW}▶${NC} $module"
     done
     echo ""
     echo -e "${BLUE}🚀 Starting test execution...${NC}"
     echo ""
     
+    # Execute tests with progress tracking
+    local current=0
     local passed=0
-    local failed=0
+    local start_time=$(date +%s)
     
-    for module in "${test_modules[@]}"; do
-      current=$((current + 1))
-      
-      if run_interactive_test "$module" "$current" "$total"; then
-        ((passed++))
-      else
-        ((failed++))
-        echo -e "${RED}💥 Test execution stopped due to failure in $module${NC}"
-        return 1
-      fi
-    done
+    # Just run the standard test command instead of individual modules to avoid hanging
+    echo -e "${YELLOW}▶️  Running all test modules...${NC}"
+    local temp_log=$(mktemp)
+    if run_tests human >"$temp_log" 2>&1; then
+        echo -e "${GREEN}✅ All test modules passed${NC}"
+        passed=${#TEST_MODULES[@]}
+        rm -f "$temp_log"
+    else
+        echo -e "${RED}❌ Some test modules failed${NC}"
+        echo -e "${RED}💥 Test execution stopped${NC}"
+        if [ -f "$temp_log" ]; then
+            echo -e "${RED}Last few lines of output:${NC}"
+            tail -10 "$temp_log"
+            rm -f "$temp_log"
+        fi
+        exit 1
+    fi
     
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
@@ -221,141 +212,61 @@ function run_detailed_tests() {
     echo -e "${GREEN}🎉 All test modules completed successfully!${NC}"
     echo -e "${BLUE}📊 Test Summary:${NC}"
     echo -e "  ${GREEN}✅ Passed: $passed${NC}"
-    echo -e "  ${RED}❌ Failed: $failed${NC}"
     echo -e "  ${BLUE}⏱️  Duration: ${duration}s${NC}"
     echo -e "  ${BLUE}📁 Modules: $total${NC}"
     echo ""
-    return 0
-  else
-    # For non-human modes, run all tests normally
-    make test -j$(nproc)
-  fi
-}
 
-status "Cleaning build artifacts..."
-if [ "$VERBOSE" = "human" ]; then
-  echo -e "${BLUE}🧹 Cleaning main project and test artifacts...${NC}"
-  make clean -j$(nproc) && make test-clean -j$(nproc)
-  echo -e "${GREEN}✅ Clean completed${NC}"
-else
-  make clean -j$(nproc) && make test-clean -j$(nproc)
-fi
+    echo -e "${BLUE}📊 Test Statistics:${NC}"
+    make test-stats VERBOSE=human
 
-status "Running tests..."
-if run_detailed_tests; then
-  success "All tests passed!"
-  
-  status "Showing test statistics..."
-  make test-stats
-else
-  fail "Some tests failed. Check the output above."
-  exit 1
-fi
-
-function run_interactive_build() {
-  if [ "$VERBOSE" = "human" ]; then
     echo -e "${BLUE}🔨 Building main application (debug + release)...${NC}"
-    
-    # Show build phases
-    local build_phases=("analyzing" "compiling debug" "linking debug" "compiling release" "linking release" "optimizing")
-    for phase in "${build_phases[@]}"; do
-      printf "${YELLOW}🔧 Build phase: $phase...                    ${NC}"
-      sleep 0.3
-      printf "\r"
-    done
-    
     local build_start=$(date +%s)
     
-    # Build both debug and release
-    if make debug -j$(nproc) && make release -j$(nproc); then
-      local build_end=$(date +%s)
-      local build_duration=$((build_end - build_start))
-      echo -e "${GREEN}✅ Both builds completed successfully in ${build_duration}s${NC}"
-      return 0
+    if build_all; then
+        local build_end=$(date +%s)
+        local build_duration=$((build_end - build_start))
+        echo -e "${GREEN}✅ Both builds completed successfully in ${build_duration}s${NC}"
     else
-      echo -e "${RED}❌ Build failed. Check the output above.${NC}"
-      return 1
+        echo -e "${RED}❌ Build failed. Check the output above.${NC}"
+        exit 1
     fi
-  else
-    make debug -j$(nproc) && make release -j$(nproc)
-  fi
-}
 
-function run_interactive_app() {
-  if [ "$VERBOSE" = "human" ]; then
     echo ""
     echo -e "${BLUE}🚀 Testing both debug and release builds...${NC}"
     echo -e "${YELLOW}⚠️  Each build will run for 5 seconds then automatically stop${NC}"
     echo ""
     
-    local total_start=$(date +%s)
+    local app_test_start=$(date +%s)
     
-    # Test debug build
     echo -e "${BLUE}📝 Testing DEBUG build...${NC}"
     if ! make test_debug; then
-      echo -e "${RED}❌ Debug build failed to run. Check the output above.${NC}"
-      return 1
+        echo -e "${RED}❌ Debug build failed to run. Check the output above.${NC}"
+        exit 1
     fi
     echo -e "${GREEN}✅ Debug build test completed${NC}"
     echo ""
     
-    # Test release build
     echo -e "${BLUE}🚀 Testing RELEASE build...${NC}"
     if ! make test_release; then
-      echo -e "${RED}❌ Release build failed to run. Check the output above.${NC}"
-      return 1
+        echo -e "${RED}❌ Release build failed to run. Check the output above.${NC}"
+        exit 1
     fi
     echo -e "${GREEN}✅ Release build test completed${NC}"
     
-    local total_end=$(date +%s)
-    local total_duration=$((total_end - total_start))
+    local app_test_end=$(date +%s)
+    local app_test_duration=$((app_test_end - app_test_start))
     echo ""
-    echo -e "${GREEN}🎉 Both builds tested successfully in ${total_duration}s${NC}"
-    return 0
-  else
-    # Test both builds in sequence
-    make test_debug && make test_release
-  fi
-}
+    echo -e "${GREEN}🎉 Both builds tested successfully in ${app_test_duration}s${NC}"
 
-status "Building debug and release versions..."
-if ! run_interactive_build; then
-  fail "Build failed."
-  exit 1
-fi
-
-status "Testing debug and release builds..."
-if ! run_interactive_app; then
-  fail "Application testing failed."
-  exit 1
-fi
-
-function run_interactive_cleanup() {
-  if [ "$VERBOSE" = "human" ]; then
     echo ""
     echo -e "${BLUE}🧹 Final cleanup of build artifacts...${NC}"
-    
-    local cleanup_phases=("removing objects" "cleaning cache" "finalizing")
-    for phase in "${cleanup_phases[@]}"; do
-      printf "${YELLOW}🗑️  Cleanup: $phase...                    ${NC}"
-      sleep 0.2
-      printf "\r"
-    done
-    
-    if make clean -j$(nproc) && make test-clean -j$(nproc); then
-      echo -e "${GREEN}✅ Cleanup completed successfully${NC}"
-      return 0
+    if cleanup; then
+        echo -e "${GREEN}✅ Cleanup completed successfully${NC}"
     else
-      echo -e "${RED}❌ Cleanup failed${NC}"
-      return 1
+        echo -e "${RED}❌ Cleanup failed${NC}"
+        exit 1
     fi
-  else
-    make clean -j$(nproc) && make test-clean -j$(nproc)
-  fi
-}
 
-function show_final_summary() {
-  if [ "$VERBOSE" = "human" ]; then
     echo ""
     echo -e "${GREEN}🎉 All checks complete! Your code is working perfectly!${NC}"
     echo ""
@@ -368,15 +279,52 @@ function show_final_summary() {
     echo ""
     echo -e "${BLUE}🚀 Both debug and release builds are ready for deployment!${NC}"
     echo ""
-  else
-    echo -e "${BLUE}[SCRIPT]${NC} SUCCESS: All checks complete"
-  fi
 }
 
-status "Cleaning up build artifacts after successful completion..."
-if ! run_interactive_cleanup; then
-  fail "Cleanup failed."
-  exit 1
-fi
+# Debug mode: Show everything with full output
+run_debug_mode() {
+    echo -e "${BLUE}[DEBUG]${NC} Cleaning build artifacts..."
+    cleanup debug
+    
+    echo -e "${BLUE}[DEBUG]${NC} Running all tests with full verbose output..."
+    run_tests debug
+    
+    echo -e "${BLUE}[DEBUG]${NC} Showing test statistics..."
+    make test-stats VERBOSE=debug
+    
+    echo -e "${BLUE}[DEBUG]${NC} Building debug version with full compiler output..."
+    make debug VERBOSE=debug -j$(nproc)
+    
+    echo -e "${BLUE}[DEBUG]${NC} Building release version with full compiler output..."
+    make release VERBOSE=debug -j$(nproc)
+    
+    echo -e "${BLUE}[DEBUG]${NC} Testing debug build with full application output..."
+    make test_debug VERBOSE=debug
+    
+    echo -e "${BLUE}[DEBUG]${NC} Testing release build with full application output..."
+    make test_release VERBOSE=debug
+    
+    echo -e "${BLUE}[DEBUG]${NC} Final cleanup with full verbose output..."
+    cleanup debug
+    
+    echo -e "${BLUE}[DEBUG]${NC} All operations completed successfully"
+}
 
-show_final_summary
+# ============================================================================
+# MAIN EXECUTION FLOW
+# ============================================================================
+
+main() {
+    case "$MODE" in
+        "minimal") run_minimal_mode ;;
+        "human")   run_human_mode ;;
+        "debug")   run_debug_mode ;;
+        *)         
+            echo "ERROR: Unknown mode '$MODE'" >&2
+            exit 1
+            ;;
+    esac
+}
+
+# Execute main function
+main "$@"

@@ -1,8 +1,19 @@
 # Main Makefile for running all unit tests in subdirectories
 # Supports the flexible Makefile system and provides comprehensive test management
 
-# VERBOSE mode inheritance (VERBOSE=1 human, VERBOSE=0 agent)
-VERBOSE ?= 1
+# Multi-tiered verbose system (inherits from parent Makefile)
+# VERBOSE=minimal   - Ultra-minimal output (default for agents)
+# VERBOSE=debug     - Agent + debugging context (troubleshooting) 
+# VERBOSE=human     - Full human-friendly output (verbose)
+VERBOSE ?= minimal
+
+# Map legacy numeric values to named modes for backward compatibility
+ifeq ($(VERBOSE),0)
+    override VERBOSE = minimal
+endif
+ifeq ($(VERBOSE),1)
+    override VERBOSE = human
+endif
 
 # Auto-discover test subdirectories that have Makefiles
 SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/Makefile' \; -print | sed 's|^\./||')
@@ -18,7 +29,7 @@ SUBDIRS := $(shell find . -maxdepth 1 -type d -not -path '.' -exec test -e '{}/M
 # Build and run tests for a specific module
 .PHONY: test-run-%
 test-run-%:
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "🧪 Building and running tests for $*..."
 	@if [ ! -d "$*" ]; then \
 		echo "❌ Error: Test directory '$*' does not exist"; \
@@ -45,6 +56,37 @@ ifeq ($(VERBOSE),1)
 		echo "⚠️  No test executables found in $*/bin/"; \
 	else \
 		echo "📊 Tests completed: $$passed_count/$$test_count passed"; \
+		if [ $$passed_count -ne $$test_count ]; then \
+			exit 1; \
+		fi; \
+	fi
+else ifeq ($(VERBOSE),debug)
+	@echo "[DEBUG] Building and running tests for $* with full output..."
+	@if [ ! -d "$*" ]; then \
+		echo "[DEBUG] ERROR: Test directory '$*' does not exist"; \
+		echo "[DEBUG] Available test modules: $(SUBDIRS)"; \
+		exit 1; \
+	fi
+	$(MAKE) -C $* all VERBOSE=$(VERBOSE)
+	@absdir="$$(cd $* && pwd)"; \
+	test_count=0; \
+	passed_count=0; \
+	for bin in "$$absdir"/bin/*Test; do \
+		if [ -x "$$bin" ]; then \
+			test_count=$$((test_count + 1)); \
+			echo "[DEBUG] Running $$(basename $$bin)..."; \
+			if "$$bin"; then \
+				passed_count=$$((passed_count + 1)); \
+				echo "[DEBUG] $$(basename $$bin) PASSED"; \
+			else \
+				echo "[DEBUG] $$(basename $$bin) FAILED"; \
+			fi; \
+		fi; \
+	done; \
+	if [ $$test_count -eq 0 ]; then \
+		echo "[DEBUG] No test executables found in $*/bin/"; \
+	else \
+		echo "[DEBUG] Tests completed: $$passed_count/$$test_count passed"; \
 		if [ $$passed_count -ne $$test_count ]; then \
 			exit 1; \
 		fi; \
@@ -122,14 +164,19 @@ test-debug-%:
 
 # Build all test modules
 all: $(SUBDIRS)
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "✅ All test modules built successfully"
+else ifeq ($(VERBOSE),debug)
+	@echo "[DEBUG] All test modules built successfully"
 endif
 
 # Build a specific test module
 $(SUBDIRS):
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "🔧 Building $@..."
+	$(MAKE) -C $@
+else ifeq ($(VERBOSE),debug)
+	@echo "[DEBUG] Building test module $@..."
 	$(MAKE) -C $@
 else
 	@$(MAKE) -C $@ >/dev/null
@@ -137,13 +184,20 @@ endif
 
 # Clean all test artifacts
 clean:
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "🧹 Cleaning all test artifacts..."
 	@for dir in $(SUBDIRS); do \
 		echo "  Cleaning $$dir..."; \
 		$(MAKE) -C $$dir clean; \
 	done
 	@echo "✅ All test artifacts cleaned"
+else ifeq ($(VERBOSE),debug)
+	@echo "[DEBUG] Cleaning all test artifacts..."
+	@for dir in $(SUBDIRS); do \
+		echo "[DEBUG] Cleaning $$dir..."; \
+		$(MAKE) -C $$dir clean; \
+	done
+	@echo "[DEBUG] All test artifacts cleaned"
 else
 	@for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean >/dev/null; \
@@ -152,7 +206,7 @@ endif
 
 # Run all tests with comprehensive reporting
 test: all
-ifeq ($(VERBOSE),1)
+ifeq ($(VERBOSE),human)
 	@echo "🧪 Running all unit tests..."
 	@echo "Found test modules: $(SUBDIRS)"
 	@total_modules=0; \
@@ -178,6 +232,35 @@ ifeq ($(VERBOSE),1)
 	else \
 		echo "  ✅ All tests passed!"; \
 		echo "=========================================="; \
+	fi
+else ifeq ($(VERBOSE),debug)
+	@echo "[DEBUG] Running all unit tests with full output..."
+	@echo "[DEBUG] Found test modules: $(SUBDIRS)"
+	@total_modules=0; \
+	passed_modules=0; \
+	failed_modules=""; \
+	for dir in $(SUBDIRS); do \
+		echo "[DEBUG] Testing module: $$dir"; \
+		total_modules=$$((total_modules + 1)); \
+		if $(MAKE) -C $$dir run VERBOSE=$(VERBOSE); then \
+			passed_modules=$$((passed_modules + 1)); \
+			echo "[DEBUG] Module $$dir PASSED"; \
+		else \
+			failed_modules="$$failed_modules $$dir"; \
+			echo "[DEBUG] Module $$dir FAILED"; \
+		fi; \
+		echo ""; \
+	done; \
+	echo "[DEBUG] =========================================="; \
+	echo "[DEBUG] FINAL RESULTS:"; \
+	echo "[DEBUG]   Modules: $$passed_modules/$$total_modules passed"; \
+	if [ $$passed_modules -ne $$total_modules ]; then \
+		echo "[DEBUG]   Failed modules:$$failed_modules"; \
+		echo "[DEBUG] =========================================="; \
+		exit 1; \
+	else \
+		echo "[DEBUG]   All tests passed!"; \
+		echo "[DEBUG] =========================================="; \
 	fi
 else
 	@total_modules=0; \
