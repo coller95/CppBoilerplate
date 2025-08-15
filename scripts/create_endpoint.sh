@@ -60,12 +60,34 @@ create_endpoint() {
 cat > "include/$ENDPOINT_NAME/$ENDPOINT_NAME.h" << EOF
 #pragma once
 #include <ApiRouter/IApiRouter.h>
+#include <string>
+#include <string_view>
 
 namespace $NAMESPACE_NAME {
-    class $ENDPOINT_NAME : public apirouter::IApiModule {
-    public:
-        void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
-    };
+
+/**
+ * $ENDPOINT_NAME - HTTP endpoint handler
+ * Handles HTTP requests for /${ENDPOINT_PART,,} resources
+ * Automatically registers with ApiRouter for request routing
+ */
+class $ENDPOINT_NAME : public apirouter::IApiModule {
+public:
+    void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
+
+protected:
+    // HTTP handler methods (testable protected methods - accessible to unit tests)
+    void handleGet${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+                                 const std::string& requestBody, std::string& responseBody, int& statusCode);
+    
+    // TODO: Add more HTTP handler methods as needed
+    // void handlePost${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+    //                                const std::string& requestBody, std::string& responseBody, int& statusCode);
+    // void handlePut${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+    //                               const std::string& requestBody, std::string& responseBody, int& statusCode);
+    // void handleDelete${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+    //                                  const std::string& requestBody, std::string& responseBody, int& statusCode);
+};
+
 }
 EOF
 
@@ -80,27 +102,62 @@ cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 namespace $NAMESPACE_NAME {
 
 void $ENDPOINT_NAME::registerEndpoints(apirouter::IEndpointRegistrar& registrar) {
+    // Register GET /${ENDPOINT_PART,,} handler using lambda that calls private method
     registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
-       [](std::string_view, std::string_view, const std::string&, std::string& responseBody, int& statusCode) {
-           statusCode = 200;
-           responseBody = "Hello from $ENDPOINT_NAME!\\n";
-       });
+        [this](std::string_view path, std::string_view method, const std::string& requestBody, 
+                std::string& responseBody, int& statusCode) {
+            handleGet${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
+        });
+    
+    // TODO: Register additional endpoints as needed
+    // registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "POST",
+    //     [this](std::string_view path, std::string_view method, const std::string& requestBody, 
+    //             std::string& responseBody, int& statusCode) {
+    //         handlePost${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
+    //     });
 }
+
+void $ENDPOINT_NAME::handleGet${ENDPOINT_PART}(std::string_view /*path*/, std::string_view /*method*/,
+                                             const std::string& /*requestBody*/, std::string& responseBody, int& statusCode) {
+    // TODO: Implement your GET /${ENDPOINT_PART,,} logic here
+    statusCode = 200;
+    responseBody = "Hello from $ENDPOINT_NAME! This is the GET /${ENDPOINT_PART,,} endpoint.\\n";
+    
+    // Example of JSON response:
+    // responseBody = R"({"message": "Hello from ${ENDPOINT_PART}", "status": "success"})";
+    
+    // Example of error handling:
+    // if (some_error_condition) {
+    //     statusCode = 400;
+    //     responseBody = R"({"error": "Bad request", "message": "Invalid ${ENDPOINT_PART} data"})";
+    //     return;
+    // }
+}
+
+// TODO: Implement additional handler methods
+// void $ENDPOINT_NAME::handlePost${ENDPOINT_PART}(std::string_view path, std::string_view method,
+//                                               const std::string& requestBody, std::string& responseBody, int& statusCode) {
+//     // TODO: Implement POST logic
+//     statusCode = 201;
+//     responseBody = R"({"message": "${ENDPOINT_PART} created successfully"})";
+// }
 
 // Auto-registration: Register this endpoint module with ApiRouter
 namespace {
-    static bool registered = []() {
-        apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
-            return std::make_unique<$ENDPOINT_NAME>();
-        });
-        return true;
-    }();
+    struct ${ENDPOINT_NAME}Registration {
+        ${ENDPOINT_NAME}Registration() {
+            apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
+                return std::make_unique<$ENDPOINT_NAME>();
+            });
+        }
+    };
+    static ${ENDPOINT_NAME}Registration _registration;
 }
 
 } // namespace $NAMESPACE_NAME
 EOF
 
-# Create test case file
+# Create test case file for endpoint registration
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
@@ -125,6 +182,56 @@ TEST(${ENDPOINT_NAME}Test, RegisterEndpointsCanBeRegistered) {
     ASSERT_EQ(registrar.registeredPaths.size(), 1U);
     EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
 }
+EOF
+
+# Create handler test file to test the extracted handler methods directly
+cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp" << EOF
+#include <gtest/gtest.h>
+#include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
+#include <string>
+
+class ${ENDPOINT_NAME}HandlerTest : public ::testing::Test {
+protected:
+    $NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
+};
+
+TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}ReturnsSuccessResponse) {
+    std::string responseBody;
+    int statusCode = 0;
+    
+    // Test the extracted handler method directly
+    endpoint.handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
+    
+    // Verify response
+    EXPECT_EQ(statusCode, 200);
+    EXPECT_FALSE(responseBody.empty());
+    EXPECT_NE(responseBody.find("$ENDPOINT_NAME"), std::string::npos);
+}
+
+TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}AcceptsParameters) {
+    std::string responseBody;
+    int statusCode = 0;
+    std::string requestBody = R"({"test": "data"})";
+    
+    // Test with request body
+    endpoint.handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
+    
+    // Should still return success (parameters are ignored in this simple implementation)
+    EXPECT_EQ(statusCode, 200);
+    EXPECT_FALSE(responseBody.empty());
+}
+
+// TODO: Add tests for additional handler methods when implemented
+// TEST_F(${ENDPOINT_NAME}HandlerTest, HandlePost${ENDPOINT_PART}CreatesResource) {
+//     std::string responseBody;
+//     int statusCode = 0;
+//     std::string requestBody = R"({"name": "test${ENDPOINT_PART}"})";
+//     
+//     endpoint.handlePost${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "POST", requestBody, responseBody, statusCode);
+//     
+//     EXPECT_EQ(statusCode, 201);
+//     EXPECT_FALSE(responseBody.empty());
+// }
 EOF
 
 # Create auto-registration cross-check test
@@ -386,25 +493,37 @@ EOF
     echo ""
     echo "✅ Endpoint module '$ENDPOINT_NAME' created successfully!"
     echo ""
-    echo "Created files:"
-    echo "  📁 include/$ENDPOINT_NAME/$ENDPOINT_NAME.h"
-    echo "  📁 src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
-    echo "  📁 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp"
-    echo "  📁 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp"
-    echo "  📁 tests/${ENDPOINT_NAME}Test/TestMain.cpp"
-    echo "  📁 tests/${ENDPOINT_NAME}Test/Makefile"
+    echo "📁 Created files:"
+    echo "  📄 include/$ENDPOINT_NAME/$ENDPOINT_NAME.h (header with testable protected methods)"
+    echo "  📄 src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp (implementation + auto-registration)"
+    echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp (registration tests)"
+    echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp (handler method tests)"
+    echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp (auto-registration tests)"
+    echo "  📄 tests/${ENDPOINT_NAME}Test/TestMain.cpp"
+    echo "  📄 tests/${ENDPOINT_NAME}Test/Makefile"
     echo ""
-    echo "Next steps:"
-    echo "1. Edit src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp to implement your endpoints"
-    echo "2. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp with proper test assertions"
-    echo "3. Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp with endpoint verification"
-    echo "4. The endpoint will auto-register with ApiRouter (no manual integration needed!)"
-    echo "5. To add dependencies, edit the DEPENDENCIES line in tests/${ENDPOINT_NAME}Test/Makefile"
-    echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
+    echo "📋 Next steps:"
+    echo "1. 🔧 Implement handleGet${ENDPOINT_PART}() method in src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
+    echo "2. 🔧 Add additional handler methods (handlePost${ENDPOINT_PART}, etc.) as needed"
+    echo "3. 🧪 Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp with comprehensive handler tests"
+    echo "4. 🧪 Add tests for additional handler methods as you implement them"
+    echo "5. 📦 Add service dependencies in tests/${ENDPOINT_NAME}Test/Makefile if needed"
+    echo "   Examples: DEPENDENCIES = ServiceUser ServiceAuth Logger"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
-    echo "6. Test your endpoint:"
+    echo "6. 🧪 Test your endpoint:"
     echo "   make test-run-${ENDPOINT_NAME}Test"
-    echo "7. The auto-registration cross-check will verify your endpoint is properly registered"
+    echo ""
+    echo "🚀 Architecture benefits:"
+    echo "  • Handler logic extracted to testable protected methods"
+    echo "  • Lambdas are thin wrappers that call handler methods"
+    echo "  • Each HTTP method has its own dedicated handler method"
+    echo "  • Auto-registration with ApiRouter for plugin-like behavior"
+    echo ""
+    echo "💡 Tips:"
+    echo "  • Test handler methods directly for better test coverage"
+    echo "  • Use meaningful HTTP status codes (200, 201, 400, 404, 500)"
+    echo "  • Return JSON responses for API consistency"
+    echo "  • Inject services via IoC container for business logic"
     echo ""
 }
 

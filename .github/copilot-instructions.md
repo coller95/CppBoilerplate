@@ -149,22 +149,78 @@ When reviewing generated code architecture, ask:
 - The script creates the complete modular structure with IoC registration verification tests
 - Always test the generated service with `make test-run-ServiceNameTest`
 
-### Module Generation Script
+### **NEW: Differentiated Module Generation Architecture**
 
-- Use the `scripts/create_module.sh` script to generate new utility/infrastructure modules automatically
-- Usage:
-  - Create: `./scripts/create_module.sh create ModuleName` (must be in PascalCase, cannot start with "Service" or "Endpoint")
-  - Remove: `./scripts/create_module.sh remove ModuleName` (removes an existing module with confirmation)
-- The script creates the complete modular structure with interface, implementation, and comprehensive tests:
-  - `include/ModuleName/IModuleName.h` (interface definition)
-  - `include/ModuleName/ModuleName.h` (main implementation header)
-  - `src/ModuleName/ModuleName.cpp` (implementation)
-  - `tests/ModuleNameTest/` (with comprehensive test cases and mocks)
-- Generated modules follow RAII principles and include mock classes for testing
-- Always test the generated module with `make test-run-ModuleNameTest`
-- Examples: `DatabaseManager`, `ConfigReader`, `CacheManager`, `FileHandler`
+**CRITICAL**: This project uses a **differentiated generation approach** - each script type follows different complexity defaults based on actual usage patterns:
 
-**Rationale:** Infrastructure modules require different patterns than services/endpoints, including interfaces for testability, RAII resource management, and mock objects for testing dependent components.
+#### **🔧 create_module.sh - Progressive Enhancement**
+```bash
+# Default: Simple concrete class (minimal overhead)
+./scripts/create_module.sh create ConfigManager
+# → Creates: ConfigManager.h, ConfigManager.cpp (no interface, no PIMPL)
+
+# Add interface when polymorphism needed
+./scripts/create_module.sh create Logger --interface  
+# → Creates: ILogger.h, Logger.h, Logger.cpp, MockLogger.h
+
+# Add PIMPL when hiding complex dependencies
+./scripts/create_module.sh create WebServer --interface --pimpl
+# → Creates: IWebServer.h, WebServer.h (with PIMPL), WebServer.cpp (with Impl class)
+```
+
+**When to use flags:**
+- `--interface`: Multiple implementations, dependency injection, unit testing with mocks
+- `--pimpl`: Hide complex dependencies (Mongoose, OpenSSL), reduce compilation time
+
+#### **🔧 create_service.sh - Interface by Default**
+```bash
+# Always generates interface (needed for DI and testing)
+./scripts/create_service.sh create ServiceUser
+# → Creates: IServiceUser + ServiceUser + MockServiceUser + auto-registration
+```
+
+**Key improvements:**
+- Simplified auto-registration (no redundant methods)
+- Domain-specific method naming (`processUserData()` not `doSomethingServiceUser()`)
+- Always includes interface for dependency injection and testing
+
+#### **🔧 create_endpoint.sh - Testable Handler Methods**
+```bash
+# Generates testable handler methods (no interface needed)
+./scripts/create_endpoint.sh create EndpointUser
+# → Creates: EndpointUser with protected handleGetUser() method + handler tests
+```
+
+**Architecture benefits:**
+- Handler logic extracted to testable protected methods
+- Lambdas are thin wrappers calling handler methods  
+- Direct unit testing of HTTP handler logic
+- Each HTTP method gets its own handler method
+
+### **🎯 Key Architectural Improvements**
+
+**1. Minimal Overhead by Default:**
+- Utility modules start as simple concrete classes
+- No premature abstraction or unused patterns
+- Add complexity only when requirements justify it
+
+**2. Service-Oriented Design:**
+- Services always get interfaces (required for DI/testing)
+- Simplified auto-registration (no redundant methods)
+- Domain-specific method naming
+
+**3. Testable Endpoint Architecture:**
+- HTTP handler logic extracted from lambdas
+- Protected methods accessible to unit tests
+- Clear separation: registration logic vs. business logic
+
+**4. Progressive Enhancement:**
+- Start simple: `create ConfigManager` → minimal class
+- Add interface: `--interface` → enables polymorphism  
+- Add PIMPL: `--pimpl` → hides implementation complexity
+- Follow YAGNI: "You Aren't Gonna Need It" principle
+
+**Rationale:** Different component types have different complexity needs by default. This differentiated approach eliminates over-engineering while providing the right abstractions when actually needed.
 
 ### Class Chart Generation Script
 
@@ -274,22 +330,6 @@ sudo apt-get install doxygen graphviz
 - Provides safe removal with confirmation to prevent accidental deletion
 - **IoC registration tests guarantee dependency injection works correctly and catch integration issues early**
 
-## Module Generation Script
-
-- Use the `scripts/create_module.sh` script to generate new utility/infrastructure modules automatically
-- Usage:
-  - Create: `./scripts/create_module.sh create ModuleName` (must be in PascalCase, cannot start with "Service" or "Endpoint")
-  - Remove: `./scripts/create_module.sh remove ModuleName` (removes an existing module with confirmation)
-- The script creates the complete modular structure with interface, implementation, and comprehensive tests:
-  - `include/ModuleName/IModuleName.h` (interface definition)
-  - `include/ModuleName/ModuleName.h` (main implementation header)
-  - `src/ModuleName/ModuleName.cpp` (implementation)
-  - `tests/ModuleNameTest/` (with comprehensive test cases and mocks)
-- Generated modules follow RAII principles and include mock classes for testing
-- Always test the generated module with `make test-run-ModuleNameTest`
-- Examples: `DatabaseManager`, `ConfigReader`, `CacheManager`, `FileHandler`
-
-**Rationale:** Infrastructure modules require different patterns than services/endpoints, including interfaces for testability, RAII resource management, and mock objects for testing dependent components.
 
 # AI/Assistant Guidance: Evolving Project Conventions
 
@@ -1093,12 +1133,15 @@ This helps keep the project's standards up to date and ensures all contributors 
 
 ### Key Reminders
 
-- Strict adherence to TDD is mandatory for all development tasks
-- Always use the generation scripts for creating new modules:
-  - `./scripts/create_endpoint.sh` for endpoints 
-  - `./scripts/create_service.sh` for services
-  - `./scripts/create_module.sh` for utility/infrastructure modules
+- **Strict adherence to TDD is mandatory** for all development tasks
+- **Use differentiated generation approach**:
+  - `./scripts/create_module.sh create ModuleName` - Simple by default, add `--interface` or `--pimpl` when needed
+  - `./scripts/create_service.sh create ServiceName` - Always includes interface for DI/testing  
+  - `./scripts/create_endpoint.sh create EndpointName` - Testable handler methods
   - `./scripts/generate_class_chart.sh` for UML class diagrams and documentation
+- **Progressive enhancement principle**: Start simple, add complexity only when requirements justify it
+- **Service architecture**: Always use interfaces for dependency injection and mocking
+- **Endpoint architecture**: Extract handler logic to testable protected methods
 - Use the flexible Makefile system: modify only the DEPENDENCIES line in test Makefiles
 - For external dependencies, use `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, and `EXTERNAL_LIBS` for maximum flexibility
 - Use `make debug-config` to verify dependency resolution in test modules

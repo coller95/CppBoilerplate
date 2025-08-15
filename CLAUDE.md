@@ -114,11 +114,22 @@ VERBOSE=1 make debug               # Maps to human mode
 - **Scalable complexity**: Handle multi-step tasks efficiently
 
 ### Module Generation
+
+**CRITICAL**: This project uses a **differentiated generation approach** - each script type follows different complexity defaults based on actual usage patterns:
+
 ```bash
-# Create new modules using generation scripts
-./scripts/create_endpoint.sh create EndpointName    # HTTP endpoints
-./scripts/create_service.sh create ServiceName      # Business logic services  
-./scripts/create_module.sh create ModuleName        # Utility/infrastructure modules
+# UTILITY MODULES - Start Simple, Add Complexity When Needed
+./scripts/create_module.sh create ConfigManager              # Simple concrete class (default)
+./scripts/create_module.sh create Logger --interface         # Add interface for polymorphism
+./scripts/create_module.sh create WebServer --interface --pimpl # Both interface and PIMPL
+
+# BUSINESS SERVICES - Interface by Default for DI/Testing
+./scripts/create_service.sh create ServiceUser               # Always generates interface + concrete
+./scripts/create_service.sh create ServiceAuth               # Auto-registers both interface and implementation
+
+# HTTP ENDPOINTS - Testable Handler Methods (No Interface)
+./scripts/create_endpoint.sh create EndpointUser             # Testable protected handler methods
+./scripts/create_endpoint.sh create EndpointProduct          # Lambdas call extracted handler methods
 
 # Remove modules safely with confirmation
 ./scripts/create_endpoint.sh remove EndpointName
@@ -128,6 +139,83 @@ VERBOSE=1 make debug               # Maps to human mode
 # Generate UML class diagrams and documentation
 ./scripts/generate_class_chart.sh                   # Dynamic class charts using Doxygen + Graphviz
 ```
+
+### **NEW: Differentiated Generation Architecture**
+
+**CRITICAL**: Each generation script follows **progressive complexity principles** - start minimal, add sophistication only when justified:
+
+#### **🔧 create_module.sh - Progressive Enhancement**
+```bash
+# Default: Simple concrete class (minimal overhead)
+./scripts/create_module.sh create ConfigManager
+# → Creates: ConfigManager.h, ConfigManager.cpp (no interface, no PIMPL)
+
+# Add interface when polymorphism needed
+./scripts/create_module.sh create Logger --interface  
+# → Creates: ILogger.h, Logger.h, Logger.cpp, MockLogger.h
+
+# Add PIMPL when hiding complex dependencies
+./scripts/create_module.sh create WebServer --interface --pimpl
+# → Creates: IWebServer.h, WebServer.h (with PIMPL), WebServer.cpp (with Impl class)
+```
+
+**When to use flags:**
+- `--interface`: Multiple implementations, dependency injection, unit testing with mocks
+- `--pimpl`: Hide complex dependencies (Mongoose, OpenSSL), reduce compilation time
+
+#### **🔧 create_service.sh - Interface by Default**
+```bash
+# Always generates interface (needed for DI and testing)
+./scripts/create_service.sh create ServiceUser
+# → Creates: IServiceUser + ServiceUser + MockServiceUser + auto-registration
+```
+
+**Why interface by default:**
+- Services almost always need dependency injection
+- Unit testing requires mocking capabilities  
+- IoC container registration works with interfaces
+
+#### **🔧 create_endpoint.sh - Testable Methods**
+```bash
+# Generates testable handler methods (no interface needed)
+./scripts/create_endpoint.sh create EndpointUser
+# → Creates: EndpointUser with protected handleGetUser() method + handler tests
+```
+
+**Architecture benefits:**
+- Handler logic extracted to testable protected methods
+- Lambdas are thin wrappers calling handler methods
+- Direct unit testing of HTTP handler logic
+- Each HTTP method gets its own handler method
+
+### **🎯 Key Architectural Improvements**
+
+**1. Minimal Overhead by Default:**
+- Utility modules start as simple concrete classes
+- No premature abstraction or unused patterns
+- Add complexity only when requirements justify it
+
+**2. Service-Oriented Design:**
+- Services always get interfaces (required for DI/testing)
+- Simplified auto-registration (no redundant methods)
+- Domain-specific method naming (`processUserData()` not `doSomethingServiceUser()`)
+
+**3. Testable Endpoint Architecture:**
+- HTTP handler logic extracted from lambdas
+- Protected methods accessible to unit tests
+- Clear separation: registration logic vs. business logic
+
+**4. Progressive Enhancement:**
+- Start simple: `create ConfigManager` → minimal class
+- Add interface: `--interface` → enables polymorphism  
+- Add PIMPL: `--pimpl` → hides implementation complexity
+- Follow YAGNI: "You Aren't Gonna Need It" principle
+
+**5. Preserved Auto-Registration:**
+- All components still auto-register (plugin architecture maintained)
+- Services register both interface and concrete implementation
+- Endpoints register with ApiRouter automatically
+- No manual wiring required in main application
 
 ### **NEW: Lexical Analysis for LLM Context Optimization**
 

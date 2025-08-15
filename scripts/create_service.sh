@@ -64,17 +64,34 @@ cat > "include/$SERVICE_NAME/$SERVICE_NAME.h" << EOF
 #include <IocContainer/IocContainer.h>
 
 namespace $NAMESPACE_NAME {
-class $SERVICE_NAME {
+
+/**
+ * Interface for $SERVICE_NAME
+ * Define the service contract for dependency injection and testing
+ */
+class I$SERVICE_NAME {
+public:
+    virtual ~I$SERVICE_NAME() = default;
+    
+    // TODO: Define your service interface methods here
+    virtual std::string process${SERVICE_PART}Data() const = 0;
+};
+
+/**
+ * $SERVICE_NAME - Business logic service
+ * Automatically registers with IoC container for dependency injection
+ */
+class $SERVICE_NAME : public I$SERVICE_NAME {
 public:
     $SERVICE_NAME();
-    std::string doSomething${SERVICE_NAME}() const;
     
-    // Static registration helper for TDD and decoupling
-    static void registerWith(ioccontainer::IocContainer& container);
+    // Service interface implementation
+    std::string process${SERVICE_PART}Data() const override;
     
-    // Factory method for creating instances
-    static std::shared_ptr<$SERVICE_NAME> create();
+    // TODO: Add additional service methods here
+    // Example: void update${SERVICE_PART}(const ${SERVICE_PART}& data);
 };
+
 }
 EOF
 
@@ -86,29 +103,25 @@ namespace $NAMESPACE_NAME {
 
 $SERVICE_NAME::$SERVICE_NAME() = default;
 
-std::string $SERVICE_NAME::doSomething${SERVICE_NAME}() const {
-    return "$SERVICE_NAME result";
+std::string $SERVICE_NAME::process${SERVICE_PART}Data() const {
+    // TODO: Implement your business logic here
+    return "$SERVICE_PART data processed successfully";
 }
 
-std::shared_ptr<$SERVICE_NAME> $SERVICE_NAME::create() {
-    return std::make_shared<$SERVICE_NAME>();
-}
-
-void $SERVICE_NAME::registerWith(ioccontainer::IocContainer& container) {
-    auto instance = create();
-    container.registerInstance<$SERVICE_NAME>(instance);
-}
-
+// Auto-registration: Register both interface and concrete class with IoC container
 namespace {
-// Static registration with singleton IoC container using global methods
-struct ${SERVICE_NAME}StaticRegistration {
-    ${SERVICE_NAME}StaticRegistration() {
-        ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(
-            []() { return $SERVICE_NAME::create(); }
-        );
-    }
-};
-static ${SERVICE_NAME}StaticRegistration _${NAMESPACE_NAME}StaticRegistration;
+    struct ${SERVICE_NAME}Registration {
+        ${SERVICE_NAME}Registration() {
+            // Register both interface and concrete implementation
+            ioccontainer::IIocContainer::registerGlobal<I$SERVICE_NAME>(
+                []() { return std::make_shared<$SERVICE_NAME>(); }
+            );
+            ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(
+                []() { return std::make_shared<$SERVICE_NAME>(); }
+            );
+        }
+    };
+    static ${SERVICE_NAME}Registration _registration;
 }
 
 } // namespace $NAMESPACE_NAME
@@ -124,66 +137,114 @@ int main(int argc, char **argv) {
 }
 EOF
 
+# Create mock header for testing
+cat > "tests/${SERVICE_NAME}Test/Mock$SERVICE_NAME.h" << EOF
+#pragma once
+
+#include <gmock/gmock.h>
+#include <$SERVICE_NAME/$SERVICE_NAME.h>
+
+namespace $NAMESPACE_NAME {
+
+/**
+ * Mock implementation of I$SERVICE_NAME for testing
+ */
+class Mock$SERVICE_NAME : public I$SERVICE_NAME {
+public:
+    MOCK_METHOD(std::string, process${SERVICE_PART}Data, (), (const, override));
+    
+    // TODO: Add more mock methods as you expand your interface
+    // Example:
+    // MOCK_METHOD(void, update${SERVICE_PART}, (const ${SERVICE_PART}&), (override));
+};
+
+} // namespace $NAMESPACE_NAME
+EOF
+
 # Create basic test case
 cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$SERVICE_NAME/$SERVICE_NAME.h>
 
-TEST(${SERVICE_NAME}Test, DoSomething${SERVICE_NAME}ReturnsExpected) {
+TEST(${SERVICE_NAME}Test, Process${SERVICE_PART}DataReturnsExpected) {
     $NAMESPACE_NAME::$SERVICE_NAME service;
-    EXPECT_EQ(service.doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
+    std::string result = service.process${SERVICE_PART}Data();
+    EXPECT_FALSE(result.empty());
+    EXPECT_NE(result.find("$SERVICE_PART"), std::string::npos);
+}
+
+TEST(${SERVICE_NAME}Test, ImplementsInterface) {
+    // Verify that $SERVICE_NAME implements I$SERVICE_NAME
+    $NAMESPACE_NAME::$SERVICE_NAME service;
+    $NAMESPACE_NAME::I$SERVICE_NAME* interface = &service;
+    EXPECT_NE(interface, nullptr);
 }
 EOF
 
 # Create registration test
 cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp" << EOF
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <IocContainer/IocContainer.h>
 #include <$SERVICE_NAME/$SERVICE_NAME.h>
+#include "../Mock$SERVICE_NAME.h"
 
-TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}IsRegisteredInGlobalIoC) {
-    // Verify the service is automatically registered in the global container
+using ::testing::Return;
+
+TEST(${SERVICE_NAME}RegistrationTest, ConcreteServiceIsAutoRegistered) {
+    // Verify the concrete service is automatically registered in the global container
     EXPECT_TRUE(ioccontainer::IIocContainer::isRegisteredGlobal<$NAMESPACE_NAME::$SERVICE_NAME>());
     
-    // Verify we can resolve the service globally
+    // Verify we can resolve the concrete service globally
     EXPECT_NO_THROW({
         auto ptr = ioccontainer::IIocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
         EXPECT_NE(ptr, nullptr);
-        EXPECT_EQ(ptr->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
+        std::string result = ptr->process${SERVICE_PART}Data();
+        EXPECT_FALSE(result.empty());
     });
 }
 
-TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}GlobalMethodsWorkflow) {
-    // Test complete workflow using only global methods
+TEST(${SERVICE_NAME}RegistrationTest, InterfaceIsAutoRegistered) {
+    // Verify the interface is automatically registered in the global container
+    EXPECT_TRUE(ioccontainer::IIocContainer::isRegisteredGlobal<$NAMESPACE_NAME::I$SERVICE_NAME>());
     
-    // Register an additional instance using global method with instance
-    auto customService = $NAMESPACE_NAME::$SERVICE_NAME::create();
-    ioccontainer::IIocContainer::registerGlobal<$NAMESPACE_NAME::$SERVICE_NAME>(customService);
-    
-    // Verify global resolution works
-    auto resolved = ioccontainer::IIocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
-    EXPECT_NE(resolved, nullptr);
-    EXPECT_EQ(resolved->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
+    // Verify we can resolve via interface globally (returns concrete implementation)
+    EXPECT_NO_THROW({
+        auto ptr = ioccontainer::IIocContainer::resolveGlobal<$NAMESPACE_NAME::I$SERVICE_NAME>();
+        EXPECT_NE(ptr, nullptr);
+        std::string result = ptr->process${SERVICE_PART}Data();
+        EXPECT_FALSE(result.empty());
+    });
 }
 
-TEST(${SERVICE_NAME}RegistrationTest, ${SERVICE_NAME}ManualInstanceRegistrationWorks) {
-    // Test manual registration with getInstance() method for specific containers
+TEST(${SERVICE_NAME}RegistrationTest, MockCanBeUsedForTesting) {
+    // Test that our mock can be used to replace the service in tests
+    auto mockService = std::make_shared<$NAMESPACE_NAME::Mock$SERVICE_NAME>();
+    
+    // Set up expectations
+    EXPECT_CALL(*mockService, process${SERVICE_PART}Data())
+        .WillOnce(Return("Mock $SERVICE_PART data"));
+    
+    // Test the mock
+    std::string result = mockService->process${SERVICE_PART}Data();
+    EXPECT_EQ(result, "Mock $SERVICE_PART data");
+    
+    // Verify mock can be treated as interface
+    $NAMESPACE_NAME::I$SERVICE_NAME* interface = mockService.get();
+    EXPECT_NE(interface, nullptr);
+}
+
+TEST(${SERVICE_NAME}RegistrationTest, DependencyInjectionWorkflow) {
+    // Test typical DI workflow: register mock, resolve interface
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // Verify service can be manually registered using the registerWith helper
-    EXPECT_NO_THROW({
-        $NAMESPACE_NAME::$SERVICE_NAME::registerWith(container);
-    });
+    // Register a mock instance for testing
+    auto mockService = std::make_shared<$NAMESPACE_NAME::Mock$SERVICE_NAME>();
+    container.registerInstance<$NAMESPACE_NAME::I$SERVICE_NAME>(mockService);
     
-    // Verify manual registration worked
-    EXPECT_TRUE(container.isRegistered<$NAMESPACE_NAME::$SERVICE_NAME>());
-    
-    // Verify we can resolve the manually registered service
-    auto ptr = container.resolve<$NAMESPACE_NAME::$SERVICE_NAME>();
-    EXPECT_NE(ptr, nullptr);
-    
-    // Verify the service works
-    EXPECT_EQ(ptr->doSomething${SERVICE_NAME}(), "$SERVICE_NAME result");
+    // Verify we can resolve the mock via interface
+    auto resolved = container.resolve<$NAMESPACE_NAME::I$SERVICE_NAME>();
+    EXPECT_EQ(resolved.get(), mockService.get());
 }
 EOF
 
@@ -363,28 +424,36 @@ EOF
     echo ""
     echo "✅ Service module '$SERVICE_NAME' created successfully!"
     echo ""
-    echo "Created files:"
-    echo "  📁 include/$SERVICE_NAME/$SERVICE_NAME.h"
-    echo "  📁 src/$SERVICE_NAME/$SERVICE_NAME.cpp"
-    echo "  📁 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp"
-    echo "  📁 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp"
-    echo "  📁 tests/${SERVICE_NAME}Test/TestMain.cpp"
-    echo "  📁 tests/${SERVICE_NAME}Test/Makefile"
+    echo "📁 Created files:"
+    echo "  📄 include/$SERVICE_NAME/$SERVICE_NAME.h (interface + implementation)"
+    echo "  📄 src/$SERVICE_NAME/$SERVICE_NAME.cpp (implementation + auto-registration)"
+    echo "  📄 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp"
+    echo "  📄 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp"
+    echo "  📄 tests/${SERVICE_NAME}Test/Mock$SERVICE_NAME.h (mock for testing)"
+    echo "  📄 tests/${SERVICE_NAME}Test/TestMain.cpp"
+    echo "  📄 tests/${SERVICE_NAME}Test/Makefile"
     echo ""
-    echo "Next steps:"
-    echo "1. Edit src/$SERVICE_NAME/$SERVICE_NAME.cpp to implement your service logic"
-    echo "2. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp with proper test assertions"
-    echo "3. Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp with IoC verification"
-    echo "4. The service will auto-register with the global IoCContainer (no manual integration needed!)"
-    echo "5. Use global IoC methods for easy access:"
-    echo "   - ioccontainer::IIocContainer::registerGlobal<ServiceType>(instance)"
-    echo "   - auto service = ioccontainer::IIocContainer::resolveGlobal<ServiceType>()"
-    echo "   - bool exists = ioccontainer::IIocContainer::isRegisteredGlobal<ServiceType>()"
-    echo "6. To add dependencies, edit the DEPENDENCIES line in tests/${SERVICE_NAME}Test/Makefile"
+    echo "📋 Next steps:"
+    echo "1. 🔧 Edit the I$SERVICE_NAME interface in include/$SERVICE_NAME/$SERVICE_NAME.h"
+    echo "2. 🔧 Implement the service logic in src/$SERVICE_NAME/$SERVICE_NAME.cpp"
+    echo "3. 🧪 Update tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp with real test cases"
+    echo "4. 🃏 Add mock expectations in tests/${SERVICE_NAME}Test/Mock$SERVICE_NAME.h as needed"
+    echo "5. 📦 Add dependencies in tests/${SERVICE_NAME}Test/Makefile if needed"
     echo "   Examples: DEPENDENCIES = ServiceA ServiceB Logger"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
-    echo "7. Test your service:"
+    echo "6. 🧪 Test your service:"
     echo "   make test-run-${SERVICE_NAME}Test"
+    echo ""
+    echo "🚀 Auto-registration features:"
+    echo "  • Both I$SERVICE_NAME and $SERVICE_NAME are auto-registered with IoC container"
+    echo "  • Resolve via interface: ioccontainer::IIocContainer::resolveGlobal<I$SERVICE_NAME>()"
+    echo "  • Resolve concrete: ioccontainer::IIocContainer::resolveGlobal<$SERVICE_NAME>()"
+    echo "  • Perfect for dependency injection and testing with mocks"
+    echo ""
+    echo "💡 Tips:"
+    echo "  • Use the interface (I$SERVICE_NAME) for dependency injection"
+    echo "  • The mock class enables easy unit testing of dependent components"
+    echo "  • Method names are domain-specific (process${SERVICE_PART}Data) instead of generic"
     echo ""
 }
 

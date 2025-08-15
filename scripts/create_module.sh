@@ -12,19 +12,46 @@ cd "$PROJECT_ROOT"
 
 # Check if action and module name are provided
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <create|remove> <ModuleName>"
+    echo "Usage: $0 <create|remove> <ModuleName> [--interface] [--pimpl]"
     echo "Examples:"
-    echo "  $0 create DatabaseManager    # Create a new utility module"
-    echo "  $0 create ConfigReader        # Create a new infrastructure module"
-    echo "  $0 remove DatabaseManager     # Remove an existing module"
+    echo "  $0 create DatabaseManager              # Simple concrete class (default)"
+    echo "  $0 create Logger --interface           # Add interface for polymorphism"
+    echo "  $0 create WebServer --interface --pimpl # Both interface and PIMPL"
+    echo "  $0 remove DatabaseManager              # Remove an existing module"
+    echo ""
+    echo "Flags:"
+    echo "  --interface   Generate interface class for polymorphism/DI"
+    echo "  --pimpl       Use PIMPL idiom to hide implementation details"
     echo ""
     echo "Note: Module names should be in PascalCase (e.g., DatabaseManager, not databaseManager)"
     exit 1
 fi
 
-
 ACTION="$1"
 MODULE_NAME="$2"
+
+# Parse optional flags
+GENERATE_INTERFACE=false
+GENERATE_PIMPL=false
+
+shift 2  # Remove action and module name from arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --interface)
+            GENERATE_INTERFACE=true
+            shift
+            ;;
+        --pimpl)
+            GENERATE_PIMPL=true
+            shift
+            ;;
+        *)
+            echo "Error: Unknown flag '$1'"
+            echo "Valid flags: --interface, --pimpl"
+            exit 1
+            ;;
+    esac
+done
 
 # Reserved module names that cannot be manipulated
 RESERVED_MODULES=("ApiRouter" "IocContainer" "Logger" "WebServer")
@@ -65,6 +92,7 @@ NAMESPACE_NAME="${MODULE_NAME,,}"
 create_module() {
     echo "🔧 Creating utility/infrastructure module: $MODULE_NAME"
     echo "📁 Namespace: $NAMESPACE_NAME"
+    echo "🏗️  Configuration: Interface=$GENERATE_INTERFACE, PIMPL=$GENERATE_PIMPL"
 
     # Check if module already exists
     if [ -d "include/$MODULE_NAME" ] || [ -d "src/$MODULE_NAME" ] || [ -d "tests/${MODULE_NAME}Test" ]; then
@@ -78,8 +106,9 @@ create_module() {
     mkdir -p "src/$MODULE_NAME"
     mkdir -p "tests/${MODULE_NAME}Test/cases"
 
-# Create interface header (optional - many modules don't need interfaces)
-cat > "include/$MODULE_NAME/I$MODULE_NAME.h" << EOF
+    # Create interface header (only if requested)
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        cat > "include/$MODULE_NAME/I$MODULE_NAME.h" << EOF
 #pragma once
 
 namespace $NAMESPACE_NAME {
@@ -100,15 +129,16 @@ public:
 
 } // namespace $NAMESPACE_NAME
 EOF
+    fi
 
-# Create main header file
-cat > "include/$MODULE_NAME/$MODULE_NAME.h" << EOF
+    # Create main header file with conditional content
+    cat > "include/$MODULE_NAME/$MODULE_NAME.h" << EOF
 #pragma once
 
 #include <memory>
 #include <string>
 #include <string_view>
-#include "$MODULE_NAME/I$MODULE_NAME.h"
+$(if [ "$GENERATE_INTERFACE" = true ]; then echo "#include \"$MODULE_NAME/I$MODULE_NAME.h\""; fi)
 
 namespace $NAMESPACE_NAME {
 
@@ -117,7 +147,7 @@ namespace $NAMESPACE_NAME {
  * 
  * TODO: Add detailed description of what this module does
  */
-class $MODULE_NAME : public I$MODULE_NAME {
+class $MODULE_NAME$(if [ "$GENERATE_INTERFACE" = true ]; then echo " : public I$MODULE_NAME"; fi) {
 public:
     /**
      * Default constructor
@@ -127,12 +157,12 @@ public:
     /**
      * Destructor - ensures proper cleanup
      */
-    ~$MODULE_NAME() override;
+    $(if [ "$GENERATE_INTERFACE" = true ]; then echo "~$MODULE_NAME() override;"; else echo "~$MODULE_NAME();"; fi)
 
     // TODO: Add your public interface methods here
     // Example:
-    // bool initialize() override;
-    // void cleanup() override;
+    $(if [ "$GENERATE_INTERFACE" = true ]; then echo "    // bool initialize() override;"; else echo "    // bool initialize();"; fi)
+    $(if [ "$GENERATE_INTERFACE" = true ]; then echo "    // void cleanup() override;"; else echo "    // void cleanup();"; fi)
     // std::string getStatus() const;
 
     // Delete copy constructor and assignment operator (RAII best practice)
@@ -144,46 +174,68 @@ public:
     $MODULE_NAME& operator=($MODULE_NAME&&) noexcept;
 
 private:
-    // TODO: Add private members here
-    // Consider using PIMPL idiom for complex implementations:
-    // class Impl;
-    // std::unique_ptr<Impl> _impl;
+$(if [ "$GENERATE_PIMPL" = true ]; then 
+    echo "    // PIMPL idiom to hide implementation details"
+    echo "    class Impl;"
+    echo "    std::unique_ptr<Impl> _impl;"
+else
+    echo "    // TODO: Add private members here"
+fi)
 };
 
 } // namespace $NAMESPACE_NAME
 EOF
 
-# Create source file
-cat > "src/$MODULE_NAME/$MODULE_NAME.cpp" << EOF
+    # Create source file with conditional PIMPL content
+    cat > "src/$MODULE_NAME/$MODULE_NAME.cpp" << EOF
 #include <$MODULE_NAME/$MODULE_NAME.h>
+$(if [ "$GENERATE_PIMPL" = true ]; then 
+    echo ""
+    echo "namespace $NAMESPACE_NAME {"
+    echo ""
+    echo "// PIMPL implementation class"
+    echo "class $MODULE_NAME::Impl {"
+    echo "public:"
+    echo "    Impl() {"
+    echo "        // TODO: Initialize implementation here"
+    echo "    }"
+    echo ""
+    echo "    // TODO: Add implementation methods here"
+    echo "};"
+    echo ""
+fi)
 
 namespace $NAMESPACE_NAME {
 
-$MODULE_NAME::$MODULE_NAME() {
-    // TODO: Initialize your module here
+$MODULE_NAME::$MODULE_NAME()$(if [ "$GENERATE_PIMPL" = true ]; then echo " : _impl(std::make_unique<Impl>())"; fi) {
+    $(if [ "$GENERATE_PIMPL" = false ]; then echo "    // TODO: Initialize your module here"; fi)
 }
 
-$MODULE_NAME::~$MODULE_NAME() {
-    // TODO: Cleanup resources here
-    // Note: If using PIMPL, destructor must be defined in .cpp file
-}
+$MODULE_NAME::~$MODULE_NAME()$(if [ "$GENERATE_PIMPL" = true ]; then echo " = default;"; else echo " {"; echo "    // TODO: Cleanup resources here"; echo "}"; fi)
 
-$MODULE_NAME::$MODULE_NAME($MODULE_NAME&&) noexcept {
-    // TODO: Implement move constructor if needed
-}
+$MODULE_NAME::$MODULE_NAME($MODULE_NAME&&) noexcept$(if [ "$GENERATE_PIMPL" = true ]; then echo " = default;"; else echo " {"; echo "    // TODO: Implement move constructor if needed"; echo "}"; fi)
 
 $MODULE_NAME& $MODULE_NAME::operator=($MODULE_NAME&& other) noexcept {
-    if (this != &other) {
-        // TODO: Implement move assignment if needed
-    }
-    return *this;
+$(if [ "$GENERATE_PIMPL" = true ]; then 
+    echo "    _impl = std::move(other._impl);"
+    echo "    return *this;"
+else
+    echo "    if (this != &other) {"
+    echo "        // TODO: Implement move assignment if needed"
+    echo "    }"
+    echo "    return *this;"
+fi)
 }
 
 // TODO: Implement your public methods here
 // Example:
 // bool $MODULE_NAME::initialize() {
-//     // Implementation here
-//     return true;
+$(if [ "$GENERATE_PIMPL" = true ]; then 
+    echo "//     return _impl->initialize();"
+else
+    echo "//     // Implementation here"
+    echo "//     return true;"
+fi)
 // }
 
 } // namespace $NAMESPACE_NAME
@@ -245,8 +297,9 @@ TEST_F(${MODULE_NAME}Test, MoveConstructorWorks) {
 // }
 EOF
 
-# Create mock header for testing (if needed)
-cat > "tests/${MODULE_NAME}Test/Mock$MODULE_NAME.h" << EOF
+    # Create mock header for testing (only if interface is generated)
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        cat > "tests/${MODULE_NAME}Test/Mock$MODULE_NAME.h" << EOF
 #pragma once
 
 #include <gmock/gmock.h>
@@ -267,9 +320,11 @@ public:
 
 } // namespace $NAMESPACE_NAME
 EOF
+    fi
 
-# Create interface test (to ensure contract compliance)
-cat > "tests/${MODULE_NAME}Test/cases/${MODULE_NAME}InterfaceTest.cpp" << EOF
+    # Create interface test (only if interface is generated)
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        cat > "tests/${MODULE_NAME}Test/cases/${MODULE_NAME}InterfaceTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <$MODULE_NAME/$MODULE_NAME.h>
@@ -313,6 +368,7 @@ TEST_F(${MODULE_NAME}InterfaceTest, MockCanBeUsedForTesting) {
 
 // TODO: Add more interface compliance tests
 EOF
+    fi
 
 # Create Makefile for tests using the flexible template
 cat << 'EOF' > "tests/${MODULE_NAME}Test/Makefile"
@@ -489,33 +545,64 @@ EOF
 
     echo ""
     echo "✅ Utility/Infrastructure module '$MODULE_NAME' created successfully!"
+    echo "🏗️  Configuration: Interface=$GENERATE_INTERFACE, PIMPL=$GENERATE_PIMPL"
     echo ""
     echo "📁 Created files:"
-    echo "  📄 include/$MODULE_NAME/I$MODULE_NAME.h (interface)"
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        echo "  📄 include/$MODULE_NAME/I$MODULE_NAME.h (interface)"
+    fi
     echo "  📄 include/$MODULE_NAME/$MODULE_NAME.h (main header)"
     echo "  📄 src/$MODULE_NAME/$MODULE_NAME.cpp (implementation)"
     echo "  📄 tests/${MODULE_NAME}Test/cases/${MODULE_NAME}BasicTest.cpp"
-    echo "  📄 tests/${MODULE_NAME}Test/cases/${MODULE_NAME}InterfaceTest.cpp"
-    echo "  📄 tests/${MODULE_NAME}Test/Mock$MODULE_NAME.h (mock for testing)"
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        echo "  📄 tests/${MODULE_NAME}Test/cases/${MODULE_NAME}InterfaceTest.cpp"
+        echo "  📄 tests/${MODULE_NAME}Test/Mock$MODULE_NAME.h (mock for testing)"
+    fi
     echo "  📄 tests/${MODULE_NAME}Test/TestMain.cpp"
     echo "  📄 tests/${MODULE_NAME}Test/Makefile"
     echo ""
     echo "📋 Next steps:"
-    echo "1. 🔧 Edit include/$MODULE_NAME/I$MODULE_NAME.h to define your interface"
-    echo "2. 🔧 Edit include/$MODULE_NAME/$MODULE_NAME.h to add your public API"
-    echo "3. 🔧 Edit src/$MODULE_NAME/$MODULE_NAME.cpp to implement your functionality"
-    echo "4. 🧪 Update tests/${MODULE_NAME}Test/cases/${MODULE_NAME}BasicTest.cpp with real test cases"
-    echo "5. 🃏 Update tests/${MODULE_NAME}Test/Mock$MODULE_NAME.h with mock methods for your interface"
-    echo "6. 📦 To add dependencies, edit the DEPENDENCIES line in tests/${MODULE_NAME}Test/Makefile"
+    local step=1
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        echo "$step. 🔧 Edit include/$MODULE_NAME/I$MODULE_NAME.h to define your interface"
+        step=$((step + 1))
+    fi
+    echo "$step. 🔧 Edit include/$MODULE_NAME/$MODULE_NAME.h to add your public API"
+    step=$((step + 1))
+    echo "$step. 🔧 Edit src/$MODULE_NAME/$MODULE_NAME.cpp to implement your functionality"
+    step=$((step + 1))
+    if [ "$GENERATE_PIMPL" = true ]; then
+        echo "$step. 🏗️  Implement the PIMPL Impl class in the .cpp file"
+        step=$((step + 1))
+    fi
+    echo "$step. 🧪 Update tests/${MODULE_NAME}Test/cases/${MODULE_NAME}BasicTest.cpp with real test cases"
+    step=$((step + 1))
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        echo "$step. 🃏 Update tests/${MODULE_NAME}Test/Mock$MODULE_NAME.h with mock methods for your interface"
+        step=$((step + 1))
+    fi
+    echo "$step. 📦 To add dependencies, edit the DEPENDENCIES line in tests/${MODULE_NAME}Test/Makefile"
     echo "   Examples: DEPENDENCIES = Logger IoCContainer ServiceA"
     echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
-    echo "7. 🧪 Test your module:"
+    step=$((step + 1))
+    echo "$step. 🧪 Test your module:"
     echo "   make test-run-${MODULE_NAME}Test"
     echo ""
     echo "💡 Tips:"
-    echo "  • Use the interface (I$MODULE_NAME) to define contracts"
-    echo "  • Consider PIMPL idiom for complex implementations"
-    echo "  • The mock class helps test components that depend on your module"
+    if [ "$GENERATE_INTERFACE" = false ]; then
+        echo "  • Simple concrete class - add --interface flag if you later need polymorphism"
+    fi
+    if [ "$GENERATE_INTERFACE" = true ]; then
+        echo "  • Use the interface (I$MODULE_NAME) to define contracts"
+        echo "  • The mock class helps test components that depend on your module"
+    fi
+    if [ "$GENERATE_PIMPL" = true ]; then
+        echo "  • PIMPL hides implementation details and speeds up compilation"
+        echo "  • Destructor is defined in .cpp file for proper PIMPL cleanup"
+    fi
+    if [ "$GENERATE_PIMPL" = false ]; then
+        echo "  • Add --pimpl flag if you later need to hide complex dependencies"
+    fi
     echo "  • Follow RAII principles for resource management"
     echo ""
 }
