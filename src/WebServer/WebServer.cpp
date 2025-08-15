@@ -95,7 +95,7 @@ public:
         running = false;
     }
     
-    HttpRequest parseHttpRequest(struct mg_http_message* hm, struct mg_connection* c) {
+    HttpRequest parseHttpRequest(struct mg_http_message* hm, struct mg_connection* /*c*/) {
         HttpRequest request;
         
         // Parse method

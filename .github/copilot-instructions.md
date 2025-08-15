@@ -1048,6 +1048,134 @@ Before committing tests, verify:
 
 **Remember**: The best test is one that tests **exactly one thing** in **complete isolation**. If your IoC Container tests break when you change the Logger, you're not testing the IoC Container - you're testing the integration.
 
+## **CRITICAL: Testing Strategy Guidelines**
+
+### **Mock vs Isolation Decision Framework**
+
+**FUNDAMENTAL RULE**: **Mock your business logic, isolate your infrastructure.**
+
+#### **When to Use MOCKING:**
+```cpp
+// ✅ MOCK: Business logic, domain objects, complex algorithms
+TEST(ApiRouterTest, RoutesToCorrectEndpoint) {
+    MockEndpoint mockEndpoint;
+    EXPECT_CALL(mockEndpoint, handleRequest(_)).Times(1);
+    apiRouter.registerEndpoint("/api/users", mockEndpoint);
+    apiRouter.handleRequest("/api/users", "GET", ...);
+}
+```
+
+**Mock these types:**
+- **Business logic classes** (ApiRouter, Services, Controllers)
+- **Domain objects** with complex behavior and state
+- **Classes you own and control** completely
+- **Multi-step algorithms** and workflows
+- **Classes with significant logic** to test
+
+#### **When to Use ISOLATION:**
+```cpp
+// ✅ ISOLATE: Infrastructure, thin wrappers, external library facades
+TEST(WebServerTest, StartOperationDoesNotCrash) {
+    WebServer webServer("127.0.0.1", 8080);
+    EXPECT_NO_THROW(webServer.start());  // Test our interface, not mongoose
+    EXPECT_EQ(webServer.getBindAddress(), "127.0.0.1");
+}
+```
+
+**Isolate these types:**
+- **Infrastructure wrappers** (WebServer, Database connections)
+- **External library facades** (mongoose, SQLite, curl wrappers)
+- **Simple data holders** and configuration objects
+- **System boundary classes** (file I/O, network, OS interfaces)
+- **Thin wrappers** where most logic lives in external libraries
+
+#### **Why This Distinction Matters:**
+
+**Infrastructure Code Reality:**
+```cpp
+// WebServer is mostly mongoose + thin interface
+class WebServer {
+    bool start() { return mongoose_start(); }  // Thin wrapper
+    void setHandler(Handler h) { handler = h; } // Simple storage
+};
+
+// Mocking mongoose internals = testing the wrong thing
+❌ EXPECT_CALL(mongoose, mg_http_listen(addr, port, handler));
+✅ EXPECT_EQ(webServer.getBindAddress(), "127.0.0.1");
+```
+
+**Business Logic Reality:**
+```cpp
+// ApiRouter has complex routing logic we own
+class ApiRouter {
+    bool handleRequest(path, method, body, response) {
+        auto key = createEndpointKey(path, method);  // Our logic
+        auto endpoint = findEndpoint(key);           // Our logic
+        return endpoint->handle(request);            // Our orchestration
+    }
+};
+
+// We want to test OUR routing logic, not endpoint implementation
+✅ EXPECT_CALL(mockEndpoint, handle(_)).WillReturn(true);
+❌ WebServer webServer; // Don't test real HTTP over network
+```
+
+#### **Testing Value Assessment:**
+
+**High-Value Tests (Write These):**
+- ✅ **Interface contracts** - Does the API work as promised?
+- ✅ **Error handling** - How does it fail gracefully?
+- ✅ **Configuration** - Are settings stored/applied correctly?
+- ✅ **Business logic** - Do algorithms produce correct results?
+
+**Low-Value Tests (Avoid These):**
+- ❌ **Implementation details** - Which internal functions get called?
+- ❌ **External library behavior** - Does mongoose parse HTTP correctly?
+- ❌ **Integration complexity** - Real network calls in unit tests
+- ❌ **Timing dependencies** - Tests that fail due to race conditions
+
+#### **Practical Guidelines:**
+
+**For Infrastructure (WebServer, Logger, Database):**
+1. **Test configuration and lifecycle** - Does it start/stop safely?
+2. **Test your interface contract** - Do methods return expected values?
+3. **Test error handling** - Does it fail gracefully with bad input?
+4. **Don't test the library** - Trust mongoose to parse HTTP correctly
+
+**For Business Logic (ApiRouter, Services, Domain):**
+1. **Mock dependencies** - Control what collaborators do
+2. **Test decision logic** - Does it route/process/calculate correctly?
+3. **Test edge cases** - How does it handle unusual inputs?
+4. **Test state changes** - Does it update internal state correctly?
+
+#### **Architecture Testing Strategy:**
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Integration   │    │  Business Logic │    │ Infrastructure  │
+│      Tests      │    │   (Unit Tests)  │    │ (Isolated Tests)│
+├─────────────────┤    ├─────────────────┤    ├─────────────────┤
+│ ApiRouter +     │    │ ApiRouter       │    │ WebServer       │
+│ WebServer +     │    │ (mocked deps)   │    │ (no network)    │
+│ Real HTTP       │    │                 │    │                 │
+│                 │    │ Services        │    │ Logger          │
+│ ┌─┐ ┌─┐ ┌─┐    │    │ (mocked deps)   │    │ (no file I/O)   │
+│ │E│ │F│ │F│    │    │                 │    │                 │
+│ │2│ │e│ │a│    │    │ Domain Logic    │    │ Database        │
+│ │E│ │w│ │s│    │    │ (mocked repos)  │    │ (no real DB)    │
+│ └─┘ └─┘ └─┘    │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+     Slow                    Fast                   Fast
+   Real Network            Mocked Deps           No External Deps
+```
+
+**Layer Testing Strategy:**
+- **Infrastructure**: Isolated unit tests (fast, no external deps)
+- **Business Logic**: Mocked unit tests (fast, controlled dependencies)  
+- **Integration**: End-to-end tests (slower, real components)
+
+This approach maximizes test value while minimizing maintenance overhead and execution time.
+
 ---
 
 ## Development Workflow
