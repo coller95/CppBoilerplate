@@ -1,8 +1,36 @@
 #include <gtest/gtest.h>
 #include <IocContainer/IIocContainer.h>
-#include <Logger/Logger.h>
-#include <Logger/ILogger.h>
-#include <WebServer/IWebServer.h>
+#include <string>
+#include <memory>
+
+// Completely generic test services - no domain knowledge
+class IServiceA {
+public:
+	virtual ~IServiceA() = default;
+	virtual int getValue() = 0;
+	virtual void setValue(int value) = 0;
+	virtual void increment() = 0;
+};
+
+class ServiceAImpl : public IServiceA {
+private:
+	int _value;
+
+public:
+	ServiceAImpl(int initialValue = 42) : _value(initialValue) {}
+
+	int getValue() override {
+		return _value;
+	}
+
+	void setValue(int value) override {
+		_value = value;
+	}
+
+	void increment() override {
+		_value++;
+	}
+};
 
 namespace {
 
@@ -17,24 +45,24 @@ protected:
 
 } // anonymous namespace
 
-// Test EXACT startup sequence from main.cpp
+// Test basic startup workflow
 TEST_F(IocStartupFailureTest, ApplicationStartupWorkflow) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // 1. Register Logger (exactly like main.cpp does)
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger);
+    // 1. Register service
+    auto serviceA = std::make_shared<ServiceAImpl>(100);
+    container.registerInstance<IServiceA>(serviceA);
     
-    // 2. Resolve Logger (exactly like main.cpp does)
-    auto globalLogger = container.resolve<logger::ILogger>();
-    EXPECT_NE(globalLogger, nullptr);
+    // 2. Resolve service
+    auto globalService = container.resolve<IServiceA>();
+    EXPECT_NE(globalService, nullptr);
     
     // 3. Verify it's the same instance we registered
-    EXPECT_EQ(globalLogger.get(), logger.get());
+    EXPECT_EQ(globalService.get(), serviceA.get());
     
     // 4. Verify we can actually use the service
-    EXPECT_NO_THROW(globalLogger->logInfo("Application starting up..."));
+    EXPECT_NO_THROW(globalService->increment());
+    EXPECT_EQ(globalService->getValue(), 101);
 }
 
 // Test failure mode: missing service during startup
@@ -44,7 +72,7 @@ TEST_F(IocStartupFailureTest, StartupFailsWhenServiceMissing) {
     
     // Should throw ServiceNotRegisteredException when trying to resolve
     EXPECT_THROW(
-        container.resolve<logger::ILogger>(),
+        container.resolve<IServiceA>(),
         ioccontainer::ServiceNotRegisteredException
     );
     
@@ -52,41 +80,41 @@ TEST_F(IocStartupFailureTest, StartupFailsWhenServiceMissing) {
     EXPECT_EQ(container.getRegisteredCount(), 0);
 }
 
-// Test auto-registration workflow used by modules
+// Test auto-registration workflow
 TEST_F(IocStartupFailureTest, AutoRegistrationWorks) {
-    // Test what endpoint modules do for auto-registration
-    ioccontainer::IIocContainer::registerGlobal<logger::ILogger>(
+    // Test factory-based auto-registration
+    ioccontainer::IIocContainer::registerGlobal<IServiceA>(
         []() { 
-            auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-            logger->setLocalDisplay(true);
-            return logger;
+            return std::make_shared<ServiceAImpl>(200);
         }
     );
     
     // Should be able to resolve the auto-registered service
-    auto service = ioccontainer::IIocContainer::resolveGlobal<logger::ILogger>();
+    auto service = ioccontainer::IIocContainer::resolveGlobal<IServiceA>();
     EXPECT_NE(service, nullptr);
     
     // Should be usable
-    EXPECT_NO_THROW(service->logInfo("Auto-registered service works"));
+    EXPECT_NO_THROW(service->increment());
+    EXPECT_EQ(service->getValue(), 201);
 }
 
 // Test service overwrite behavior during startup
 TEST_F(IocStartupFailureTest, ServiceOverwriteWorks) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // Register first logger
-    auto logger1 = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    container.registerInstance<logger::ILogger>(logger1);
+    // Register first service
+    auto service1 = std::make_shared<ServiceAImpl>(300);
+    container.registerInstance<IServiceA>(service1);
     
-    // Register second logger (should overwrite first)
-    auto logger2 = std::make_shared<logger::Logger>("127.0.0.1", 9001);
-    container.registerInstance<logger::ILogger>(logger2);
+    // Register second service (should overwrite first)
+    auto service2 = std::make_shared<ServiceAImpl>(400);
+    container.registerInstance<IServiceA>(service2);
     
-    // Should get the second logger
-    auto resolved = container.resolve<logger::ILogger>();
-    EXPECT_EQ(resolved.get(), logger2.get());
-    EXPECT_NE(resolved.get(), logger1.get());
+    // Should get the second service
+    auto resolved = container.resolve<IServiceA>();
+    EXPECT_EQ(resolved.get(), service2.get());
+    EXPECT_NE(resolved.get(), service1.get());
+    EXPECT_EQ(resolved->getValue(), 400);
     
     // Container should still have only 1 service registered
     EXPECT_EQ(container.getRegisteredCount(), 1);
@@ -96,39 +124,41 @@ TEST_F(IocStartupFailureTest, ServiceOverwriteWorks) {
 TEST_F(IocStartupFailureTest, MixedRegistrationMethods) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // Use instance method (like main.cpp)
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    container.registerInstance<logger::ILogger>(logger);
+    // Use instance method
+    auto serviceA = std::make_shared<ServiceAImpl>(500);
+    container.registerInstance<IServiceA>(serviceA);
     
-    // Use global static method (like modules)  
-    ioccontainer::IIocContainer::registerGlobal<logger::Logger>(
-        std::make_shared<logger::Logger>("127.0.0.1", 9001)
+    // Use global static method  
+    ioccontainer::IIocContainer::registerGlobal<ServiceAImpl>(
+        std::make_shared<ServiceAImpl>(600)
     );
     
     // Both should be resolvable
-    auto loggerInterface = container.resolve<logger::ILogger>();
-    auto loggerConcrete = container.resolve<logger::Logger>();
+    auto serviceInterface = container.resolve<IServiceA>();
+    auto serviceConcrete = container.resolve<ServiceAImpl>();
     
-    EXPECT_NE(loggerInterface, nullptr);
-    EXPECT_NE(loggerConcrete, nullptr);
+    EXPECT_NE(serviceInterface, nullptr);
+    EXPECT_NE(serviceConcrete, nullptr);
+    EXPECT_EQ(serviceInterface->getValue(), 500);
+    EXPECT_EQ(serviceConcrete->getValue(), 600);
     
     // Should have 2 different service types registered
     EXPECT_EQ(container.getRegisteredCount(), 2);
 }
 
-// Test interface-first access - can't accidentally use concrete class
+// Test interface-first access pattern
 TEST_F(IocStartupFailureTest, InterfaceFirstAccessWorks) {
-    // This is the ONLY way users should access the container
     auto& container = ioccontainer::IIocContainer::getInstance();
     
     // Register service through interface
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    container.registerInstance<logger::ILogger>(logger);
+    auto serviceA = std::make_shared<ServiceAImpl>(700);
+    container.registerInstance<IServiceA>(serviceA);
     
     // Resolve service through interface
-    auto resolved = container.resolve<logger::ILogger>();
+    auto resolved = container.resolve<IServiceA>();
     EXPECT_NE(resolved, nullptr);
+    EXPECT_EQ(resolved->getValue(), 700);
     
     // Verify global methods also work through interface
-    EXPECT_TRUE(ioccontainer::IIocContainer::isRegisteredGlobal<logger::ILogger>());
+    EXPECT_TRUE(ioccontainer::IIocContainer::isRegisteredGlobal<IServiceA>());
 }

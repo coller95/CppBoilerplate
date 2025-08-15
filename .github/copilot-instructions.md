@@ -882,6 +882,132 @@ docker buildx build --platform linux/arm64,linux/amd64 .
 
 **Rationale:** Strict TDD ensures predictable and reliable code behavior, early detection of bugs and regressions, and a maintainable and scalable codebase.
 
+### Test Isolation Principles
+
+**MANDATORY TEST DECOUPLING** - All tests must be completely isolated from other modules:
+
+#### Core Principle: Test Only What You're Testing
+
+**RULE**: Each test module should **ONLY** depend on the module being tested. Zero external module dependencies.
+
+#### ❌ WRONG: Tightly Coupled Tests
+```cpp
+// DON'T DO THIS - test depends on Logger module
+#include <Logger/Logger.h>
+#include <Logger/ILogger.h>
+
+TEST(IocContainerTest, ServiceResolution) {
+    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);  // External dependency!
+    container.registerInstance<logger::ILogger>(logger);               // Domain coupling!
+    
+    auto resolved = container.resolve<logger::ILogger>();               // Business logic leak!
+    resolved->logInfo("Test message");                                  // Not testing container!
+}
+```
+
+**Problems:**
+- Changes to Logger **break IoC Container tests**
+- Tests fail when Logger has bugs
+- Not testing IoC Container functionality - testing Logger integration
+- Build dependencies create coupling
+
+#### ✅ CORRECT: Isolated Tests
+```cpp
+// CORRECT - completely generic, no domain knowledge
+class IServiceA {
+public:
+    virtual ~IServiceA() = default;
+    virtual int getValue() = 0;
+    virtual void setValue(int value) = 0;
+    virtual void increment() = 0;
+};
+
+class ServiceAImpl : public IServiceA {
+private:
+    int _value;
+public:
+    ServiceAImpl(int initial = 42) : _value(initial) {}
+    int getValue() override { return _value; }
+    void setValue(int value) override { _value = value; }
+    void increment() override { _value++; }
+};
+
+TEST(IocContainerTest, ServiceResolution) {
+    auto service = std::make_shared<ServiceAImpl>(100);                // Generic service
+    container.registerInstance<IServiceA>(service);                   // Tests container mechanics
+    
+    auto resolved = container.resolve<IServiceA>();                    // Tests resolution
+    EXPECT_EQ(resolved->getValue(), 100);                             // Tests functionality
+    resolved->increment();                                             // Tests usability
+    EXPECT_EQ(resolved->getValue(), 101);                             // Verifies state
+}
+```
+
+**Benefits:**
+- Tests **only** IoC Container functionality
+- Zero external dependencies
+- Works with **any** service type (banking, gaming, utilities)
+- Changes to other modules **never** break these tests
+
+#### Implementation Guidelines
+
+1. **Zero External Dependencies**:
+   ```makefile
+   # Makefile should have empty dependencies
+   DEPENDENCIES =  # No external modules!
+   ```
+
+2. **Generic Test Services**:
+   ```cpp
+   // Use domain-agnostic interfaces
+   class IServiceA { /* generic operations */ };
+   class IServiceB { /* different generic operations */ };
+   
+   // NO business domain concepts:
+   // ❌ ILogger, IWebServer, IPaymentProcessor
+   // ✅ IServiceA, IServiceB, IServiceC
+   ```
+
+3. **Test Container Mechanics, Not Business Logic**:
+   ```cpp
+   // Test what the CONTAINER does:
+   ✅ Service registration works
+   ✅ Service resolution works  
+   ✅ Thread safety works
+   ✅ Error handling works
+   ✅ Service lifecycle works
+   
+   // DON'T test what SERVICES do:
+   ❌ Logging functionality
+   ❌ HTTP request handling
+   ❌ Database operations
+   ```
+
+#### When Isolation Is Required
+
+**ALWAYS isolate when testing**:
+- Core infrastructure (IoC Container, Router, etc.)
+- Utility classes and algorithms
+- Data structures and collections
+- Any component meant to work with multiple service types
+
+**Integration tests are separate**:
+- Create dedicated integration test modules for cross-module testing
+- Use `tests/IntegrationTest/` for real service interactions
+- Keep unit tests and integration tests clearly separated
+
+#### Test Isolation Checklist
+
+Before committing tests, verify:
+- [ ] Makefile has `DEPENDENCIES =` (empty)
+- [ ] No `#include` of other project modules
+- [ ] Uses generic test services (`IServiceA`, `ServiceAImpl`)
+- [ ] Tests component mechanics, not business logic
+- [ ] All tests pass with only target module built
+- [ ] No domain-specific concepts in test code
+
+**Remember**: The best test is one that tests **exactly one thing** in **complete isolation**. If your IoC Container tests break when you change the Logger, you're not testing the IoC Container - you're testing the integration.
+
 ---
 
 ## Development Workflow

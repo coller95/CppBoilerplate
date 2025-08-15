@@ -1,12 +1,73 @@
 #include <gtest/gtest.h>
 #include <IocContainer/IIocContainer.h>
-#include <Logger/Logger.h>
-#include <Logger/ILogger.h>
 #include <thread>
 #include <vector>
 #include <atomic>
 #include <chrono>
 #include <random>
+#include <string>
+
+// Completely generic test services - no domain knowledge
+class IServiceA {
+public:
+	virtual ~IServiceA() = default;
+	virtual int getValue() = 0;
+	virtual void setValue(int value) = 0;
+	virtual void increment() = 0;
+};
+
+class ServiceAImpl : public IServiceA {
+private:
+	std::atomic<int> _value{42};
+
+public:
+	ServiceAImpl() = default;
+	ServiceAImpl(int initialValue) : _value(initialValue) {}
+
+	int getValue() override {
+		return _value.load();
+	}
+
+	void setValue(int value) override {
+		_value.store(value);
+	}
+
+	void increment() override {
+		_value.fetch_add(1);
+	}
+};
+
+class IServiceB {
+public:
+	virtual ~IServiceB() = default;
+	virtual std::string getName() = 0;
+	virtual void setName(const std::string& name) = 0;
+	virtual int getCallCount() = 0;
+};
+
+class ServiceBImpl : public IServiceB {
+private:
+	std::string _name;
+	std::atomic<int> _callCount{0};
+
+public:
+	ServiceBImpl() : _name("DefaultService") {}
+	ServiceBImpl(const std::string& name) : _name(name) {}
+
+	std::string getName() override {
+		_callCount.fetch_add(1);
+		return _name;
+	}
+
+	void setName(const std::string& name) override {
+		_callCount.fetch_add(1);
+		_name = name;
+	}
+
+	int getCallCount() override {
+		return _callCount.load();
+	}
+};
 
 namespace {
 
@@ -49,12 +110,11 @@ public:
 
 } // anonymous namespace
 
-// Test REALISTIC concurrency: HTTP requests resolving services
-TEST_F(IocConcurrencyTest, ServiceResolutionUnderHTTPLoad) {
-    // Setup: Register services like a real web server
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger->setLocalDisplay(true);
-    ioccontainer::IIocContainer::registerGlobal<logger::ILogger>(logger);
+// Test concurrent service resolution under load
+TEST_F(IocConcurrencyTest, ServiceResolutionUnderLoad) {
+    // Setup: Register generic services
+    auto serviceA = std::make_shared<ServiceAImpl>(100);
+    ioccontainer::IIocContainer::registerGlobal<IServiceA>(serviceA);
     
     auto trackingService = std::make_shared<ConcurrentTrackingService>();
     ioccontainer::IIocContainer::registerGlobal<ConcurrentTrackingService>(trackingService);
@@ -68,13 +128,13 @@ TEST_F(IocConcurrencyTest, ServiceResolutionUnderHTTPLoad) {
     for (int i = 0; i < numRequests; ++i) {
         requests.emplace_back([&]() {
             try {
-                // Each HTTP request resolves services it needs
-                auto requestLogger = ioccontainer::IIocContainer::resolveGlobal<logger::ILogger>();
+                // Each request resolves services it needs
+                auto serviceA = ioccontainer::IIocContainer::resolveGlobal<IServiceA>();
                 auto requestService = ioccontainer::IIocContainer::resolveGlobal<ConcurrentTrackingService>();
                 
-                if (requestLogger != nullptr && requestService != nullptr) {
-                    // Use the services (simulate HTTP request processing)
-                    requestLogger->logInfo("Processing HTTP request");
+                if (serviceA != nullptr && requestService != nullptr) {
+                    // Use the services (test container functionality)
+                    serviceA->increment();
                     requestService->processRequest();
                     successCount++;
                 } else {
@@ -115,9 +175,9 @@ TEST_F(IocConcurrencyTest, ConcurrentRegistrationAndResolution) {
             std::this_thread::sleep_for(std::chrono::microseconds(rand() % 1000));
             
             try {
-                auto logger = ioccontainer::IIocContainer::resolveGlobal<logger::ILogger>();
-                if (logger != nullptr) {
-                    logger->logInfo("Resolved during concurrent access");
+                auto serviceA = ioccontainer::IIocContainer::resolveGlobal<IServiceA>();
+                if (serviceA != nullptr) {
+                    serviceA->increment();
                     resolveSuccesses++;
                 } else {
                     resolveFailures++;
@@ -137,9 +197,8 @@ TEST_F(IocConcurrencyTest, ConcurrentRegistrationAndResolution) {
             std::this_thread::sleep_for(std::chrono::microseconds(rand() % 500));
             
             try {
-                auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000 + i);
-                logger->setLocalDisplay(true);
-                ioccontainer::IIocContainer::registerGlobal<logger::ILogger>(logger);
+                auto serviceA = std::make_shared<ServiceAImpl>(200 + i);
+                ioccontainer::IIocContainer::registerGlobal<IServiceA>(serviceA);
                 registrationsDone++;
             } catch (...) {
                 // Registration failed
@@ -159,7 +218,7 @@ TEST_F(IocConcurrencyTest, ConcurrentRegistrationAndResolution) {
     
     // Final state should be consistent
     auto& container = ioccontainer::IIocContainer::getInstance();
-    EXPECT_EQ(container.getRegisteredCount(), 1); // Only one logger type (overwrites)
+    EXPECT_EQ(container.getRegisteredCount(), 1); // Only one service type (overwrites)
 }
 
 // Test singleton behavior under thread stress
@@ -191,8 +250,8 @@ TEST_F(IocConcurrencyTest, SingletonStressTest) {
     }
 }
 
-// Test real-world scenario: web server startup + concurrent requests
-TEST_F(IocConcurrencyTest, WebServerStartupWithConcurrentRequests) {
+// Test scenario: service startup + concurrent requests
+TEST_F(IocConcurrencyTest, ServiceStartupWithConcurrentRequests) {
     std::atomic<bool> startupComplete{false};
     std::atomic<int> requestsProcessed{0};
     std::atomic<int> requestsFailed{0};
@@ -200,15 +259,14 @@ TEST_F(IocConcurrencyTest, WebServerStartupWithConcurrentRequests) {
     
     std::vector<std::thread> threads;
     
-    // Simulate web server startup thread
+    // Simulate service startup thread
     threads.emplace_back([&]() {
         auto& container = ioccontainer::IIocContainer::getInstance();
         
-        // Simulate gradual service registration (like real startup)
+        // Simulate gradual service registration
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-        logger->setLocalDisplay(true);
-        container.registerInstance<logger::ILogger>(logger);
+        auto serviceA = std::make_shared<ServiceAImpl>(300);
+        container.registerInstance<IServiceA>(serviceA);
         
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         auto trackingService = std::make_shared<ConcurrentTrackingService>();
@@ -224,11 +282,11 @@ TEST_F(IocConcurrencyTest, WebServerStartupWithConcurrentRequests) {
             std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 50));
             
             try {
-                auto logger = ioccontainer::IIocContainer::resolveGlobal<logger::ILogger>();
+                auto serviceA = ioccontainer::IIocContainer::resolveGlobal<IServiceA>();
                 auto service = ioccontainer::IIocContainer::resolveGlobal<ConcurrentTrackingService>();
                 
-                if (logger && service) {
-                    logger->logInfo("Request processed successfully");
+                if (serviceA && service) {
+                    serviceA->increment();
                     service->processRequest();
                     requestsProcessed++;
                 } else {
@@ -266,14 +324,13 @@ TEST_F(IocConcurrencyTest, MemorySafetyUnderConcurrentAccess) {
                     // Mix of operations to stress memory management
                     if (op % 3 == 0) {
                         // Register service
-                        auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000 + i);
-                        logger->setLocalDisplay(true);
-                        ioccontainer::IIocContainer::registerGlobal<logger::ILogger>(logger);
+                        auto serviceA = std::make_shared<ServiceAImpl>(400 + i);
+                        ioccontainer::IIocContainer::registerGlobal<IServiceA>(serviceA);
                     } else if (op % 3 == 1) {
                         // Resolve service  
-                        auto logger = ioccontainer::IIocContainer::resolveGlobal<logger::ILogger>();
-                        if (logger) {
-                            logger->logInfo("Memory safety test");
+                        auto serviceA = ioccontainer::IIocContainer::resolveGlobal<IServiceA>();
+                        if (serviceA) {
+                            serviceA->increment();
                         }
                     } else {
                         // Query container state

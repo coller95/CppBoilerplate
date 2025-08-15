@@ -1,8 +1,36 @@
 #include <gtest/gtest.h>
 #include <IocContainer/IIocContainer.h>
-#include <Logger/Logger.h>
-#include <Logger/ILogger.h>
 #include <memory>
+#include <string>
+
+// Completely generic test services - no domain knowledge
+class IServiceA {
+public:
+	virtual ~IServiceA() = default;
+	virtual int getValue() = 0;
+	virtual void setValue(int value) = 0;
+	virtual void increment() = 0;
+};
+
+class ServiceAImpl : public IServiceA {
+private:
+	int _value;
+
+public:
+	ServiceAImpl(int initialValue = 42) : _value(initialValue) {}
+
+	int getValue() override {
+		return _value;
+	}
+
+	void setValue(int value) override {
+		_value = value;
+	}
+
+	void increment() override {
+		_value++;
+	}
+};
 
 namespace {
 
@@ -48,75 +76,73 @@ public:
 
 } // anonymous namespace
 
-// Test error handling during HTTP request processing
+// Test error handling when service is missing
 TEST_F(IocRuntimeFailureTest, HandlesUnregisteredServiceGracefully) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // Setup: Register Logger but not WebServer (partial startup)
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger);
+    // Setup: Register ServiceA but not MockWebServer (partial registration)
+    auto serviceA = std::make_shared<ServiceAImpl>(100);
+    container.registerInstance<IServiceA>(serviceA);
     
-    // During HTTP request processing, try to resolve unregistered service
+    // Try to resolve unregistered service
     EXPECT_THROW(
         container.resolve<IMockWebServer>(),
         ioccontainer::ServiceNotRegisteredException
     );
     
-    // But Logger should still work (other services unaffected)
-    auto resolvedLogger = container.resolve<logger::ILogger>();
-    EXPECT_NE(resolvedLogger, nullptr);
-    EXPECT_NO_THROW(resolvedLogger->logError("WebServer not available"));
+    // But ServiceA should still work (other services unaffected)
+    auto resolvedServiceA = container.resolve<IServiceA>();
+    EXPECT_NE(resolvedServiceA, nullptr);
+    EXPECT_NO_THROW(resolvedServiceA->increment());
 }
 
 // Test service replacement during runtime (hot-swap scenario)
 TEST_F(IocRuntimeFailureTest, CanReplaceServicesAtRuntime) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // Initial setup: Register first logger
-    auto logger1 = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger1->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger1);
+    // Initial setup: Register first service
+    auto service1 = std::make_shared<ServiceAImpl>(100);
+    container.registerInstance<IServiceA>(service1);
     
-    // Verify first logger works
-    auto resolved1 = container.resolve<logger::ILogger>();
-    EXPECT_EQ(resolved1.get(), logger1.get());
+    // Verify first service works
+    auto resolved1 = container.resolve<IServiceA>();
+    EXPECT_EQ(resolved1.get(), service1.get());
     
-    // Runtime: Replace with second logger (configuration change, failover, etc.)
-    auto logger2 = std::make_shared<logger::Logger>("127.0.0.1", 9001);
-    logger2->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger2);
+    // Runtime: Replace with second service (hot-swap scenario)
+    auto service2 = std::make_shared<ServiceAImpl>(200);
+    container.registerInstance<IServiceA>(service2);
     
-    // Should now get the second logger
-    auto resolved2 = container.resolve<logger::ILogger>();
-    EXPECT_EQ(resolved2.get(), logger2.get());
-    EXPECT_NE(resolved2.get(), logger1.get());
+    // Should now get the second service
+    auto resolved2 = container.resolve<IServiceA>();
+    EXPECT_EQ(resolved2.get(), service2.get());
+    EXPECT_NE(resolved2.get(), service1.get());
     
     // Should be usable immediately
-    EXPECT_NO_THROW(resolved2->logInfo("Service replaced successfully"));
+    EXPECT_NO_THROW(resolved2->increment());
+    EXPECT_EQ(resolved2->getValue(), 201);
 }
 
 // Test multiple service resolution in single request context
 TEST_F(IocRuntimeFailureTest, MultipleServiceResolutionInRequest) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
-    // Setup: Register multiple services (typical web server state)
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger);
+    // Setup: Register multiple services
+    auto serviceA = std::make_shared<ServiceAImpl>(300);
+    container.registerInstance<IServiceA>(serviceA);
     
     auto webserver = std::make_shared<MockWebServerImpl>("127.0.0.1", 8080);
     container.registerInstance<IMockWebServer>(webserver);
     
-    // Simulate HTTP request processing: resolve multiple services
-    auto requestLogger = container.resolve<logger::ILogger>();
+    // Simulate resolving multiple services in single context
+    auto requestServiceA = container.resolve<IServiceA>();
     auto requestWebServer = container.resolve<IMockWebServer>();
     
-    EXPECT_NE(requestLogger, nullptr);
+    EXPECT_NE(requestServiceA, nullptr);
     EXPECT_NE(requestWebServer, nullptr);
     
     // Should be able to use both services
-    EXPECT_NO_THROW(requestLogger->logInfo("Processing HTTP request"));
+    EXPECT_NO_THROW(requestServiceA->increment());
+    EXPECT_EQ(requestServiceA->getValue(), 301);
     EXPECT_EQ(requestWebServer->getHost(), "127.0.0.1");
     EXPECT_EQ(requestWebServer->getPort(), 8080);
 }
@@ -126,9 +152,8 @@ TEST_F(IocRuntimeFailureTest, ErrorRecoveryDuringRequests) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
     // Setup partial services
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger);
+    auto serviceA = std::make_shared<ServiceAImpl>(400);
+    container.registerInstance<IServiceA>(serviceA);
     
     // First request fails due to missing service
     EXPECT_THROW(
@@ -136,9 +161,10 @@ TEST_F(IocRuntimeFailureTest, ErrorRecoveryDuringRequests) {
         ioccontainer::ServiceNotRegisteredException
     );
     
-    // Log the error (this should work)
-    auto errorLogger = container.resolve<logger::ILogger>();
-    EXPECT_NO_THROW(errorLogger->logError("WebServer service not available"));
+    // Available service should still work
+    auto availableService = container.resolve<IServiceA>();
+    EXPECT_NO_THROW(availableService->increment());
+    EXPECT_EQ(availableService->getValue(), 401);
     
     // Admin registers missing service
     auto webserver = std::make_shared<MockWebServerImpl>("127.0.0.1", 8080);
@@ -155,26 +181,26 @@ TEST_F(IocRuntimeFailureTest, ResolvedServiceLifecycle) {
     auto& container = ioccontainer::IIocContainer::getInstance();
     
     // Register service
-    auto logger1 = std::make_shared<logger::Logger>("127.0.0.1", 9000);
-    logger1->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger1);
+    auto service1 = std::make_shared<ServiceAImpl>(500);
+    container.registerInstance<IServiceA>(service1);
     
-    // Resolve service (HTTP request gets reference)
-    auto resolvedLogger = container.resolve<logger::ILogger>();
-    EXPECT_EQ(resolvedLogger.get(), logger1.get());
+    // Resolve service (get reference)
+    auto resolvedService = container.resolve<IServiceA>();
+    EXPECT_EQ(resolvedService.get(), service1.get());
     
     // Container registration changes (service replacement)
-    auto logger2 = std::make_shared<logger::Logger>("127.0.0.1", 9001);
-    logger2->setLocalDisplay(true);
-    container.registerInstance<logger::ILogger>(logger2);
+    auto service2 = std::make_shared<ServiceAImpl>(600);
+    container.registerInstance<IServiceA>(service2);
     
     // Previously resolved service should still work (shared_ptr keeps it alive)
-    EXPECT_NO_THROW(resolvedLogger->logInfo("Using old service reference"));
+    EXPECT_NO_THROW(resolvedService->increment());
+    EXPECT_EQ(resolvedService->getValue(), 501);
     
     // New resolutions get new service
-    auto newlyResolvedLogger = container.resolve<logger::ILogger>();
-    EXPECT_EQ(newlyResolvedLogger.get(), logger2.get());
-    EXPECT_NE(newlyResolvedLogger.get(), resolvedLogger.get());
+    auto newlyResolvedService = container.resolve<IServiceA>();
+    EXPECT_EQ(newlyResolvedService.get(), service2.get());
+    EXPECT_NE(newlyResolvedService.get(), resolvedService.get());
+    EXPECT_EQ(newlyResolvedService->getValue(), 600);
 }
 
 // Test interface substitutability - the core value of IoC

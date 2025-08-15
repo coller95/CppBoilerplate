@@ -18,7 +18,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
 # Examples: Logger IocContainer ServiceA ApiModule:ApiModule
-DEPENDENCIES = Logger
+DEPENDENCIES =
 
 # External dependencies - flexible configuration for any external library
 # Add external source files that need to be compiled with your tests
