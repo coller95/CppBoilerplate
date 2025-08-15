@@ -83,9 +83,22 @@ bool ApiRouter::initialize() {
 bool ApiRouter::handleRequest(std::string_view path, std::string_view method, const std::string& requestBody, std::string& responseBody, int& statusCode) {
     std::lock_guard<std::recursive_mutex> lock(_mutex);
     
+    // Validate input parameters
+    if (path.empty()) {
+        statusCode = 400;
+        responseBody = "Bad request: empty path";
+        return false;
+    }
+    
+    if (method.empty()) {
+        statusCode = 400;
+        responseBody = "Bad request: empty method";
+        return false;
+    }
+    
     if (!_initialized) {
         statusCode = 500;
-        responseBody = "Router not initialized";
+        responseBody = "Internal server error: router not initialized";
         return false;
     }
     
@@ -96,16 +109,16 @@ bool ApiRouter::handleRequest(std::string_view path, std::string_view method, co
         try {
             it->second(path, method, requestBody, responseBody, statusCode);
             return true;
-        } catch (const std::exception&) {
+        } catch (const std::exception& e) {
             statusCode = 500;
-            responseBody = "Internal server error";
+            responseBody = std::string("Internal server error: endpoint handler failed - ") + e.what();
             return false;
         }
     }
     
-    // Endpoint not found
+    // Endpoint not found - provide helpful error message
     statusCode = 404;
-    responseBody = "Endpoint not found";
+    responseBody = std::string("Not found: ") + std::string(method) + " " + std::string(path) + " is not registered";
     return false;
 }
 
@@ -160,7 +173,16 @@ std::vector<std::unique_ptr<IApiModule>> ApiRouter::createAllModules() const {
 // IEndpointRegistrar interface implementation
 void ApiRouter::registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler) {
     std::lock_guard<std::recursive_mutex> lock(_mutex);
+    
+    // Validate input parameters
+    if (path.empty() || method.empty()) {
+        throw std::invalid_argument("Path and method cannot be empty");
+    }
+    
     std::string key = createEndpointKey(path, method);
+    
+    // Allow re-registration (overwrite existing endpoint)
+    // This is useful for testing scenarios and dynamic endpoint updates
     _endpoints[key] = std::move(handler);
 }
 

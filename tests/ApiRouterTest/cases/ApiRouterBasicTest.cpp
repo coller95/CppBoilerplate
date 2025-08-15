@@ -109,7 +109,7 @@ TEST_F(ApiRouterTest, NonExistentEndpointReturns404) {
     
     EXPECT_FALSE(handled);
     EXPECT_EQ(statusCode, 404);
-    EXPECT_EQ(responseBody, "Endpoint not found");
+    EXPECT_EQ(responseBody, "Not found: GET /nonexistent is not registered");
 }
 
 TEST_F(ApiRouterTest, ModuleFactoryRegistrationWorks) {

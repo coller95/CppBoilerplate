@@ -8,8 +8,7 @@
 #include <Logger/Logger.h>
 #include <Logger/ILogger.h>
 #include <IocContainer/IocContainer.h>
-#include <WebServer/IWebServer.h>
-#include <WebServer/WebServerBackendFactory.h>
+#include <WebServer/WebServer.h>
 #include <ApiRouter/ApiRouter.h>
 
 /**
@@ -34,7 +33,7 @@ struct AppConfig
 	int loggerPort = 9000;
 	std::string webServerIp = "127.0.0.1";
 	int webServerPort = 8080;
-	webserver::WebServerBackendFactory::Backend webServerBackend = webserver::WebServerBackendFactory::Backend::Mongoose;
+	// WebServer configuration - concrete implementation
 };
 
 /**
@@ -44,7 +43,7 @@ class Application
 {
   private:
 	AppConfig _config;
-	std::unique_ptr<webserver::IWebServer> _webServer;
+	std::unique_ptr<webserver::WebServer> _webServer;
 	std::string _webServerBackendName;
 	
 	/**
@@ -67,17 +66,13 @@ class Application
 		auto globalLogger = container.resolve<logger::ILogger>();
 		globalLogger->logInfo("Application starting up...");
 		
-		// Create and register WebServer using factory
-		_webServer = webserver::WebServerBackendFactory::createBackend(
-			_config.webServerBackend,
-			_config.webServerIp, 
-			_config.webServerPort
-		);
-		_webServerBackendName = webserver::WebServerBackendFactory::getBackendName(_config.webServerBackend);
+		// Create concrete WebServer - first principles design
+		_webServer = std::make_unique<webserver::WebServer>(_config.webServerIp, _config.webServerPort);
+		_webServerBackendName = "Mongoose";
 		
-		// Register WebServer in IoC container (non-owning shared_ptr)
-		std::shared_ptr<webserver::IWebServer> webServerPtr(_webServer.get(), [](webserver::IWebServer*){});
-		container.registerInstance<webserver::IWebServer>(webServerPtr);
+		// Register WebServer in IoC container (non-owning shared_ptr)  
+		std::shared_ptr<webserver::WebServer> webServerPtr(_webServer.get(), [](webserver::WebServer*){});
+		container.registerInstance<webserver::WebServer>(webServerPtr);
 		
 		globalLogger->logInfo("Services registered in IoC container");
 		globalLogger->logInfo("WebServer configured for " + _config.webServerIp + ":" + std::to_string(_config.webServerPort));
@@ -412,8 +407,8 @@ void Application::setupWebServerRoutes() {
 			statusCode = 200;
 		});
 	
-	// Register a catch-all handler with WebServer that delegates to ApiRouter
-	_webServer->registerHandler("*", [&apiRouter, logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
+	// Set the global request handler that delegates ALL requests to ApiRouter
+	_webServer->setGlobalRequestHandler([&apiRouter, logger](const webserver::HttpRequest& request, webserver::HttpResponse& response) {
 		std::string responseBody;
 		int statusCode = 404;
 		

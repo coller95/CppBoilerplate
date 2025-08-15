@@ -2,9 +2,10 @@
 
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <functional>
+#include <unordered_map>
 #include <cstdint>
+#include <memory>
 
 namespace webserver {
 
@@ -57,7 +58,6 @@ struct HttpResponse {
 
 /**
  * HTTP handler function type
- * Provides raw access to request and allows building response
  */
 using HttpHandler = std::function<void(const HttpRequest& request, HttpResponse& response)>;
 
@@ -86,7 +86,6 @@ struct MimeConfig {
     std::string defaultType = "application/octet-stream";       // Default for unknown extensions
     bool enableAutoDetection = true;                            // Try to detect MIME from content
     
-    // Common MIME type presets
     static MimeConfig createDefault() {
         MimeConfig config;
         config.extensionMap = {
@@ -110,97 +109,64 @@ struct MimeConfig {
         };
         return config;
     }
-    
-    static MimeConfig createWebAssets() {
-        MimeConfig config;
-        config.extensionMap = {
-            {".html", "text/html; charset=utf-8"},
-            {".css", "text/css; charset=utf-8"},
-            {".js", "application/javascript; charset=utf-8"},
-            {".ts", "application/typescript; charset=utf-8"},
-            {".jsx", "text/javascript; charset=utf-8"},
-            {".vue", "text/vue; charset=utf-8"},
-            {".scss", "text/scss; charset=utf-8"},
-            {".sass", "text/sass; charset=utf-8"},
-            {".less", "text/less; charset=utf-8"},
-            {".woff", "font/woff"},
-            {".woff2", "font/woff2"},
-            {".ttf", "font/ttf"},
-            {".eot", "application/vnd.ms-fontobject"},
-            {".png", "image/png"},
-            {".jpg", "image/jpeg"},
-            {".jpeg", "image/jpeg"},
-            {".gif", "image/gif"},
-            {".svg", "image/svg+xml"},
-            {".webp", "image/webp"},
-            {".ico", "image/x-icon"}
-        };
-        config.defaultType = "text/plain; charset=utf-8";
-        return config;
-    }
-    
-    static MimeConfig createBinary() {
-        MimeConfig config;
-        config.extensionMap = {
-            {".bin", "application/octet-stream"},
-            {".exe", "application/octet-stream"},
-            {".dll", "application/octet-stream"},
-            {".so", "application/octet-stream"},
-            {".dylib", "application/octet-stream"},
-            {".zip", "application/zip"},
-            {".tar", "application/x-tar"},
-            {".gz", "application/gzip"},
-            {".7z", "application/x-7z-compressed"},
-            {".rar", "application/vnd.rar"},
-            {".deb", "application/vnd.debian.binary-package"},
-            {".rpm", "application/x-rpm"},
-            {".dmg", "application/x-apple-diskimage"},
-            {".iso", "application/x-iso9660-image"}
-        };
-        config.defaultType = "application/octet-stream";
-        config.enableAutoDetection = false;  // Binary files shouldn't be auto-detected
-        return config;
-    }
 };
 
 /**
- * Interface for WebServer
- * Provides HTTP and WebSocket server capabilities with raw access to requests/responses
+ * WebServer - Concrete HTTP server implementation
+ * 
+ * CRITICAL: First principles infrastructure design
+ * - No interface abstraction (YAGNI - we only use one HTTP backend)
+ * - PIMPL pattern for mongoose.h compilation isolation only
+ * - Direct, high-performance implementation
+ * - ApiRouter-enforced architecture: only setGlobalRequestHandler for routing
  */
-class IWebServer {
+class WebServer {
 public:
-    virtual ~IWebServer() = default;
+    /**
+     * Constructor with bind configuration
+     */
+    WebServer(const std::string& bindAddress, uint16_t port);
+
+    /**
+     * Destructor - ensures proper cleanup
+     */
+    ~WebServer();
+
+    // Server lifecycle - core functionality
+    bool start();
+    void stop();
+    bool isRunning() const;
     
-    // Server lifecycle
-    virtual bool start() = 0;
-    virtual void stop() = 0;
-    virtual bool isRunning() const = 0;
+    // Global request handler - ONLY way to configure HTTP handling
+    // This should delegate ALL requests to ApiRouter
+    void setGlobalRequestHandler(HttpHandler handler);
     
-    // HTTP handler registration
-    virtual void registerHandler(const std::string& method, const std::string& path, HttpHandler handler) = 0;
-    virtual void registerHandler(const std::string& path, HttpHandler handler) = 0;  // Matches all methods
+    // Server information - read-only access
+    std::string getBindAddress() const;
+    uint16_t getPort() const;
+    size_t getActiveConnections() const;
     
-    // Convenience methods for common HTTP methods
-    virtual void get(const std::string& path, HttpHandler handler) = 0;
-    virtual void post(const std::string& path, HttpHandler handler) = 0;
-    virtual void put(const std::string& path, HttpHandler handler) = 0;
-    virtual void del(const std::string& path, HttpHandler handler) = 0;  // 'delete' is a keyword
+    // Static file serving - infrastructure feature
+    void serveStatic(const StaticRoute& route);
+    void serveStaticWithMime(const std::string& urlPrefix, const std::string& localPath, const MimeConfig& mimeConfig);
+    void setGlobalMimeConfig(const MimeConfig& config);
     
-    // Static file serving
-    virtual void serveStatic(const StaticRoute& route) = 0;
-    virtual void serveStatic(const std::string& urlPrefix, const std::string& localPath) = 0;
-    virtual void serveStaticWithMime(const std::string& urlPrefix, const std::string& localPath, const MimeConfig& mimeConfig) = 0;
-    virtual void serveFile(const std::string& path, const std::string& filePath, const std::string& mimeType = "") = 0;  // Serve single file
-    virtual void setGlobalMimeConfig(const MimeConfig& config) = 0;  // Set MIME config for all static serving
+    // WebSocket support - infrastructure feature
+    void registerWebSocketHandler(const std::string& path, WebSocketHandler handler);
+    bool sendWebSocketMessage(const std::string& connectionId, const std::string& message);
+
+    // Delete copy constructor and assignment operator (RAII best practice)
+    WebServer(const WebServer&) = delete;
+    WebServer& operator=(const WebServer&) = delete;
     
-    // WebSocket support
-    virtual void registerWebSocketHandler(const std::string& path, WebSocketHandler handler) = 0;
-    virtual bool sendWebSocketMessage(const std::string& connectionId, const std::string& message) = 0;
-    
-    // Server information
-    virtual std::string getBindAddress() const = 0;
-    virtual uint16_t getPort() const = 0;
-    virtual size_t getActiveConnections() const = 0;
+    // Allow move constructor and assignment
+    WebServer(WebServer&&) noexcept;
+    WebServer& operator=(WebServer&&) noexcept;
+
+private:
+    // PIMPL idiom to hide mongoose.h implementation details
+    class Impl;
+    std::unique_ptr<Impl> _impl;
 };
 
 } // namespace webserver
