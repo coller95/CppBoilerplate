@@ -421,7 +421,7 @@ EXTERNAL_LIBS += -lgmock -lgmock_main
 # ============================================================================
 
 # Include compiler configuration
--include \$(ROOTDIR)/Compiler.build
+-include $(ROOTDIR)/Compiler.build
 
 CXX = g++
 CC = gcc

@@ -112,13 +112,12 @@ std::string $SERVICE_NAME::process${SERVICE_PART}Data() const {
 namespace {
     struct ${SERVICE_NAME}Registration {
         ${SERVICE_NAME}Registration() {
-            // Register both interface and concrete implementation
-            ioccontainer::IIocContainer::registerGlobal<I$SERVICE_NAME>(
-                []() { return std::make_shared<$SERVICE_NAME>(); }
-            );
-            ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(
-                []() { return std::make_shared<$SERVICE_NAME>(); }
-            );
+            // Create a single shared instance
+            auto instance = std::make_shared<$SERVICE_NAME>();
+            
+            // Register the same instance for both interface and concrete class
+            ioccontainer::IIocContainer::registerGlobal<I$SERVICE_NAME>(instance);
+            ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(instance);
         }
     };
     static ${SERVICE_NAME}Registration _registration;
@@ -299,7 +298,7 @@ EXTERNAL_LIBS += -lgmock -lgmock_main
 # ============================================================================
 
 # Include compiler configuration
--include \$(ROOTDIR)/Compiler.build
+-include $(ROOTDIR)/Compiler.build
 
 CXX = g++
 CC = gcc

@@ -190,9 +190,9 @@ cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp" << EOF
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
 #include <string>
 
-class ${ENDPOINT_NAME}HandlerTest : public ::testing::Test {
+class ${ENDPOINT_NAME}HandlerTest : public ::testing::Test, protected $NAMESPACE_NAME::$ENDPOINT_NAME {
 protected:
-    $NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
+    // Test class inherits from $ENDPOINT_NAME to access protected handler methods
 };
 
 TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}ReturnsSuccessResponse) {
@@ -200,7 +200,7 @@ TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}ReturnsSuccessRespo
     int statusCode = 0;
     
     // Test the extracted handler method directly
-    endpoint.handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
+    handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
     
     // Verify response
     EXPECT_EQ(statusCode, 200);
@@ -214,7 +214,7 @@ TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}AcceptsParameters) 
     std::string requestBody = R"({"test": "data"})";
     
     // Test with request body
-    endpoint.handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
+    handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
     
     // Should still return success (parameters are ignored in this simple implementation)
     EXPECT_EQ(statusCode, 200);
@@ -227,7 +227,7 @@ TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}AcceptsParameters) 
 //     int statusCode = 0;
 //     std::string requestBody = R"({"name": "test${ENDPOINT_PART}"})";
 //     
-//     endpoint.handlePost${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "POST", requestBody, responseBody, statusCode);
+//     handlePost${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "POST", requestBody, responseBody, statusCode);
 //     
 //     EXPECT_EQ(statusCode, 201);
 //     EXPECT_FALSE(responseBody.empty());
@@ -368,7 +368,7 @@ EXTERNAL_LIBS += -lgmock -lgmock_main
 # ============================================================================
 
 # Include compiler configuration
--include \$(ROOTDIR)/Compiler.build
+-include $(ROOTDIR)/Compiler.build
 
 CXX = g++
 CC = gcc
