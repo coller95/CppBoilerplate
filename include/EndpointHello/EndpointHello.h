@@ -1,5 +1,5 @@
 #pragma once
-#include <ApiRouter/IApiRouter.h>
+#include <ApiRouter/IEndpointRegistrar.h>
 #include <string>
 #include <string_view>
 

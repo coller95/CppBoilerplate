@@ -865,7 +865,7 @@ curl http://localhost:8080/api/endpoints
 - **Infrastructure**: Provide system-level functionality (WebServer, Logger)
 
 **Interface-Based Design**: All modules implement clear interfaces:
-- `ILogger`, `IWebServer`, `IWebServerBackend`, `IApiRouter`
+- `ILogger`
 - Enables mocking and testing isolation
 - Supports dependency injection patterns
 
@@ -1052,7 +1052,7 @@ This architecture enables rapid development of new features while maintaining hi
    - Starting new TDD cycles for different components
 
 2. **Architecture Changes** (ALWAYS clear):
-   - Modifying core interfaces (ILogger, IWebServer, IApiRouter)
+   - Modifying core interfaces (ILogger)
    - Changing dependency relationships between modules
    - Refactoring that affects multiple interconnected classes
 

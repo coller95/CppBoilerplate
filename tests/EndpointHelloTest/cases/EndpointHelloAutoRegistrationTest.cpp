@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <EndpointHello/EndpointHello.h>
 #include <ApiRouter/ApiRouter.h>
-#include <ApiRouter/IApiRouter.h>
 #include <vector>
 #include <string>
 #include <memory>

@@ -1,27 +1,26 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <ApiRouter/IApiRouter.h>
+#include <ApiRouter/IEndpointRegistrar.h>
 
 namespace apirouter {
 
 /**
- * Mock implementation of IApiRouter for testing
+ * Mock for ApiRouter testing - since ApiRouter is a singleton, we mock its dependencies instead
+ * This mock can be used to simulate ApiRouter-like behavior in tests that need it
  */
-class MockApiRouter : public IApiRouter {
+class MockApiRouter {
 public:
-    MOCK_METHOD(bool, initialize, (), (override));
+    MOCK_METHOD(bool, initialize, ());
     MOCK_METHOD(bool, handleRequest, 
                (std::string_view path, std::string_view method, const std::string& requestBody, 
-                std::string& responseBody, int& statusCode), 
-               (override));
-    MOCK_METHOD(size_t, getEndpointCount, (), (const, override));
-    MOCK_METHOD(std::vector<std::string>, getRegisteredEndpoints, (), (const, override));
+                std::string& responseBody, int& statusCode));
+    MOCK_METHOD(size_t, getEndpointCount, (), (const));
+    MOCK_METHOD(std::vector<std::string>, getRegisteredEndpoints, (), (const));
     MOCK_METHOD(void, registerModuleFactory, 
-               (std::function<std::unique_ptr<IApiModule>()> factory), 
-               (override));
-    MOCK_METHOD(size_t, getRegisteredModuleCount, (), (const, override));
-    MOCK_METHOD(std::vector<std::unique_ptr<IApiModule>>, createAllModules, (), (const, override));
+               (std::function<std::unique_ptr<IApiModule>()> factory));
+    MOCK_METHOD(size_t, getRegisteredModuleCount, (), (const));
+    MOCK_METHOD(std::vector<std::unique_ptr<IApiModule>>, createAllModules, (), (const));
 };
 
 /**

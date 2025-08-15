@@ -19,11 +19,11 @@ protected:
 
 } // anonymous namespace
 
-TEST_F(ApiRouterInterfaceTest, ImplementsIApiRouterInterface) {
-    // Verify that ApiRouter implements IApiRouter
+TEST_F(ApiRouterInterfaceTest, SingletonInstanceAccessible) {
+    // Verify that ApiRouter singleton is accessible
     auto& router = apirouter::ApiRouter::getInstance();
-    apirouter::IApiRouter* interface = &router;
-    EXPECT_NE(interface, nullptr);
+    EXPECT_NO_THROW(router.getEndpointCount());
+    EXPECT_NO_THROW(router.getRegisteredModuleCount());
 }
 
 TEST_F(ApiRouterInterfaceTest, ImplementsIEndpointRegistrarInterface) {
@@ -109,11 +109,11 @@ TEST_F(ApiRouterInterfaceTest, MockEndpointRegistrarWorks) {
         });
 }
 
-TEST_F(ApiRouterInterfaceTest, AllRequiredMethodsAreImplemented) {
-    // Verify all required interface methods are implemented
+TEST_F(ApiRouterInterfaceTest, AllCoreMethodsWork) {
+    // Verify all core methods are implemented and functional
     auto& router = apirouter::ApiRouter::getInstance();
     
-    // IApiRouter methods
+    // Core ApiRouter methods
     EXPECT_NO_THROW(router.initialize());
     EXPECT_NO_THROW(router.getEndpointCount());
     EXPECT_NO_THROW(router.getRegisteredEndpoints());

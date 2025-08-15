@@ -48,7 +48,7 @@ ApiRouter::~ApiRouter() {
     // Cleanup is handled automatically by containers
 }
 
-// IApiRouter interface implementation
+// Core ApiRouter functionality
 bool ApiRouter::initialize() {
     // Copy factories while holding lock, then release lock before calling them
     std::vector<std::function<std::unique_ptr<IApiModule>()>> factoriesCopy;

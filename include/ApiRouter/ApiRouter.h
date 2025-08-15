@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include <functional>
-#include "ApiRouter/IApiRouter.h"
+#include "ApiRouter/IEndpointRegistrar.h"
 
 namespace apirouter {
 
@@ -21,7 +21,7 @@ namespace apirouter {
  * 
  * Thread-safe singleton implementation using Meyer's singleton pattern.
  */
-class ApiRouter : public IApiRouter, public IEndpointRegistrar {
+class ApiRouter : public IEndpointRegistrar {
 public:
     /**
      * Get the singleton instance of the API router
@@ -80,16 +80,16 @@ public:
     /**
      * Destructor - ensures proper cleanup
      */
-    ~ApiRouter() override;
+    ~ApiRouter();
 
-    // IApiRouter interface implementation
-    bool initialize() override;
-    bool handleRequest(std::string_view path, std::string_view method, const std::string& requestBody, std::string& responseBody, int& statusCode) override;
-    size_t getEndpointCount() const override;
-    std::vector<std::string> getRegisteredEndpoints() const override;
-    void registerModuleFactory(std::function<std::unique_ptr<IApiModule>()> factory) override;
-    size_t getRegisteredModuleCount() const override;
-    std::vector<std::unique_ptr<IApiModule>> createAllModules() const override;
+    // Core ApiRouter functionality
+    bool initialize();
+    bool handleRequest(std::string_view path, std::string_view method, const std::string& requestBody, std::string& responseBody, int& statusCode);
+    size_t getEndpointCount() const;
+    std::vector<std::string> getRegisteredEndpoints() const;
+    void registerModuleFactory(std::function<std::unique_ptr<IApiModule>()> factory);
+    size_t getRegisteredModuleCount() const;
+    std::vector<std::unique_ptr<IApiModule>> createAllModules() const;
 
     // IEndpointRegistrar interface implementation
     void registerHttpHandler(std::string_view path, std::string_view method, HttpHandler handler) override;

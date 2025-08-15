@@ -59,7 +59,7 @@ create_endpoint() {
 # Create header file
 cat > "include/$ENDPOINT_NAME/$ENDPOINT_NAME.h" << EOF
 #pragma once
-#include <ApiRouter/IApiRouter.h>
+#include <ApiRouter/IEndpointRegistrar.h>
 #include <string>
 #include <string_view>
 
@@ -161,7 +161,7 @@ EOF
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
-#include <ApiRouter/IApiRouter.h>
+#include <ApiRouter/IEndpointRegistrar.h>
 #include <vector>
 #include <string>
 
@@ -239,7 +239,7 @@ cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
 #include <ApiRouter/ApiRouter.h>
-#include <ApiRouter/IApiRouter.h>
+#include <ApiRouter/IEndpointRegistrar.h>
 #include <vector>
 #include <string>
 #include <memory>
