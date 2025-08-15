@@ -6,30 +6,30 @@
 // Completely generic test services - no domain knowledge
 class IServiceA {
 public:
-	virtual ~IServiceA() = default;
-	virtual int getValue() = 0;
-	virtual void setValue(int value) = 0;
-	virtual void increment() = 0;
+    virtual ~IServiceA() = default;
+    virtual int getValue() = 0;
+    virtual void setValue(int value) = 0;
+    virtual void increment() = 0;
 };
 
 class ServiceAImpl : public IServiceA {
 private:
-	int _value;
+    int _value;
 
 public:
-	ServiceAImpl(int initialValue = 42) : _value(initialValue) {}
+    ServiceAImpl(int initialValue = 42) : _value(initialValue) {}
 
-	int getValue() override {
-		return _value;
-	}
+    int getValue() override {
+        return _value;
+    }
 
-	void setValue(int value) override {
-		_value = value;
-	}
+    void setValue(int value) override {
+        _value = value;
+    }
 
-	void increment() override {
-		_value++;
-	}
+    void increment() override {
+        _value++;
+    }
 };
 
 namespace {
@@ -77,7 +77,7 @@ TEST_F(IocStartupFailureTest, StartupFailsWhenServiceMissing) {
     );
     
     // Verify container is still functional for other services
-    EXPECT_EQ(container.getRegisteredCount(), 0);
+    EXPECT_EQ(container.getRegisteredCount(), static_cast<size_t>(0));
 }
 
 // Test auto-registration workflow
@@ -117,7 +117,7 @@ TEST_F(IocStartupFailureTest, ServiceOverwriteWorks) {
     EXPECT_EQ(resolved->getValue(), 400);
     
     // Container should still have only 1 service registered
-    EXPECT_EQ(container.getRegisteredCount(), 1);
+    EXPECT_EQ(container.getRegisteredCount(), static_cast<size_t>(1));
 }
 
 // Test mixed registration methods work together
@@ -143,7 +143,7 @@ TEST_F(IocStartupFailureTest, MixedRegistrationMethods) {
     EXPECT_EQ(serviceConcrete->getValue(), 600);
     
     // Should have 2 different service types registered
-    EXPECT_EQ(container.getRegisteredCount(), 2);
+    EXPECT_EQ(container.getRegisteredCount(), static_cast<size_t>(2));
 }
 
 // Test interface-first access pattern

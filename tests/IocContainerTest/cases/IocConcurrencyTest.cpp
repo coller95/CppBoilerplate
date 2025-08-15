@@ -10,63 +10,63 @@
 // Completely generic test services - no domain knowledge
 class IServiceA {
 public:
-	virtual ~IServiceA() = default;
-	virtual int getValue() = 0;
-	virtual void setValue(int value) = 0;
-	virtual void increment() = 0;
+    virtual ~IServiceA() = default;
+    virtual int getValue() = 0;
+    virtual void setValue(int value) = 0;
+    virtual void increment() = 0;
 };
 
 class ServiceAImpl : public IServiceA {
 private:
-	std::atomic<int> _value{42};
+    std::atomic<int> _value{42};
 
 public:
-	ServiceAImpl() = default;
-	ServiceAImpl(int initialValue) : _value(initialValue) {}
+    ServiceAImpl() = default;
+    ServiceAImpl(int initialValue) : _value(initialValue) {}
 
-	int getValue() override {
-		return _value.load();
-	}
+    int getValue() override {
+        return _value.load();
+    }
 
-	void setValue(int value) override {
-		_value.store(value);
-	}
+    void setValue(int value) override {
+        _value.store(value);
+    }
 
-	void increment() override {
-		_value.fetch_add(1);
-	}
+    void increment() override {
+        _value.fetch_add(1);
+    }
 };
 
 class IServiceB {
 public:
-	virtual ~IServiceB() = default;
-	virtual std::string getName() = 0;
-	virtual void setName(const std::string& name) = 0;
-	virtual int getCallCount() = 0;
+    virtual ~IServiceB() = default;
+    virtual std::string getName() = 0;
+    virtual void setName(const std::string& name) = 0;
+    virtual int getCallCount() = 0;
 };
 
 class ServiceBImpl : public IServiceB {
 private:
-	std::string _name;
-	std::atomic<int> _callCount{0};
+    std::string _name;
+    std::atomic<int> _callCount{0};
 
 public:
-	ServiceBImpl() : _name("DefaultService") {}
-	ServiceBImpl(const std::string& name) : _name(name) {}
+    ServiceBImpl() : _name("DefaultService") {}
+    ServiceBImpl(const std::string& name) : _name(name) {}
 
-	std::string getName() override {
-		_callCount.fetch_add(1);
-		return _name;
-	}
+    std::string getName() override {
+        _callCount.fetch_add(1);
+        return _name;
+    }
 
-	void setName(const std::string& name) override {
-		_callCount.fetch_add(1);
-		_name = name;
-	}
+    void setName(const std::string& name) override {
+        _callCount.fetch_add(1);
+        _name = name;
+    }
 
-	int getCallCount() override {
-		return _callCount.load();
-	}
+    int getCallCount() override {
+        return _callCount.load();
+    }
 };
 
 namespace {
@@ -218,7 +218,7 @@ TEST_F(IocConcurrencyTest, ConcurrentRegistrationAndResolution) {
     
     // Final state should be consistent
     auto& container = ioccontainer::IIocContainer::getInstance();
-    EXPECT_EQ(container.getRegisteredCount(), 1); // Only one service type (overwrites)
+    EXPECT_EQ(container.getRegisteredCount(), static_cast<size_t>(1)); // Only one service type (overwrites)
 }
 
 // Test singleton behavior under thread stress
@@ -235,7 +235,7 @@ TEST_F(IocConcurrencyTest, SingletonStressTest) {
             instances[i] = &container;
             
             // Immediately use the container (stress the singleton)
-            EXPECT_EQ(container.getRegisteredCount(), 0);
+            EXPECT_EQ(container.getRegisteredCount(), static_cast<size_t>(0));
         });
     }
     
