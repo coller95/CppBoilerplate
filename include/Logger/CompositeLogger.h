@@ -64,6 +64,9 @@ public:
     
     void setLocalDisplay(bool enabled) override;
     bool isLocalDisplayEnabled() const override;
+    
+    void setTimestampEnabled(bool enabled) override;
+    bool isTimestampEnabled() const override;
 
     // Delete copy constructor and assignment operator
     CompositeLogger(const CompositeLogger&) = delete;
@@ -78,6 +81,7 @@ private:
     mutable std::mutex loggersMutex_;
     LogLevel logLevel_;
     bool localDisplayEnabled_;
+    bool timestampEnabled_;
 };
 
 } // namespace logger

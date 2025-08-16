@@ -3,6 +3,8 @@
 #include <sstream>
 #include <chrono>
 #include <iomanip>
+#include <cstring>
+#include <errno.h>
 
 namespace logger {
 
@@ -13,7 +15,18 @@ NetworkLogger::NetworkLogger(const std::string& remoteHost, int remotePort)
     , running_(false)
     , localDisplayEnabled_(false)  // Network logger defaults to disabled local display
     , connected_(false)
+    , timestampEnabled_(true)      // Timestamps enabled by default
+    , socketFd_(-1)
 {
+    // Initialize server address structure
+    memset(&serverAddr_, 0, sizeof(serverAddr_));
+    serverAddr_.sin_family = AF_INET;
+    serverAddr_.sin_port = htons(remotePort_);
+    
+    if (inet_pton(AF_INET, remoteHost_.c_str(), &serverAddr_.sin_addr) <= 0) {
+        // Invalid IP address format
+        serverAddr_.sin_addr.s_addr = INADDR_NONE;
+    }
 }
 
 NetworkLogger::~NetworkLogger() {
@@ -29,9 +42,13 @@ NetworkLogger::NetworkLogger(NetworkLogger&& other) noexcept
     , running_(other.running_.load())
     , localDisplayEnabled_(other.localDisplayEnabled_.load())
     , connected_(other.connected_.load())
+    , timestampEnabled_(other.timestampEnabled_.load())
+    , socketFd_(other.socketFd_)
+    , serverAddr_(other.serverAddr_)
 {
     other.running_ = false;
     other.connected_ = false;
+    other.socketFd_ = -1;
 }
 
 NetworkLogger& NetworkLogger::operator=(NetworkLogger&& other) noexcept {
@@ -46,9 +63,13 @@ NetworkLogger& NetworkLogger::operator=(NetworkLogger&& other) noexcept {
         running_ = other.running_.load();
         localDisplayEnabled_ = other.localDisplayEnabled_.load();
         connected_ = other.connected_.load();
+        timestampEnabled_ = other.timestampEnabled_.load();
+        socketFd_ = other.socketFd_;
+        serverAddr_ = other.serverAddr_;
         
         other.running_ = false;
         other.connected_ = false;
+        other.socketFd_ = -1;
     }
     return *this;
 }
@@ -121,6 +142,14 @@ bool NetworkLogger::isLocalDisplayEnabled() const {
     return localDisplayEnabled_.load();
 }
 
+void NetworkLogger::setTimestampEnabled(bool enabled) {
+    timestampEnabled_.store(enabled);
+}
+
+bool NetworkLogger::isTimestampEnabled() const {
+    return timestampEnabled_.load();
+}
+
 void NetworkLogger::logMessage(LogLevel level, std::string_view message) {
     std::lock_guard<std::mutex> lock(logMutex_);
     
@@ -129,8 +158,21 @@ void NetworkLogger::logMessage(LogLevel level, std::string_view message) {
     // Try to send to remote server
     if (connected_.load()) {
         if (!sendToRemote(formattedMessage)) {
-            // If remote send fails, optionally fallback to local display
+            // Connection lost, try to reconnect once
             connected_.store(false);
+            if (reconnect()) {
+                connected_.store(true);
+                // Retry sending the message
+                if (!sendToRemote(formattedMessage)) {
+                    connected_.store(false);
+                }
+            }
+        }
+    } else if (running_.load()) {
+        // Not connected but logger is running, try to reconnect
+        if (reconnect()) {
+            connected_.store(true);
+            sendToRemote(formattedMessage);
         }
     }
     
@@ -141,12 +183,15 @@ void NetworkLogger::logMessage(LogLevel level, std::string_view message) {
 }
 
 std::string NetworkLogger::formatMessage(LogLevel level, std::string_view message) const {
-    auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-    
     std::ostringstream oss;
-    oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
-    oss << " [" << logLevelToString(level) << "] " << message;
+    
+    if (timestampEnabled_.load()) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << " ";
+    }
+    
+    oss << "[" << logLevelToString(level) << "] " << message;
     
     return oss.str();
 }
@@ -167,30 +212,103 @@ bool NetworkLogger::shouldLog(LogLevel level) const {
 }
 
 bool NetworkLogger::connectToRemote() {
-    // TODO: Implement actual network connection (TCP/UDP socket)
-    // For now, simulate connection
-    if (remoteHost_.empty() || remotePort_ <= 0) {
+    if (remoteHost_.empty() || remotePort_ <= 0 || serverAddr_.sin_addr.s_addr == INADDR_NONE) {
         return false;
     }
     
-    // Simulate connection attempt
-    // In real implementation: create socket, connect to remoteHost_:remotePort_
-    return true; // Assume success for now
+    // Create TCP socket
+    socketFd_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketFd_ < 0) {
+        if (localDisplayEnabled_.load()) {
+            std::cerr << "[NETWORK] Failed to create socket: " << strerror(errno) << std::endl;
+        }
+        return false;
+    }
+    
+    // Set socket options for better reliability
+    int optval = 1;
+    setsockopt(socketFd_, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
+    
+    // Connect to remote server
+    if (connect(socketFd_, (struct sockaddr*)&serverAddr_, sizeof(serverAddr_)) < 0) {
+        if (localDisplayEnabled_.load()) {
+            std::cerr << "[NETWORK] Failed to connect to " << remoteHost_ << ":" << remotePort_ 
+                     << " - " << strerror(errno) << std::endl;
+        }
+        close(socketFd_);
+        socketFd_ = -1;
+        return false;
+    }
+    
+    if (localDisplayEnabled_.load()) {
+        std::cout << "[NETWORK] Connected to " << remoteHost_ << ":" << remotePort_ << std::endl;
+    }
+    
+    return true;
 }
 
 void NetworkLogger::disconnectFromRemote() {
-    // TODO: Implement actual network disconnection
-    // For now, just cleanup simulation
+    if (socketFd_ >= 0) {
+        close(socketFd_);
+        socketFd_ = -1;
+        
+        if (localDisplayEnabled_.load()) {
+            std::cout << "[NETWORK] Disconnected from " << remoteHost_ << ":" << remotePort_ << std::endl;
+        }
+    }
 }
 
 bool NetworkLogger::sendToRemote(const std::string& message) {
-    // TODO: Implement actual network send (TCP/UDP)
-    // For now, simulate send
-    (void)message; // Suppress unused parameter warning
+    if (socketFd_ < 0) {
+        return false;
+    }
     
-    // In real implementation: send message over socket
-    // Return false if send fails (connection lost, etc.)
-    return true; // Assume success for now
+    // Add newline for proper message termination
+    std::string messageWithNewline = message + "\n";
+    const char* data = messageWithNewline.c_str();
+    size_t totalBytes = messageWithNewline.length();
+    size_t bytesSent = 0;
+    
+    // Send all data (handle partial sends)
+    while (bytesSent < totalBytes) {
+        ssize_t result = send(socketFd_, data + bytesSent, totalBytes - bytesSent, MSG_NOSIGNAL);
+        
+        if (result < 0) {
+            if (errno == EPIPE || errno == ECONNRESET) {
+                // Connection lost, mark as disconnected
+                connected_.store(false);
+                if (localDisplayEnabled_.load()) {
+                    std::cerr << "[NETWORK] Connection lost: " << strerror(errno) << std::endl;
+                }
+                return false;
+            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // Temporary failure, retry
+                continue;
+            } else {
+                // Other error
+                if (localDisplayEnabled_.load()) {
+                    std::cerr << "[NETWORK] Send error: " << strerror(errno) << std::endl;
+                }
+                return false;
+            }
+        } else if (result == 0) {
+            // Connection closed by peer
+            connected_.store(false);
+            if (localDisplayEnabled_.load()) {
+                std::cerr << "[NETWORK] Connection closed by peer" << std::endl;
+            }
+            return false;
+        }
+        
+        bytesSent += result;
+    }
+    
+    return true;
+}
+
+bool NetworkLogger::reconnect() {
+    disconnectFromRemote();
+    return connectToRemote();
 }
 
 } // namespace logger

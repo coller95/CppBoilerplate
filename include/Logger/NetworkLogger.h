@@ -6,6 +6,10 @@
 #include <string_view>
 #include <mutex>
 #include <atomic>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 namespace logger {
 
@@ -45,6 +49,9 @@ public:
 	
 	void setLocalDisplay(bool enabled) override;
 	bool isLocalDisplayEnabled() const override;
+	
+	void setTimestampEnabled(bool enabled) override;
+	bool isTimestampEnabled() const override;
 
 	// Delete copy constructor and assignment operator (RAII best practice)
 	NetworkLogger(const NetworkLogger&) = delete;
@@ -61,7 +68,10 @@ private:
 	std::atomic<bool> running_;
 	std::atomic<bool> localDisplayEnabled_;
 	std::atomic<bool> connected_;
+	std::atomic<bool> timestampEnabled_;
 	mutable std::mutex logMutex_;
+	int socketFd_;
+	struct sockaddr_in serverAddr_;
 	
 	void logMessage(LogLevel level, std::string_view message);
 	std::string formatMessage(LogLevel level, std::string_view message) const;
@@ -70,6 +80,7 @@ private:
 	bool connectToRemote();
 	void disconnectFromRemote();
 	bool sendToRemote(const std::string& message);
+	bool reconnect();
 };
 
 } // namespace logger

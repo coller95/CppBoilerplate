@@ -33,6 +33,9 @@ public:
     
     virtual void setLocalDisplay(bool enabled) = 0;
     virtual bool isLocalDisplayEnabled() const = 0;
+    
+    virtual void setTimestampEnabled(bool enabled) = 0;
+    virtual bool isTimestampEnabled() const = 0;
 };
 
 } // namespace logger

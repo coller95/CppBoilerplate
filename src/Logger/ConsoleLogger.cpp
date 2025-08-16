@@ -10,6 +10,7 @@ ConsoleLogger::ConsoleLogger()
     : logLevel_(LogLevel::Info)
     , running_(false)
     , localDisplayEnabled_(true)  // Console logger defaults to enabled
+    , timestampEnabled_(true)     // Timestamps enabled by default
 {
 }
 
@@ -23,6 +24,7 @@ ConsoleLogger::ConsoleLogger(ConsoleLogger&& other) noexcept
     : logLevel_(other.logLevel_.load())
     , running_(other.running_.load())
     , localDisplayEnabled_(other.localDisplayEnabled_.load())
+    , timestampEnabled_(other.timestampEnabled_.load())
 {
     other.running_ = false;
 }
@@ -36,6 +38,7 @@ ConsoleLogger& ConsoleLogger::operator=(ConsoleLogger&& other) noexcept {
         logLevel_ = other.logLevel_.load();
         running_ = other.running_.load();
         localDisplayEnabled_ = other.localDisplayEnabled_.load();
+        timestampEnabled_ = other.timestampEnabled_.load();
         
         other.running_ = false;
     }
@@ -102,6 +105,14 @@ bool ConsoleLogger::isLocalDisplayEnabled() const {
     return localDisplayEnabled_.load();
 }
 
+void ConsoleLogger::setTimestampEnabled(bool enabled) {
+    timestampEnabled_.store(enabled);
+}
+
+bool ConsoleLogger::isTimestampEnabled() const {
+    return timestampEnabled_.load();
+}
+
 void ConsoleLogger::logMessage(LogLevel level, std::string_view message) {
     std::lock_guard<std::mutex> lock(logMutex_);
     
@@ -112,12 +123,15 @@ void ConsoleLogger::logMessage(LogLevel level, std::string_view message) {
 }
 
 std::string ConsoleLogger::formatMessage(LogLevel level, std::string_view message) const {
-    auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-    
     std::ostringstream oss;
-    oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
-    oss << " [" << logLevelToString(level) << "] " << message;
+    
+    if (timestampEnabled_.load()) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        oss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S") << " ";
+    }
+    
+    oss << "[" << logLevelToString(level) << "] " << message;
     
     return oss.str();
 }

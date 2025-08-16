@@ -61,8 +61,15 @@ class Application
 		
 		// Create dual logger service (console + network)
 		auto composite = std::make_shared<logger::CompositeLogger>();
-		composite->addLogger(std::make_shared<logger::ConsoleLogger>());
-		composite->addLogger(std::make_shared<logger::NetworkLogger>(_config.loggerIp, _config.loggerPort));
+		auto consoleLogger = std::make_shared<logger::ConsoleLogger>();
+		auto networkLogger = std::make_shared<logger::NetworkLogger>(_config.loggerIp, _config.loggerPort);
+		
+		// Configure individual logger preferences
+		consoleLogger->setTimestampEnabled(false);  // Console: no timestamps
+		networkLogger->setTimestampEnabled(true);   // Network: with timestamps
+		
+		composite->addLogger(consoleLogger);
+		composite->addLogger(networkLogger);
 		container.registerInstance<logger::ILogger>(composite);
 		
 		// Log application startup

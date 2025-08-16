@@ -45,6 +45,9 @@ public:
 	
 	void setLocalDisplay(bool enabled) override;
 	bool isLocalDisplayEnabled() const override;
+	
+	void setTimestampEnabled(bool enabled) override;
+	bool isTimestampEnabled() const override;
 
 	// Delete copy constructor and assignment operator (RAII best practice)
 	ConsoleLogger(const ConsoleLogger&) = delete;
@@ -58,6 +61,7 @@ private:
 	std::atomic<LogLevel> logLevel_;
 	std::atomic<bool> running_;
 	std::atomic<bool> localDisplayEnabled_;
+	std::atomic<bool> timestampEnabled_;
 	mutable std::mutex logMutex_;
 	
 	void logMessage(LogLevel level, std::string_view message);

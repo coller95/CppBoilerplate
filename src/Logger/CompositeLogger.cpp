@@ -6,6 +6,7 @@ namespace logger {
 CompositeLogger::CompositeLogger()
     : logLevel_(LogLevel::Info)
     , localDisplayEnabled_(true)
+    , timestampEnabled_(true)
 {
 }
 
@@ -13,6 +14,7 @@ CompositeLogger::CompositeLogger(CompositeLogger&& other) noexcept
     : loggers_(std::move(other.loggers_))
     , logLevel_(other.logLevel_)
     , localDisplayEnabled_(other.localDisplayEnabled_)
+    , timestampEnabled_(other.timestampEnabled_)
 {
 }
 
@@ -22,6 +24,7 @@ CompositeLogger& CompositeLogger::operator=(CompositeLogger&& other) noexcept {
         loggers_ = std::move(other.loggers_);
         logLevel_ = other.logLevel_;
         localDisplayEnabled_ = other.localDisplayEnabled_;
+        timestampEnabled_ = other.timestampEnabled_;
     }
     return *this;
 }
@@ -31,9 +34,8 @@ void CompositeLogger::addLogger(std::shared_ptr<ILogger> logger) {
         std::lock_guard<std::mutex> lock(loggersMutex_);
         loggers_.push_back(logger);
         
-        // Sync the new logger with current settings
+        // Sync only log level, preserve individual timestamp preferences
         logger->setLogLevel(logLevel_);
-        logger->setLocalDisplay(localDisplayEnabled_);
     }
 }
 
@@ -146,16 +148,24 @@ void CompositeLogger::setLocalDisplay(bool enabled) {
     std::lock_guard<std::mutex> lock(loggersMutex_);
     localDisplayEnabled_ = enabled;
     
-    // Apply to all registered loggers
-    for (auto& logger : loggers_) {
-        if (logger) {
-            logger->setLocalDisplay(enabled);
-        }
-    }
+    // Note: Don't override individual logger display preferences
+    // Each logger (Console, Network, etc.) has its own display behavior
 }
 
 bool CompositeLogger::isLocalDisplayEnabled() const {
     return localDisplayEnabled_;
+}
+
+void CompositeLogger::setTimestampEnabled(bool enabled) {
+    std::lock_guard<std::mutex> lock(loggersMutex_);
+    timestampEnabled_ = enabled;
+    
+    // Note: Don't override individual logger timestamp preferences
+    // Each logger (Console, Network, etc.) has its own timestamp behavior
+}
+
+bool CompositeLogger::isTimestampEnabled() const {
+    return timestampEnabled_;
 }
 
 } // namespace logger
