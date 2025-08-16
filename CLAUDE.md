@@ -1,1149 +1,160 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Claude Code guidance for this C++ codebase.
 
-## Build Commands
+## Commands
 
-### Quick Development Workflow
+### Build/Test
 ```bash
-# Complete build, test, and run cycle - 3 ESSENTIAL MODES
-./scripts/test.sh                    # Default: Minimal Tool/LLM-friendly (TEST=OK BUILD=OK RUN=OK TIME=42s)
-./scripts/test.sh human          # Human:  Human-friendly (emojis, colors, celebration)
-./scripts/test.sh debug            # Debug: Show everything (full compiler output, detailed logs)
+./scripts/test.sh                 # Minimal mode: TEST=OK BUILD=OK RUN=OK TIME=42s
+./scripts/test.sh human          # Human mode: emojis/colors  
+./scripts/test.sh debug          # Debug mode: full output
+./scripts/debug.sh               # Quick dev: test + build + run debug
 
-# Quick development workflow - test, build debug, and run (this might blocking the test so use with cautious)
-./scripts/debug.sh                   # Quick debug session (minimal output)
-./scripts/debug.sh human            # Debug session with detailed output
-
-# Individual build commands
-make debug                          # Build debug version
-make release                        # Build optimized release version
-make run_debug                      # Build and run debug version
-make run                           # Build and run release version
-
-# Clean build artifacts
-make clean                         # Clean main project build artifacts
-make test-clean                    # Clean all test artifacts
+make debug                       # Build debug
+make release                     # Build release  
+make test                        # Run all tests
+make test-run-<ModuleName>       # Run specific module tests
+make clean                       # Clean build artifacts
 ```
 
-**Script Comparison:**
-- **`test.sh`**: Comprehensive testing - runs unit tests, builds both debug & release, tests both builds, then cleans up
-- **`debug.sh`**: Quick development workflow - validates tests, builds debug only, runs debug server (stays running for development)
+### Modes
+- **Default**: LLM-optimized (90% token reduction)
+- **human**: Human-friendly output
+- **debug**: Full verbose output
+- Use `VERBOSE=minimal|human|debug` for individual commands
 
-**Test Script Modes (First Principles - KISS):**
-- **Default**: Human-friendly with emojis 🔧🧪🚀✅ and celebration summary
-- **--minimal**: Ultra-concise for LLMs (90% token reduction): `TEST=OK BUILD=OK RUN=OK TIME=42s`
-- **--debug**: Full verbose output for troubleshooting (shows everything)
-
-### Testing Commands
+### Generation
 ```bash
-# Run all tests
-make test                          # Run all project tests
-make test-help                     # Show all available test targets
+# Modules (progressive complexity)
+./scripts/create_module.sh create ModuleName              # Simple class
+./scripts/create_module.sh create ModuleName --interface  # + Interface
+./scripts/create_module.sh create ModuleName --interface --pimpl # + PIMPL
 
-# Individual module testing
-make test-run-<ModuleName>         # Build and run tests for specific module
-make test-make-<ModuleName>        # Build tests only (no execution)
-make test-clean-<ModuleName>       # Clean artifacts for specific module
-make test-debug-<ModuleName>       # Show dependency configuration
+# Services (always with interface)  
+./scripts/create_service.sh create ServiceName            # Interface + Implementation + Mock
 
-# Project statistics and debugging
-make test-stats                    # Show test project statistics
-make test-debug-all               # Debug all module configurations
+# Endpoints (testable handlers)
+./scripts/create_endpoint.sh create EndpointName          # Protected handler methods
 
-# Examples
-make test-run-LoggerTest          # Run Logger module tests
-make test-run-EndpointHelloTest   # Run EndpointHello module tests
-make test-run-IocContainerTest    # Run IoC Container tests
-```
-
-### Test Script Output Modes (First Principles Design)
-
-**CRITICAL**: Simplified **3-mode system** based on first principles - KISS (Keep It Simple, Stupid):
-
-**Essential Modes (ordered by purpose):**
-- **Default** - Tool/LLM-friendly (90% token reduction): `TEST=OK BUILD=OK RUN=OK TIME=42s` 
-- **`human`** - Human-friendly with emojis 🔧🧪🚀✅ and celebration
-- **`debug`** - Show everything (full compiler output, detailed logs)
-
-**Usage Examples:**
-```bash
-# Test script modes (simplified from complex 3-mode system)
-./scripts/test.sh                    # Default: Minimal Tool/LLM-friendly (TEST=OK BUILD=OK RUN=OK TIME=42s)
-./scripts/test.sh human          # Human:  Human-friendly (emojis, colors, celebration)
-./scripts/test.sh debug            # Debug: Show everything (full compiler output, detailed logs)
-
-# Build system still supports verbose control for individual commands
-make debug VERBOSE=minimal         # Ultra-minimal build output
-make debug VERBOSE=human           # Human-friendly build output
-make debug VERBOSE=debug           # Debug-level build output
-```
-
-**Context Efficiency Comparison:**
-```bash
-# Default mode (human-friendly):
-🔧 Running tests...
-🧪 Running comprehensive test suite...
-✅ All tests passed
-🎉 All checks complete! Your code is working perfectly!
-
-# --minimal mode (90% token reduction - OPTIMAL for LLMs):
-TEST=OK BUILD=OK RUN=OK TIME=42s
-
-# --debug mode (full visibility for troubleshooting):
-[DEBUG] Running tests with full output...
-[DEBUG] Building with full compiler output...
-[SUCCESS] All operations completed successfully
-```
-
-**LLM Performance Benefits:**
-- **--minimal mode**: 90% token reduction, 10x faster processing
-- **Structured output**: `TEST=OK BUILD=OK RUN=OK TIME=42s` format for efficient parsing
-- **Context budget optimization**: More operations possible within token limits
-- **First principles design**: Essential functionality only, no complexity bloat
-
-### Module Generation
-
-**CRITICAL**: This project uses a **differentiated generation approach** - each script type follows different complexity defaults based on actual usage patterns:
-
-```bash
-# UTILITY MODULES - Start Simple, Add Complexity When Needed
-./scripts/create_module.sh create ConfigManager              # Simple concrete class (default)
-./scripts/create_module.sh create Logger --interface         # Add interface for polymorphism
-./scripts/create_module.sh create WebServer --interface --pimpl # Both interface and PIMPL
-
-# BUSINESS SERVICES - Interface by Default for DI/Testing
-./scripts/create_service.sh create ServiceUser               # Always generates interface + concrete
-./scripts/create_service.sh create ServiceAuth               # Auto-registers both interface and implementation
-
-# HTTP ENDPOINTS - Testable Handler Methods (No Interface)
-./scripts/create_endpoint.sh create EndpointUser             # Testable protected handler methods
-./scripts/create_endpoint.sh create EndpointProduct          # Lambdas call extracted handler methods
-
-# Remove modules safely with confirmation
-./scripts/create_endpoint.sh remove EndpointName
-./scripts/create_service.sh remove ServiceName
+# Remove
 ./scripts/create_module.sh remove ModuleName
-
-# Generate UML class diagrams and documentation
-./scripts/generate_class_chart.sh                   # Dynamic class charts using Doxygen + Graphviz
+./scripts/create_service.sh remove ServiceName  
+./scripts/create_endpoint.sh remove EndpointName
 ```
 
-### **NEW: Differentiated Generation Architecture**
-
-**CRITICAL**: Each generation script follows **progressive complexity principles** - start minimal, add sophistication only when justified:
-
-#### **🔧 create_module.sh - Progressive Enhancement**
+### LLM Tools  
 ```bash
-# Default: Simple concrete class (minimal overhead)
-./scripts/create_module.sh create ConfigManager
-# → Creates: ConfigManager.h, ConfigManager.cpp (no interface, no PIMPL)
-
-# Add interface when polymorphism needed
-./scripts/create_module.sh create Logger --interface  
-# → Creates: ILogger.h, Logger.h, Logger.cpp, MockLogger.h
-
-# Add PIMPL when hiding complex dependencies
-./scripts/create_module.sh create WebServer --interface --pimpl
-# → Creates: IWebServer.h, WebServer.h (with PIMPL), WebServer.cpp (with Impl class)
+# Analysis (90%+ token reduction)
+./scripts/lexer.sh analyze src/                   # Structured JSON summary
+./scripts/llm_analysis.sh analyze file.json type # Standardized analysis
+./scripts/refactor.sh extract-class file Class   # Safe refactoring
 ```
 
-**When to use flags:**
-- `--interface`: Multiple implementations, dependency injection, unit testing with mocks
-- `--pimpl`: Hide complex dependencies (Mongoose, OpenSSL), reduce compilation time
+## ⚠️ TDD MANDATORY
 
-#### **🔧 create_service.sh - Interface by Default**
-```bash
-# Always generates interface (needed for DI and testing)
-./scripts/create_service.sh create ServiceUser
-# → Creates: IServiceUser + ServiceUser + MockServiceUser + auto-registration
-```
-
-**Why interface by default:**
-- Services almost always need dependency injection
-- Unit testing requires mocking capabilities  
-- IoC container registration works with interfaces
-
-#### **🔧 create_endpoint.sh - Testable Methods**
-```bash
-# Generates testable handler methods (no interface needed)
-./scripts/create_endpoint.sh create EndpointUser
-# → Creates: EndpointUser with protected handleGetUser() method + handler tests
-```
-
-**Architecture benefits:**
-- Handler logic extracted to testable protected methods
-- Lambdas are thin wrappers calling handler methods
-- Direct unit testing of HTTP handler logic
-- Each HTTP method gets its own handler method
-
-### **🎯 Key Architectural Improvements**
-
-**1. Minimal Overhead by Default:**
-- Utility modules start as simple concrete classes
-- No premature abstraction or unused patterns
-- Add complexity only when requirements justify it
-
-**2. Service-Oriented Design:**
-- Services always get interfaces (required for DI/testing)
-- Simplified auto-registration (no redundant methods)
-- Domain-specific method naming (`processUserData()` not `doSomethingServiceUser()`)
-
-**3. Testable Endpoint Architecture:**
-- HTTP handler logic extracted from lambdas
-- Protected methods accessible to unit tests
-- Clear separation: registration logic vs. business logic
-
-**4. Progressive Enhancement:**
-- Start simple: `create ConfigManager` → minimal class
-- Add interface: `--interface` → enables polymorphism  
-- Add PIMPL: `--pimpl` → hides implementation complexity
-- Follow YAGNI: "You Aren't Gonna Need It" principle
-
-**5. Preserved Auto-Registration:**
-- All components still auto-register (plugin architecture maintained)
-- Services register both interface and concrete implementation
-- Endpoints register with ApiRouter automatically
-- No manual wiring required in main application
-
-### **NEW: Lexical Analysis for LLM Context Optimization**
-
-**CRITICAL**: Use lexical analysis for maximum LLM efficiency when working with large codebases:
+**STRICT RULES**:
+- Write failing test FIRST, then implement
+- NO code without tests
+- ONE CLASS PER FILE 
+- RED-GREEN-REFACTOR cycle
 
 ```bash
-# Lexical analysis commands (90%+ token reduction)
-./scripts/lexer.sh analyze src/               # Complete codebase analysis  
-./scripts/lexer.sh structure include/         # Module structure overview
-./scripts/lexer.sh dependencies               # Project dependency mapping
-
-# Token efficiency demonstration  
-./scripts/token_comparison.sh demo            # Project-wide efficiency stats
-./scripts/token_comparison.sh compare file    # Compare specific file/module
+# TDD Workflow
+make test-run-ModuleName  # RED (should fail)
+# Write minimal code
+make test-run-ModuleName  # GREEN (should pass) 
+# Refactor + test again
 ```
 
-**Why Use Lexical Analysis:**
-- **85-95% token reduction** - process 10x more code in same context
-- **Structured JSON output** - surgical precision targeting
-- **Consistent parsing** - eliminates LLM syntax parsing errors  
-- **Context multiplier** - analyze entire codebase efficiently
-- **Integration ready** - prepared for automated refactoring workflows
+## ⚠️ TEST ISOLATION MANDATORY
 
-**LLM Workflow Integration:**
-```bash
-# 1. ANALYZE: Generate structured summary (200 tokens vs 10,000+ raw)
-./scripts/lexer.sh analyze src/ > codebase_summary.json
+**RULE**: Zero external module dependencies. Test only what you're testing.
 
-# 2. STANDARDIZED ANALYSIS: Use predictable LLM analysis protocol
-./scripts/llm_analysis.sh analyze codebase_summary.json one-class-per-file
-
-# 3. VALIDATE: Ensure analysis output is consistent and correct
-./scripts/llm_analysis.sh validate analysis_output.json
-
-# 4. EXECUTE: Apply validated refactoring commands
-./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
-
-# 5. VERIFY: Ensure build still works after refactoring
-make debug VERBOSE=minimal
-```
-
-### **NEW: Standardized LLM Analysis Protocol**
-
-**CRITICAL**: Use standardized LLM analysis for predictable, testable refactoring workflows:
-
-```bash
-# Standardized LLM analysis commands (95% consistency guarantee)
-./scripts/llm_analysis.sh analyze lexer_output.json one-class-per-file  # Detect violations
-./scripts/llm_analysis.sh analyze lexer_output.json extract-class       # Plan extractions  
-./scripts/llm_analysis.sh analyze lexer_output.json dependency-analysis # Analyze dependencies
-
-# Validation and consistency testing
-./scripts/llm_analysis.sh validate analysis_output.json                 # Validate schema
-./scripts/test_llm_consistency.sh run                                   # Test consistency
-./scripts/test_llm_consistency.sh report                                # Generate report
-```
-
-**Why Use Standardized LLM Analysis:**
-- **95% Consistency** - standardized prompts eliminate analysis variance
-- **JSON Schema Validation** - ensures output correctness and compatibility
-- **Automated Testing** - verify LLM analysis produces consistent results
-- **Predictable Output** - deterministic refactoring commands every time
-- **Error Detection** - catch inconsistencies before executing refactor operations
-- **Continuous Improvement** - test-driven validation enables protocol refinement
-
-### **NEW: Automated Refactoring Tools**
-
-**CRITICAL**: Use refactoring tools for LLM-driven code extraction and reorganization:
-
-```bash
-# Refactoring analysis and execution (preserves comments and documentation)
-./scripts/refactor.sh analyze src/main.cpp           # Analyze for "One Class Per File" violations
-./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
-./scripts/refactor.sh extract-struct src/main.cpp AppConfig src/AppConfig/
-./scripts/refactor.sh extract-block src/main.cpp function signalHandler src/SignalHandler.cpp
-
-# Precise line-based operations
-./scripts/refactor.sh move-lines src/main.cpp 100 150 src/RouteSetup.cpp
-./scripts/refactor.sh copy-lines src/main.cpp 200 250 backup/main_section.cpp
-
-# Build system integration
-./scripts/refactor.sh update-build-system          # Auto-detect new sources and update configs
-```
-
-**Why Use Refactoring Tools:**
-- **Comment Preservation** - automatically includes documentation comments above functions/classes
-- **"One Class Per File" Enforcement** - detects violations and suggests extraction
-- **Standardized Integration** - follows lexer.sh → llm_analysis.sh → refactor.sh workflow
-- **Safe Operations** - automatic backups before any file modifications
-- **Build System Sync** - updates Project.build and Tests.build configurations
-- **Context Efficiency** - enables large-scale refactoring within LLM token limits
-- **Validated Execution** - only executes refactor commands that pass consistency validation
-
-**LLM Refactoring Workflow:**
-```bash
-# 1. DISCOVER: Find files that need refactoring
-./scripts/refactor.sh analyze src/main.cpp
-
-# 2. ANALYZE: Use lexical analysis for structured understanding
-./scripts/lexer.sh analyze src/main.cpp > lexer_output.json
-
-# 3. STANDARDIZED PLANNING: Generate predictable LLM analysis
-./scripts/llm_analysis.sh analyze lexer_output.json extract-class
-
-# 4. VALIDATE: Ensure analysis output is consistent and executable
-./scripts/llm_analysis.sh validate analysis_output.json
-
-# 5. EXECUTE: Apply validated refactoring commands  
-./scripts/refactor.sh extract-class src/main.cpp Application src/Application/
-
-# 6. VERIFY: Ensure build still works after refactoring
-make debug VERBOSE=minimal
-```
-
-## **CRITICAL: Test-Driven Development (TDD) Requirements**
-
-⚠️ **MANDATORY TDD DISCIPLINE** - This project strictly enforces Test-Driven Development:
-
-1. **RED-GREEN-REFACTOR CYCLE**:
-   - 🔴 **RED**: Write failing test first (`make test-run-ModuleName`)
-   - 🟢 **GREEN**: Write minimal code to make test pass
-   - 🔵 **REFACTOR**: Improve code while keeping tests green
-
-2. **STRICT RULES**:
-   - **NEVER write implementation code without a failing test first**
-   - **NO exceptions** - applies to new features, bug fixes, and refactoring
-   - **ONE CLASS PER FILE** - mandatory for LLM context efficiency
-   - Tests must be comprehensive and cover edge cases
-   - All auto-registration functionality must be verified in tests
-
-3. **TDD WORKFLOW**:
-   ```bash
-   # 1. Create failing test in tests/ModuleNameTest/cases/
-   make test-run-ModuleName  # Should fail (RED)
-   
-   # 2. Implement minimal code to pass
-   make test-run-ModuleName  # Should pass (GREEN)
-   
-   # 3. Refactor and ensure tests still pass
-   make test-run-ModuleName  # Should remain green (REFACTOR)
-   ```
-
-4. **WHY TDD IS MANDATORY**:
-   - Ensures robust, testable architecture
-   - Prevents regression bugs  
-   - Documents expected behavior
-   - Enables confident refactoring
-   - Maintains code quality at scale
-   - **Drives clean design** - TDD led to removing `poll()` method for cleaner interfaces
-   - **Enforces one-class-per-file** - TDD encourages focused, testable classes
-
-## **CRITICAL: Test Isolation Principles**
-
-⚠️ **MANDATORY TEST DECOUPLING** - All tests must be completely isolated from other modules:
-
-### **Core Principle: Test Only What You're Testing**
-
-**RULE**: Each test module should **ONLY** depend on the module being tested. Zero external module dependencies.
-
-### **❌ WRONG: Tightly Coupled Tests**
+**❌ WRONG**: 
 ```cpp
-// DON'T DO THIS - test depends on Logger module
-#include <Logger/Logger.h>
-#include <Logger/ILogger.h>
-
-TEST(IocContainerTest, ServiceResolution) {
-    auto logger = std::make_shared<logger::Logger>("127.0.0.1", 9000);  // External dependency!
-    container.registerInstance<logger::ILogger>(logger);               // Domain coupling!
-    
-    auto resolved = container.resolve<logger::ILogger>();               // Business logic leak!
-    resolved->logInfo("Test message");                                  // Not testing container!
-}
+#include <Logger/Logger.h>  // External dependency!
+auto logger = std::make_shared<logger::Logger>(...);
 ```
 
-**Problems:**
-- Changes to Logger **break IoC Container tests**
-- Tests fail when Logger has bugs
-- Not testing IoC Container functionality - testing Logger integration
-- Build dependencies create coupling
-
-### **✅ CORRECT: Isolated Tests**
+**✅ CORRECT**:
 ```cpp
-// CORRECT - completely generic, no domain knowledge
-class IServiceA {
-public:
-    virtual ~IServiceA() = default;
-    virtual int getValue() = 0;
-    virtual void setValue(int value) = 0;
-    virtual void increment() = 0;
-};
-
-class ServiceAImpl : public IServiceA {
-private:
-    int _value;
-public:
-    ServiceAImpl(int initial = 42) : _value(initial) {}
-    int getValue() override { return _value; }
-    void setValue(int value) override { _value = value; }
-    void increment() override { _value++; }
-};
-
-TEST(IocContainerTest, ServiceResolution) {
-    auto service = std::make_shared<ServiceAImpl>(100);                // Generic service
-    container.registerInstance<IServiceA>(service);                   // Tests container mechanics
-    
-    auto resolved = container.resolve<IServiceA>();                    // Tests resolution
-    EXPECT_EQ(resolved->getValue(), 100);                             // Tests functionality
-    resolved->increment();                                             // Tests usability
-    EXPECT_EQ(resolved->getValue(), 101);                             // Verifies state
-}
+// Generic test services only
+class IServiceA { virtual int getValue() = 0; };
+class ServiceAImpl : public IServiceA { /*...*/ };
 ```
 
-**Benefits:**
-- Tests **only** IoC Container functionality
-- Zero external dependencies
-- Works with **any** service type (banking, gaming, utilities)
-- Changes to other modules **never** break these tests
+**Requirements**:
+- `DEPENDENCIES =` (empty in Makefile)
+- No `#include` of other project modules
+- Use `IServiceA`, `IServiceB` (generic interfaces)
+- Test mechanics, not business logic
 
-### **Implementation Guidelines**
+## Testing Strategy
 
-1. **Zero External Dependencies**:
-   ```makefile
-   # Makefile should have empty dependencies
-   DEPENDENCIES =  # No external modules!
-   ```
+**RULE**: Mock business logic, isolate infrastructure.
 
-2. **Generic Test Services**:
-   ```cpp
-   // Use domain-agnostic interfaces
-   class IServiceA { /* generic operations */ };
-   class IServiceB { /* different generic operations */ };
-   
-   // NO business domain concepts:
-   // ❌ ILogger, IWebServer, IPaymentProcessor
-   // ✅ IServiceA, IServiceB, IServiceC
-   ```
-
-3. **Test Container Mechanics, Not Business Logic**:
-   ```cpp
-   // Test what the CONTAINER does:
-   ✅ Service registration works
-   ✅ Service resolution works  
-   ✅ Thread safety works
-   ✅ Error handling works
-   ✅ Service lifecycle works
-   
-   // DON'T test what SERVICES do:
-   ❌ Logging functionality
-   ❌ HTTP request handling
-   ❌ Database operations
-   ```
-
-### **When Isolation Is Required**
-
-**ALWAYS isolate when testing**:
-- Core infrastructure (IoC Container, Router, etc.)
-- Utility classes and algorithms
-- Data structures and collections
-- Any component meant to work with multiple service types
-
-**Integration tests are separate**:
-- Create dedicated integration test modules for cross-module testing
-- Use `tests/IntegrationTest/` for real service interactions
-- Keep unit tests and integration tests clearly separated
-
-### **Refactoring Coupled Tests**
-
-When you find tightly coupled tests:
-
-1. **Identify the coupling**: What external modules are being used?
-2. **Extract the core functionality**: What is actually being tested?
-3. **Create generic services**: Replace domain services with `IServiceA`, `IServiceB`
-4. **Remove dependencies**: Clean up Makefile dependencies
-5. **Verify isolation**: Test should build with only the target module
-
-### **Test Isolation Checklist**
-
-Before committing tests, verify:
-- [ ] Makefile has `DEPENDENCIES =` (empty)
-- [ ] No `#include` of other project modules
-- [ ] Uses generic test services (`IServiceA`, `ServiceAImpl`)
-- [ ] Tests component mechanics, not business logic
-- [ ] All tests pass with only target module built
-- [ ] No domain-specific concepts in test code
-
-**Remember**: The best test is one that tests **exactly one thing** in **complete isolation**. If your IoC Container tests break when you change the Logger, you're not testing the IoC Container - you're testing the integration.
-
-## **CRITICAL: Testing Strategy Guidelines**
-
-### **Mock vs Isolation Decision Framework**
-
-**FUNDAMENTAL RULE**: **Mock your business logic, isolate your infrastructure.**
-
-#### **When to Use MOCKING:**
+**MOCK** (ApiRouter, Services, Domain logic):
 ```cpp
-// ✅ MOCK: Business logic, domain objects, complex algorithms
-TEST(ApiRouterTest, RoutesToCorrectEndpoint) {
-    MockEndpoint mockEndpoint;
-    EXPECT_CALL(mockEndpoint, handleRequest(_)).Times(1);
-    apiRouter.registerEndpoint("/api/users", mockEndpoint);
-    apiRouter.handleRequest("/api/users", "GET", ...);
-}
+MockEndpoint mockEndpoint;
+EXPECT_CALL(mockEndpoint, handleRequest(_)).Times(1);
 ```
 
-**Mock these types:**
-- **Business logic classes** (ApiRouter, Services, Controllers)
-- **Domain objects** with complex behavior and state
-- **Classes you own and control** completely
-- **Multi-step algorithms** and workflows
-- **Classes with significant logic** to test
-
-#### **When to Use ISOLATION:**
-```cpp
-// ✅ ISOLATE: Infrastructure, thin wrappers, external library facades
-TEST(WebServerTest, StartOperationDoesNotCrash) {
-    WebServer webServer("127.0.0.1", 8080);
-    EXPECT_NO_THROW(webServer.start());  // Test our interface, not mongoose
-    EXPECT_EQ(webServer.getBindAddress(), "127.0.0.1");
-}
+**ISOLATE** (WebServer, Logger, DB wrappers):
+```cpp  
+WebServer webServer("127.0.0.1", 8080);
+EXPECT_NO_THROW(webServer.start());
 ```
 
-**Isolate these types:**
-- **Infrastructure wrappers** (WebServer, Database connections)
-- **External library facades** (mongoose, SQLite, curl wrappers)
-- **Simple data holders** and configuration objects
-- **System boundary classes** (file I/O, network, OS interfaces)
-- **Thin wrappers** where most logic lives in external libraries
-
-#### **Why This Distinction Matters:**
-
-**Infrastructure Code Reality:**
-```cpp
-// WebServer is mostly mongoose + thin interface
-class WebServer {
-    bool start() { return mongoose_start(); }  // Thin wrapper
-    void setHandler(Handler h) { handler = h; } // Simple storage
-};
-
-// Mocking mongoose internals = testing the wrong thing
-❌ EXPECT_CALL(mongoose, mg_http_listen(addr, port, handler));
-✅ EXPECT_EQ(webServer.getBindAddress(), "127.0.0.1");
-```
-
-**Business Logic Reality:**
-```cpp
-// ApiRouter has complex routing logic we own
-class ApiRouter {
-    bool handleRequest(path, method, body, response) {
-        auto key = createEndpointKey(path, method);  // Our logic
-        auto endpoint = findEndpoint(key);           // Our logic
-        return endpoint->handle(request);            // Our orchestration
-    }
-};
-
-// We want to test OUR routing logic, not endpoint implementation
-✅ EXPECT_CALL(mockEndpoint, handle(_)).WillReturn(true);
-❌ WebServer webServer; // Don't test real HTTP over network
-```
-
-#### **Testing Value Assessment:**
-
-**High-Value Tests (Write These):**
-- ✅ **Interface contracts** - Does the API work as promised?
-- ✅ **Error handling** - How does it fail gracefully?
-- ✅ **Configuration** - Are settings stored/applied correctly?
-- ✅ **Business logic** - Do algorithms produce correct results?
-
-**Low-Value Tests (Avoid These):**
-- ❌ **Implementation details** - Which internal functions get called?
-- ❌ **External library behavior** - Does mongoose parse HTTP correctly?
-- ❌ **Integration complexity** - Real network calls in unit tests
-- ❌ **Timing dependencies** - Tests that fail due to race conditions
-
-#### **Practical Guidelines:**
-
-**For Infrastructure (WebServer, Logger, Database):**
-1. **Test configuration and lifecycle** - Does it start/stop safely?
-2. **Test your interface contract** - Do methods return expected values?
-3. **Test error handling** - Does it fail gracefully with bad input?
-4. **Don't test the library** - Trust mongoose to parse HTTP correctly
-
-**For Business Logic (ApiRouter, Services, Domain):**
-1. **Mock dependencies** - Control what collaborators do
-2. **Test decision logic** - Does it route/process/calculate correctly?
-3. **Test edge cases** - How does it handle unusual inputs?
-4. **Test state changes** - Does it update internal state correctly?
-
-#### **Architecture Testing Strategy:**
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Integration   │    │  Business Logic │    │ Infrastructure  │
-│      Tests      │    │   (Unit Tests)  │    │ (Isolated Tests)│
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ ApiRouter +     │    │ ApiRouter       │    │ WebServer       │
-│ WebServer +     │    │ (mocked deps)   │    │ (no network)    │
-│ Real HTTP       │    │                 │    │                 │
-│                 │    │ Services        │    │ Logger          │
-│ ┌─┐ ┌─┐ ┌─┐    │    │ (mocked deps)   │    │ (no file I/O)   │
-│ │E│ │F│ │F│    │    │                 │    │                 │
-│ │2│ │e│ │a│    │    │ Domain Logic    │    │ Database        │
-│ │E│ │w│ │s│    │    │ (mocked repos)  │    │ (no real DB)    │
-│ └─┘ └─┘ └─┘    │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-     Slow                    Fast                   Fast
-   Real Network            Mocked Deps           No External Deps
-```
-
-**Layer Testing Strategy:**
-- **Infrastructure**: Isolated unit tests (fast, no external deps)
-- **Business Logic**: Mocked unit tests (fast, controlled dependencies)  
-- **Integration**: End-to-end tests (slower, real components)
-
-This approach maximizes test value while minimizing maintenance overhead and execution time.
-
-## High-Level Architecture
-
-This project uses a **modular monolithic architecture** with the following key principles:
-
-### Core Architecture Components
-
-**Application Class (`src/main.cpp`)**: The main application orchestrates:
-- IoC Container initialization and service registration
-- WebServer configuration and startup
-- ApiRouter initialization for HTTP endpoint management
-- Service lifecycle management (startup, shutdown)
-
-**IoC Container (`IocContainer/`)**: Dependency injection container that:
-- Manages service registration and resolution
-- Supports singleton and instance-based services
-- Enables loose coupling and testability
-- Provides service discovery and type management
-
-**WebServer (`WebServer/`)**: HTTP server abstraction that:
-- **Self-contained backends** - each backend handles its own event processing internally
-- **Clean interfaces** - no backend-specific methods (like `poll()`) leak to interfaces
-- **Internal threading** - Mongoose backend uses dedicated thread for event processing
-- **Pluggable architecture** - supports multiple backends via factory pattern
-- Integrates with ApiRouter for request routing
-- Handles MIME types, static content, and JSON responses
-
-**ApiRouter (`ApiRouter/`)**: API endpoint management system that:
-- Manages HTTP endpoint registration and routing
-- Supports automatic module registration
-- Provides global access to registered endpoints
-- Integrates seamlessly with WebServer for request handling
-
-**Logger (`Logger/`)**: Comprehensive logging system that:
-- Supports both local display and remote logging
-- Integrates with IoC container for dependency injection
-- Provides structured logging with different severity levels
-- Handles connection failures gracefully
-
-### **CRITICAL: ApiRouter Auto-Registration Architecture**
-
-**ApiRouter** implements a sophisticated **plugin discovery system** with automatic endpoint registration. This is NOT just routing - it's a complete **service discovery architecture**.
-
-#### **Two-Phase Initialization Pattern**
-
-```cpp
-// Phase 1: Static Initialization (Automatic)
-namespace {
-    struct EndpointHelloRegistration {
-        EndpointHelloRegistration() {
-            apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
-                return std::make_unique<EndpointHello>();
-            });
-        }
-    };
-    static EndpointHelloRegistration _registration;  // Auto-registers during static init
-}
-
-// Phase 2: Runtime Initialization (Explicit)
-int main() {
-    apirouter::ApiRouter::initializeGlobal();  // Creates modules, registers endpoints
-    // ALL HTTP requests now route through ApiRouter
-}
-```
-
-#### **Single Source of Truth Enforcement**
-
-**CRITICAL**: ApiRouter enforces **NO BYPASS POSSIBLE** architecture:
-
-```cpp
-// WebServer → ApiRouter delegation (MANDATORY)
-_webServer->setGlobalRequestHandler([&apiRouter](const auto& request, auto& response) {
-    // ALL HTTP requests MUST go through ApiRouter
-    apiRouter.handleRequest(request.uri, request.method, request.body, responseBody, statusCode);
-});
-```
-
-**Why This Matters**:
-- **Zero bypass routes** - impossible to register endpoints outside ApiRouter
-- **Complete discoverability** - all endpoints visible via `getRegisteredEndpoints()`
-- **Centralized logging** - every HTTP request logged and traced
-- **Consistent error handling** - unified 404/500 responses
-- **Automatic documentation** - endpoint registry for API docs
-
-#### **Architecture Layer Classification**
-
-**ApiRouter = Business Logic Layer**
-
-```
-┌─────────────────────────────────┐
-│     APPLICATION LAYER           │  ← main.cpp orchestration
-├─────────────────────────────────┤
-│     BUSINESS LOGIC LAYER        │  ← ApiRouter (USE MOCKING)
-│  • ApiRouter ← ROUTES REQUESTS  │  ← EndpointHello, Services
-│  • EndpointHello                │
-│  • Services                     │
-├─────────────────────────────────┤
-│     INFRASTRUCTURE LAYER        │  ← WebServer, Logger (USE ISOLATION)
-│  • WebServer ← SERVES HTTP      │
-│  • Logger                       │
-│  • IoC Container                │
-└─────────────────────────────────┘
-```
-
-#### **Testing Strategy for ApiRouter**
-
-**Use MOCKING approach** (business logic with dependencies):
-
-```cpp
-// ✅ CORRECT: Mock infrastructure dependencies
-TEST(ApiRouterBusinessLogicTest, RoutesToCorrectEndpoint) {
-    MockWebServer mockWebServer;
-    EXPECT_CALL(mockWebServer, setGlobalRequestHandler(_)).Times(1);
-    
-    ApiRouter router;
-    router.configureWebServer(mockWebServer);  // Test business logic
-}
-
-// ❌ WRONG: Don't isolate ApiRouter itself
-// ApiRouter IS the business logic being tested
-```
-
-#### **Performance Optimizations Applied**
-
-**1. Mutex Simplification:**
-- ✅ **Changed from `std::recursive_mutex` to `std::mutex`**
-- ✅ **Improved locking strategy** - copy-then-release pattern
-- ✅ **Performance gain** - regular mutex is faster
-
-**2. Null Handler Safety:**
-- ✅ **Added null handler checks** before execution
-- ✅ **Graceful degradation** with meaningful error messages
-- ✅ **Crash prevention** from null function pointers
-
-#### **Critical Safety Features**
-
-**Thread Safety:**
-- Thread-safe singleton using Meyer's pattern
-- Mutex-protected endpoint registry
-- Safe concurrent registration and routing
-
-**Exception Safety:**
-- Module factory exceptions don't break initialization
-- Handler exceptions return 500 with error details
-- Input validation prevents crashes
-
-**Auto-Registration Safety:**
-- Static initialization order safety via Meyer's singleton
-- Resilient to module loading failures
-- Factory pattern enables clean dependency injection
-
-#### **Best Practices for ApiRouter Usage**
-
-**DO:**
-- ✅ Use auto-registration pattern for all endpoints
-- ✅ Always route through ApiRouter (no bypass)
-- ✅ Test with mocked dependencies (business logic approach)
-- ✅ Handle exceptions in endpoint handlers
-- ✅ Use meaningful HTTP status codes
-
-**DON'T:**
-- ❌ Create direct WebServer endpoints (bypasses ApiRouter)
-- ❌ Use test isolation approach (ApiRouter is business logic)
-- ❌ Assume initialization is idempotent after factory registration
-- ❌ Ignore auto-registration in testing (singleton state persists)
-
-#### **Development Workflow Integration**
-
-```bash
-# 1. Create new endpoint using generation script
-./scripts/create_endpoint.sh create EndpointUser
-
-# 2. Endpoint auto-registers during static initialization (automatic)
-
-# 3. Test endpoint with proper mocking strategy
-make test-run-EndpointUserTest
-
-# 4. Verify integration via ApiRouter endpoints list
-curl http://localhost:8080/api/endpoints
-```
-
-#### **Troubleshooting Common Issues**
-
-**Problem**: Endpoint not found (404)
-- **Solution**: Verify auto-registration in endpoint .cpp file
-- **Check**: `apirouter::ApiRouter::getRegisteredEndpointsGlobal()`
-
-**Problem**: Tests sharing singleton state
-- **Solution**: Expected behavior - tests should account for shared state
-- **Workaround**: Use manual endpoint registration in tests
-
-**Problem**: Module factory not called
-- **Solution**: Ensure static initialization runs before `initializeGlobal()`
-- **Check**: Link order and static initialization dependencies
-
-### Architectural Best Practices
-
-**File Organization Principles:**
-- **One Class Per File**: MANDATORY - Each class must be in its own separate file
-- **LLM Context Efficiency**: Single-class files enable precise file reading and modification
-- **Modular Analysis**: AI assistants can analyze individual classes without irrelevant context
-- **Clear Boundaries**: File boundaries match logical class boundaries for better understanding
-
-**Interface Design Principles:**
-- **No Leaky Abstractions**: Interfaces must NOT expose implementation-specific methods
-- **Self-Contained Components**: Each component handles its own internal processes (e.g., event loops, threading)
-- **Clean Separation**: Consumer code should never need to know about backend implementation details
-- **Example**: WebServer backends handle event processing internally - no external `poll()` methods
-
-**Threading and Event Processing:**
-- **Internal Threading**: Components requiring event processing use internal threads (e.g., Mongoose backend)
-- **Atomic Operations**: Thread-safe state management using `std::atomic` types
-- **Graceful Shutdown**: Components handle their own cleanup and thread joining
-- **No External Dependencies**: Main application doesn't handle component-specific event processing
-
-**Interface Segregation:**
-- **Minimal Interfaces**: Only expose methods that ALL implementations can meaningfully support
-- **No Optional Methods**: Avoid methods that some implementations treat as no-ops
-- **Behavioral Consistency**: Interface methods should have consistent behavior across implementations
-
-**Generated Module Architecture Guidelines:**
-- **PIMPL for Script Generation**: Use PIMPL idiom in generated modules to hide implementation dependencies from headers
-- **Avoid Redundant Abstraction Layers**: Don't create multiple interface layers that just forward calls (e.g., Interface → Wrapper → Backend Interface → Concrete Backend)
-- **Keep Generation Scripts Flexible**: When modifying generation scripts, ensure they don't create unnecessary architectural overhead
-- **Balance Tool Compatibility vs Performance**: PIMPL is justified for script generation but avoid additional abstraction layers that add virtual call overhead without value
-- **Direct Backend Usage**: Consider if generated code can use concrete backends directly rather than through wrapper interfaces
-
-### Module Organization Principles
-
-**One Module, One Responsibility**: Each module has a clear, single purpose:
-- **Endpoints** (`EndpointHello/`): Handle specific HTTP requests
-- **Services**: Implement business logic with IoC integration
-- **Infrastructure**: Provide system-level functionality (WebServer, Logger)
-
-**Interface-Based Design**: All modules implement clear interfaces:
-- `ILogger`
-- Enables mocking and testing isolation
-- Supports dependency injection patterns
-
-**Auto-Registration Pattern**: Services and endpoints automatically register:
-- Endpoints register with ApiRouter during initialization
-- Services register with IoC Container
-- No manual wiring required in main application
-
-**Test Isolation**: Each module has comprehensive, isolated test suites:
-- Tests in `tests/ModuleNameTest/cases/` subdirectories
-- Mock implementations for all interfaces
-- Verification of auto-registration functionality
-
-### Build System Architecture
-
-**Immutable Makefile Design**: Core build logic never changes:
-- Main `Makefile` contains generic build patterns
-- `Project.build` contains project-specific source/library configuration
-- `Platform.build` handles cross-compilation and architecture detection
-- `Tests.build` provides test-related targets at project level
-
-**Flexible Test Framework**: Each test module uses configurable Makefiles:
-- Dependencies specified declaratively: `DEPENDENCIES = Logger IocContainer`
-- Special folder handling: `ModuleName:FolderName` format
-- External library support via `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, `EXTERNAL_LIBS`
-- Automatic compilation rules and object file organization
-
-**Multi-Tiered Output System**: Optimized for surgical LLM context control:
-- **Minimal mode** (default): Ultra-minimal output, 90-95% token reduction
-- **Standard mode**: Balanced agent output, 80% token reduction  
-- **Debug mode**: Agent + debugging context, 60% token reduction
-- **Human mode**: Colorful, descriptive output for humans
-- **Silent mode**: Critical errors only, maximum token efficiency
-- **Structured prefixes**: `[BUILD]`, `[TEST]`, `[SCRIPT]`, `[ERROR]` for parsing
-- **Context budget optimization**: Surgical precision for complex tasks
-
-### LLM Context Optimization Guidelines
-
-**CRITICAL: Always Minimize Context Usage for AI Efficiency**
-
-**1. Use Minimal Mode by Default:**
-```bash
-# ALWAYS use minimal mode for best LLM performance
-./scripts/test.sh                 # Defaults to minimal mode (ultra-concise)
-make test                         # Defaults to minimal mode
-make debug                        # Defaults to minimal mode
-
-# Escalate verbosity only when needed
-make debug VERBOSE=standard       # When moderate context needed
-make debug VERBOSE=debug          # When troubleshooting
-```
-
-**2. Output Efficiency Principles:**
-- **Essential Information Only**: Print only what's necessary for decision-making
-- **Structured Format**: Use consistent prefixes `[BUILD]`, `[TEST]`, `[ERROR]`
-- **No Decorative Elements**: Eliminate colors, emojis, ASCII art, progress bars
-- **Compressed Status**: `PASSED/FAILED` instead of verbose descriptions
-- **Token Reduction**: 80-90% less context usage compared to human mode
-
-**3. Context-Efficient Command Examples:**
-```bash
-# ✅ OPTIMAL - Minimal mode (5-10% tokens)
-[BUILD] hello_world
-[TEST] ModuleTest 5/5
-
-# ✅ GOOD - Standard mode (15-20% tokens)
-[BUILD] BUILT debug hello_world x86_64-native
-[TEST] RUN ModuleTest
-[TEST] RESULT ModuleTest 5/5
-
-# ⚠️ ACCEPTABLE - Debug mode (40% tokens, troubleshooting only)
-[BUILD] COMPILE src/main.cpp
-[BUILD] LINK debug hello_world
-[BUILD] BUILT debug hello_world x86_64-native
-
-# ❌ BAD - Human mode (100% tokens, wastes context)
-🧪 Running comprehensive test suite for ModuleName...
-✅ Test case 1: BasicFunctionality - PASSED
-✅ Test case 2: ErrorHandling - PASSED  
-🎯 All 5 test cases completed successfully!
-🔨 Compiling with optimizations for x86_64 architecture...
-```
-
-**4. LLM Interaction Best Practices:**
-- **One Class Per File Architecture**: Each class in separate file enables precise context targeting
-- **Read individual classes**: Target specific class files instead of large multi-class files
-- **Use limits**: `Read` tool with `offset` and `limit` parameters when files are large
-- **Single-class modifications**: Edit individual class files for minimal context usage
-- **Batch operations**: Multiple tool calls in single response when possible
-- **Targeted searches**: `Grep` with specific patterns instead of broad searches
-- **Class-level granularity**: Analyze/modify at class level for maximum efficiency
-
-**5. Multi-Tiered Context Budget Management:**
-- **Minimal mode saves ~10-20x tokens** compared to human mode
-- **Standard mode saves ~5x tokens** - use for moderate complexity
-- **Debug mode saves ~2.5x tokens** - use only for troubleshooting
-- **Essential for complex tasks** that require multiple tool calls
-- **Enables deeper analysis** within context limits
-- **Faster processing** due to reduced token overhead
-- **Surgical precision** - exact verbosity control per task
-
-### External Dependencies
-
-**Google Test Framework** (`external/googletest/`): Complete testing infrastructure
-- Integrated with all test modules via build system
-- Includes Google Mock for dependency mocking
-- Configured in `bootstrap.sh` for automatic setup
-
-**Mongoose Web Server** (`external/mongoose/`): HTTP server backend
-- C library with C++ wrapper integration
-- Source-based inclusion for cross-platform compatibility
-- Abstracted through WebServer interface for pluggability
-
-**Doxygen + Graphviz** (Class Chart Generation): UML diagram generation system
-- Automatic installation detection and configuration
-- Generates interactive HTML documentation with embedded UML diagrams
-- Creates SVG format class hierarchy charts showing relationships
-- Script: `./scripts/generate_class_chart.sh` - Auto-configures Doxyfile for project structure
-- Output: `docs/index.html` (main documentation) and `docs/hierarchy.html` (class diagrams)
-- **Installation**: `sudo apt-get install doxygen graphviz`
-
-### Development Workflow Integration
-
-**Test-Driven Development (TDD)**: **MANDATORY** for all code changes and implementations:
-- **ALWAYS write failing tests FIRST** before any implementation code
-- Tests must be written in `cases/` subdirectories for each module
-- Implement **minimal code only** to make tests pass (Red-Green-Refactor cycle)
-- Use `make test-run-ModuleName` for rapid TDD iteration
-- **NO CODE CHANGES WITHOUT TESTS** - this is a strict requirement
-- Comprehensive test coverage including auto-registration verification
-- All new features, bug fixes, and refactoring must follow TDD discipline
-
-**Module Generation Scripts**: Consistent structure across all modules:
-- `create_endpoint.sh`: HTTP endpoints with ApiRouter integration
-- `create_service.sh`: Business services with IoC registration
-- `create_module.sh`: Utility modules with interface/implementation patterns
-- `generate_class_chart.sh`: UML class diagrams and interactive documentation
-
-**Enhanced Test Management**: Comprehensive test operations from project root:
-- Individual module testing without changing directories
-- Project-wide statistics and debugging information
-- Intelligent error handling with module name suggestions
-
-### Key Architectural Benefits
-
-**High Cohesion, Low Coupling**: Each module is self-contained but integrates cleanly:
-- **Clean interfaces** with no leaky abstractions (no backend-specific methods like `poll()`)
-- **Self-contained components** handle their own internal processing (threading, event loops)
-- **Interface segregation** ensures minimal, universally-implementable methods
-- Clear interfaces enable swappable implementations
-- Dependency injection eliminates hard dependencies
-- Auto-registration reduces boilerplate and manual wiring
-
-**TDD-First Testability**: Every component designed through Test-Driven Development:
-- **ALL code written following RED-GREEN-REFACTOR TDD cycle**
-- Interface-based design enables complete mocking and test isolation
-- Test isolation prevents cross-module interference
-- Auto-registration verification catches integration issues
-- **Tests written BEFORE implementation ensures robust design**
-
-**Scalability**: Architecture supports growing complexity:
-- New modules integrate automatically via established patterns
-- Test framework scales with configurable dependency management
-- Build system handles increasing source file complexity
-
-**Developer Experience**: Tooling optimized for rapid development:
-- Generation scripts eliminate boilerplate and ensure consistency
-- Dual-mode output adapts to human vs. automated workflows
-- Enhanced test management provides comprehensive project visibility
-
-This architecture enables rapid development of new features while maintaining high code quality, comprehensive test coverage, and clear separation of concerns across all system components.
-
-**Multi-tiered output optimization ensures maximum LLM efficiency** - the `minimal` mode default provides 90-95% token reduction while preserving all essential information for AI-assisted development workflows.
-
-## **MEMORY MANAGEMENT & CONTEXT CLEARING**
-
-### **When to Clear Claude Code Memory**
-
-**MANDATORY Clear Memory Scenarios:**
-
-1. **Major Context Shift** (ALWAYS clear):
-   - Switching from one module to completely different module (e.g., Logger → WebServer → ApiRouter)
-   - Moving between unrelated features or bug fixes
-   - Starting new TDD cycles for different components
-
-2. **Architecture Changes** (ALWAYS clear):
-   - Modifying core interfaces (ILogger)
-   - Changing dependency relationships between modules
-   - Refactoring that affects multiple interconnected classes
-
-3. **Error Recovery** (CLEAR when needed):
-   - Build failures that require significant debugging context
-   - When Claude Code seems confused about project state
-   - After failed TDD attempts that left incomplete understanding
-
-4. **Context Pollution** (CLEAR when noticed):
-   - Responses reference outdated/incorrect information
-   - Claude mentions files/classes that don't exist
-   - Confusion about current module structure or recent changes
-
-**OPTIONAL Clear Memory Scenarios:**
-
-5. **Long Sessions** (CLEAR for performance):
-   - After 30+ tool calls in single conversation
-   - When context window approaches limits (slower responses)
-   - Working sessions longer than 1-2 hours
-
-6. **Clean Slate Development** (CLEAR for clarity):
-   - Beginning major new features from scratch
-   - Starting fresh development sessions
-   - After completing and testing major changes
-
-### **Memory Clearing Commands**
-
-```bash
-# Clear Claude Code memory
-/clear                              # Complete conversation reset
-
-# Alternative: Start fresh conversation
-# Close current session and start new one
-```
-
-### **Best Practices for Memory Management**
-
-**DO Clear Memory When:**
-- ✅ Context becomes stale or incorrect
-- ✅ Major architectural changes planned
-- ✅ Switching between unrelated modules
-- ✅ Build failures require fresh perspective
-- ✅ Long development sessions (1-2+ hours)
-
-**DON'T Clear Memory When:**
-- ❌ Working on same module/feature incrementally
-- ❌ Following TDD cycle within same class
-- ❌ Making small related changes
-- ❌ Context is still accurate and helpful
-
-**Memory-Efficient Development Patterns:**
-- **Single module focus**: Work on one module at a time to maintain context
-- **TDD discipline**: Complete RED-GREEN-REFACTOR cycles before switching contexts
-- **Incremental changes**: Small, related changes maintain context efficiency
-- **Clear module boundaries**: Use memory clearing as module transition points
-- **Lexical analysis first**: Use `./scripts/lexer.sh` to understand codebase before making changes
-- **Standardized analysis**: Use `./scripts/llm_analysis.sh` for predictable refactoring workflows
-- **Consistency validation**: Always validate LLM analysis output before executing commands
-- **Structured summaries**: Prefer lexical JSON over reading multiple raw C++ files
-
-### **Context State Indicators**
-
-**Good Context State (keep memory):**
-- Claude accurately describes current module structure
-- References correct file paths and class names
-- Understands recent changes and TDD state
-- Build commands work as expected
-
-**Poor Context State (clear memory):**
-- Claude references non-existent files/classes
-- Confusion about module dependencies
-- Suggests outdated approaches or patterns
-- Repeated build/test failures due to misunderstanding
-
-## **FINAL REMINDERS**
-
-### **TDD is MANDATORY**
-⚠️ Every code change in this project MUST follow Test-Driven Development:
-- 🔴 **RED**: Write failing test FIRST  
-- 🟢 **GREEN**: Implement minimal code to pass
-- 🔵 **REFACTOR**: Improve while keeping tests green
-- **NO CODE WITHOUT TESTS** - This is non-negotiable
-
-### **LLM Context Optimization is DEFAULT**
-⚡ **Always use minimal mode for optimal AI performance:**
-- `make debug` (defaults to minimal mode - 90-95% token reduction)
-- `./scripts/test.sh` (defaults to minimal mode for best performance)
-- Escalate verbosity only when debugging: `VERBOSE=standard` or `VERBOSE=debug`
-- **Never use `VERBOSE=human` in LLM contexts** - wastes 10-20x more tokens
-
-### **Standardized LLM Analysis is MANDATORY**
-🚀 **Use standardized LLM analysis for predictable, efficient workflows:**
-- `./scripts/lexer.sh analyze` for codebase understanding (85-95% token reduction)
-- `./scripts/llm_analysis.sh analyze` for consistent refactoring decisions (95% repeatability)
-- `./scripts/llm_analysis.sh validate` to ensure output correctness before execution
-- `./scripts/test_llm_consistency.sh run` to verify analysis consistency
-- Structured JSON analysis instead of reading raw C++ files
-- Essential for large refactoring and architectural analysis
-
-### **Memory Management is CRITICAL**
-🧠 **Clear memory strategically for optimal development:**
-- Clear between major module transitions or architectural changes
-- Clear when context becomes stale or incorrect
-- Keep memory for incremental work within same module/feature
-- Use `/clear` command when context state indicators suggest confusion
+**Guidelines**:
+- Infrastructure: Test interface contracts, not external libraries
+- Business Logic: Mock dependencies, test decision logic
+- Integration tests separate from unit tests
+
+## Architecture
+
+**Modular monolithic architecture** with:
+
+**Core Components**:
+- `main.cpp`: IoC + WebServer + ApiRouter orchestration
+- `IocContainer`: Dependency injection 
+- `WebServer`: HTTP abstraction (self-contained backends)
+- `ApiRouter`: Endpoint management + auto-registration
+- `Logger`: Local/remote logging
+
+**Critical Rules**:
+- ONE CLASS PER FILE (mandatory)
+- No leaky abstractions (no backend-specific methods like `poll()`)
+- All HTTP requests MUST go through ApiRouter (no bypass)
+- Auto-registration pattern for all modules
+- Self-contained components handle own threading
+
+**Layer Testing**:
+- Infrastructure (WebServer, Logger): ISOLATE
+- Business Logic (ApiRouter, Services): MOCK  
+- Integration: Separate test modules
+
+**LLM Optimization**:
+- Minimal mode default (90-95% token reduction)
+- One class per file enables surgical context targeting
+- Structured JSON analysis preferred over raw C++ reading
+
+## Memory Management
+
+**Clear `/clear` when**:
+- Major context shift (different modules)
+- Architecture changes (core interfaces)
+- Context pollution (references non-existent files)
+- Long sessions (30+ tool calls, 1-2+ hours)
+
+**Keep memory when**:
+- Same module/feature incremental work
+- TDD cycle within same class
+- Context remains accurate
+
+## Essential Rules
+
+⚠️ **TDD MANDATORY**: Write failing test FIRST, then implement
+⚠️ **LLM OPTIMIZATION**: Always use minimal mode (90-95% token reduction)  
+⚠️ **ONE CLASS PER FILE**: Mandatory for context efficiency
+⚠️ **TEST ISOLATION**: Zero external module dependencies
