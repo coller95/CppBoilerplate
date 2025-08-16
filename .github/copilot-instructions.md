@@ -545,23 +545,23 @@ Refer to the [Microsoft C++ Coding Guidelines](https://learn.microsoft.com/en-us
 
 The test script follows first principles design with exactly **3 essential modes**:
 
-#### Default Mode (Human-Friendly)
-- **Emojis and celebration** 🔧🧪🚀✅ with colorful, descriptive output
-- **Comprehensive feedback** with detailed test reporting and progress indicators
-- **Celebration summary** upon successful completion
-- **Usage**: `./scripts/test.sh` (default mode)
-
-#### Minimal Mode (Tool/LLM-Friendly)
+#### Default Mode (Tool/LLM-Friendly)
 - **Ultra-concise output** optimized for AI context processing (90% token reduction)
 - **Structured format**: `TEST=OK BUILD=OK RUN=OK TIME=42s`
 - **Essential information only** for maximum context efficiency
-- **Usage**: `./scripts/test.sh --minimal`
+- **Usage**: `./scripts/test.sh (default mode)`
+
+#### Human Mode (Human-Friendly)
+- **Emojis and celebration** 🔧🧪🚀✅ with colorful, descriptive output
+- **Comprehensive feedback** with detailed test reporting and progress indicators
+- **Celebration summary** upon successful completion
+- **Usage**: `./scripts/test.sh human` 
 
 #### Debug Mode (Full Visibility)
 - **Show everything** with full compiler output and detailed logs
 - **Complete transparency** for troubleshooting and deep debugging
 - **All operations visible** with `[DEBUG]`, `[SUCCESS]`, `[ERROR]` prefixes
-- **Usage**: `./scripts/test.sh --debug`
+- **Usage**: `./scripts/test.sh debug`
 
 #### Key Benefits (First Principles)
 - **KISS (Keep It Simple, Stupid)**: Only 3 modes instead of complex 5-mode system
@@ -572,19 +572,19 @@ The test script follows first principles design with exactly **3 essential modes
 
 #### Examples
 ```bash
-# Default: Human-friendly with emojis and celebration
-./scripts/test.sh
+# Default: Ultra-concise for tools/LLMs (90% token reduction)
+./scripts/test.sh 
+# Output: TEST=OK BUILD=OK RUN=OK TIME=42s
+
+# human: Human-friendly with emojis and celebration
+./scripts/test.sh minimal
 # Output: 🔧 Running tests...
 #         🧪 Running comprehensive test suite...
 #         ✅ All tests passed
 #         🎉 All checks complete! Your code is working perfectly!
 
-# Minimal: Ultra-concise for tools/LLMs (90% token reduction)
-./scripts/test.sh --minimal
-# Output: TEST=OK BUILD=OK RUN=OK TIME=42s
-
 # Debug: Show everything for troubleshooting
-./scripts/test.sh --debug
+./scripts/test.sh debug
 # Output: [DEBUG] Running tests with full output...
 #         [DEBUG] Building with full compiler output...
 #         [SUCCESS] All operations completed successfully
@@ -775,9 +775,10 @@ The project includes a comprehensive test management system accessible both from
 ```makefile
 # Modern, robust Makefile for unit tests (Google Test)
 ROOTDIR = ../..
+-include $(ROOTDIR)/Compiler.build
 CXX = g++
 CC = gcc
-CXXFLAGS = -std=c++17 -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
+CXXFLAGS = -std=$(CXX_STANDARD) -I$(ROOTDIR)/include -I$(ROOTDIR)/external/googletest/googletest/include -g -Wall -Wextra -MMD -MP
 CFLAGS = -I$(ROOTDIR)/include -g -Wall -Wextra -MMD -MP
 GTEST_LIBS = -L$(ROOTDIR)/external/googletest/build/lib -lgtest -lgtest_main
 

@@ -7,11 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Quick Development Workflow
 ```bash
 # Complete build, test, and run cycle - 3 ESSENTIAL MODES
-./scripts/test.sh                    # Default: Human-friendly (emojis, colors, celebration)
-./scripts/test.sh --minimal          # Minimal: Tool/LLM-friendly (TEST=OK BUILD=OK RUN=OK TIME=42s)
-./scripts/test.sh --debug            # Debug: Show everything (full compiler output, detailed logs)
+./scripts/test.sh                    # Default: Minimal Tool/LLM-friendly (TEST=OK BUILD=OK RUN=OK TIME=42s)
+./scripts/test.sh human          # Human:  Human-friendly (emojis, colors, celebration)
+./scripts/test.sh debug            # Debug: Show everything (full compiler output, detailed logs)
 
-# Quick development workflow - test, build debug, and run
+# Quick development workflow - test, build debug, and run (this might blocking the test so use with cautious)
 ./scripts/debug.sh                   # Quick debug session (minimal output)
 ./scripts/debug.sh human            # Debug session with detailed output
 
@@ -62,16 +62,16 @@ make test-run-IocContainerTest    # Run IoC Container tests
 **CRITICAL**: Simplified **3-mode system** based on first principles - KISS (Keep It Simple, Stupid):
 
 **Essential Modes (ordered by purpose):**
-- **Default** - Human-friendly with emojis 🔧🧪🚀✅ and celebration
-- **`--minimal`** - Tool/LLM-friendly (90% token reduction): `TEST=OK BUILD=OK RUN=OK TIME=42s`
-- **`--debug`** - Show everything (full compiler output, detailed logs)
+- **Default** - Tool/LLM-friendly (90% token reduction): `TEST=OK BUILD=OK RUN=OK TIME=42s` 
+- **`human`** - Human-friendly with emojis 🔧🧪🚀✅ and celebration
+- **`debug`** - Show everything (full compiler output, detailed logs)
 
 **Usage Examples:**
 ```bash
-# Test script modes (simplified from complex 5-mode system)
-./scripts/test.sh                  # Default: human-friendly with emojis and colors
-./scripts/test.sh --minimal        # Minimal: structured output for tools/LLMs
-./scripts/test.sh --debug          # Debug: full verbose output for troubleshooting
+# Test script modes (simplified from complex 3-mode system)
+./scripts/test.sh                    # Default: Minimal Tool/LLM-friendly (TEST=OK BUILD=OK RUN=OK TIME=42s)
+./scripts/test.sh human          # Human:  Human-friendly (emojis, colors, celebration)
+./scripts/test.sh debug            # Debug: Show everything (full compiler output, detailed logs)
 
 # Build system still supports verbose control for individual commands
 make debug VERBOSE=minimal         # Ultra-minimal build output
