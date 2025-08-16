@@ -66,7 +66,7 @@ class Application
 		
 		// Configure individual logger preferences
 		consoleLogger->setTimestampEnabled(false);  // Console: no timestamps
-		networkLogger->setTimestampEnabled(true);   // Network: with timestamps
+		networkLogger->setTimestampEnabled(false);   // Network: with timestamps
 		
 		composite->addLogger(consoleLogger);
 		composite->addLogger(networkLogger);
