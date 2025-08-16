@@ -5,7 +5,6 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include <Logger/Logger.h>
 #include <Logger/ILogger.h>
 #include <IocContainer/IocContainer.h>
 #include <WebServer/WebServer.h>

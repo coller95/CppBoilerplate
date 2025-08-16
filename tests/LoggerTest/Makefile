@@ -17,7 +17,7 @@ PRIMARY_MODULE = $(MODULE_NAME)
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
-# Examples: Logger IocContainer ServiceA ApiModule:ApiModule
+# Examples: Logger IoCContainer ServiceA ApiModule:ApiModule
 DEPENDENCIES = 
 
 # External dependencies - flexible configuration for any external library
@@ -25,7 +25,7 @@ DEPENDENCIES =
 # Examples:
 #   EXTERNAL_SOURCES = external/mongoose/src/mongoose.c external/sqlite/sqlite3.c
 #   EXTERNAL_SOURCES = /usr/local/src/mylib.cpp ../shared/utils.cpp
-EXTERNAL_SOURCES =
+EXTERNAL_SOURCES = 
 
 # External include paths - add any custom include directories
 # Examples:
@@ -39,7 +39,7 @@ EXTERNAL_INCLUDES += -I$(ROOTDIR)/external/googletest/googlemock/include
 #   EXTERNAL_LIBS = -Lexternal/foo/lib -lfoo -lbar
 #   EXTERNAL_LIBS = -L/usr/local/lib -lsqlite3 -lpthread
 EXTERNAL_LIBS = -L$(ROOTDIR)/external/googletest/build/lib 
-EXTERNAL_LIBS += -lgtest -lgtest_main
+EXTERNAL_LIBS += -lgtest -lgtest_main 
 EXTERNAL_LIBS += -lgmock -lgmock_main
 
 # ============================================================================
