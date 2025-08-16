@@ -1,34 +1,50 @@
 #pragma once
 
+#include <Logger/ILogger.h>
 #include <memory>
 #include <string>
 #include <string_view>
-
+#include <mutex>
+#include <atomic>
 
 namespace logger {
 
 /**
- * Logger - Utility/Infrastructure module
+ * Logger - Cross-cutting concern implementation
  * 
- * TODO: Add detailed description of what this module does
+ * Provides thread-safe logging with configurable levels and output destinations.
+ * Implements ILogger interface for dependency injection and testability.
  */
-class Logger {
+class Logger : public ILogger {
 public:
 	/**
-	 * Default constructor
+	 * Constructor with remote logging configuration
 	 */
-	Logger();
+	Logger(const std::string& remoteHost, int remotePort);
 
 	/**
 	 * Destructor - ensures proper cleanup
 	 */
-	~Logger();
+	~Logger() override;
 
-	// TODO: Add your public interface methods here
-	// Example:
-	    // bool initialize();
-	    // void cleanup();
-	// std::string getStatus() const;
+	// ILogger interface implementation
+	void logDebug(std::string_view message) override;
+	void logInfo(std::string_view message) override;
+	void logWarning(std::string_view message) override;
+	void logError(std::string_view message) override;
+	void logCritical(std::string_view message) override;
+	
+	void log(LogLevel level, std::string_view message) override;
+	
+	void setLogLevel(LogLevel level) override;
+	LogLevel getLogLevel() const override;
+	
+	bool start() override;
+	void stop() override;
+	bool isRunning() const override;
+	
+	void setLocalDisplay(bool enabled) override;
+	bool isLocalDisplayEnabled() const override;
 
 	// Delete copy constructor and assignment operator (RAII best practice)
 	Logger(const Logger&) = delete;
@@ -39,7 +55,17 @@ public:
 	Logger& operator=(Logger&&) noexcept;
 
 private:
-    // TODO: Add private members here
+	std::string remoteHost_;
+	int remotePort_;
+	std::atomic<LogLevel> logLevel_;
+	std::atomic<bool> running_;
+	std::atomic<bool> localDisplayEnabled_;
+	mutable std::mutex logMutex_;
+	
+	void logMessage(LogLevel level, std::string_view message);
+	std::string formatMessage(LogLevel level, std::string_view message) const;
+	std::string logLevelToString(LogLevel level) const;
+	bool shouldLog(LogLevel level) const;
 };
 
 } // namespace logger

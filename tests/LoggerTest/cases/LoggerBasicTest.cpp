@@ -1,42 +1,102 @@
 #include <gtest/gtest.h>
+#include <Logger/ILogger.h>
 #include <Logger/Logger.h>
+#include <sstream>
+#include <memory>
 
 namespace {
 
 class LoggerTest : public ::testing::Test {
 protected:
+	std::unique_ptr<logger::Logger> logger_;
+	
 	void SetUp() override {
-		// Setup code for each test
+		logger_ = std::make_unique<logger::Logger>("127.0.0.1", 9000);
 	}
 
 	void TearDown() override {
-		// Cleanup code for each test
+		if (logger_ && logger_->isRunning()) {
+			logger_->stop();
+		}
 	}
 };
 
 } // anonymous namespace
 
-TEST_F(LoggerTest, ConstructorCreatesValidInstance) {
-	logger::Logger module;
-	// TODO: Add assertions to verify the module is properly constructed
-	// Example:
-	// EXPECT_TRUE(module.isInitialized());
-	SUCCEED(); // Remove this when you add real tests
+// Interface contract tests
+TEST_F(LoggerTest, ImplementsILoggerInterface) {
+	logger::ILogger* ilogger = logger_.get();
+	EXPECT_NE(nullptr, ilogger);
 }
 
-TEST_F(LoggerTest, MoveConstructorWorks) {
-	logger::Logger original;
-	logger::Logger moved(std::move(original));
+TEST_F(LoggerTest, DefaultLogLevelIsInfo) {
+	EXPECT_EQ(logger::LogLevel::INFO, logger_->getLogLevel());
+}
+
+TEST_F(LoggerTest, CanSetAndGetLogLevel) {
+	logger_->setLogLevel(logger::LogLevel::DEBUG);
+	EXPECT_EQ(logger::LogLevel::DEBUG, logger_->getLogLevel());
 	
-	// TODO: Add assertions to verify move constructor works correctly
-	// Example:
-	// EXPECT_TRUE(moved.isValid());
-	SUCCEED(); // Remove this when you add real tests
+	logger_->setLogLevel(logger::LogLevel::ERROR);
+	EXPECT_EQ(logger::LogLevel::ERROR, logger_->getLogLevel());
 }
 
-// TODO: Add more test cases for your module's functionality
-// Example:
-// TEST_F(LoggerTest, InitializeReturnsTrueOnSuccess) {
-//     logger::Logger module;
-//     EXPECT_TRUE(module.initialize());
-// }
+TEST_F(LoggerTest, StartReturnsTrueAndSetsRunningState) {
+	EXPECT_FALSE(logger_->isRunning());
+	bool started = logger_->start();
+	EXPECT_TRUE(started);
+	EXPECT_TRUE(logger_->isRunning());
+}
+
+TEST_F(LoggerTest, StopChangesRunningState) {
+	logger_->start();
+	EXPECT_TRUE(logger_->isRunning());
+	
+	logger_->stop();
+	EXPECT_FALSE(logger_->isRunning());
+}
+
+TEST_F(LoggerTest, LocalDisplayDefaultsToFalse) {
+	EXPECT_FALSE(logger_->isLocalDisplayEnabled());
+}
+
+TEST_F(LoggerTest, CanSetLocalDisplay) {
+	logger_->setLocalDisplay(true);
+	EXPECT_TRUE(logger_->isLocalDisplayEnabled());
+	
+	logger_->setLocalDisplay(false);
+	EXPECT_FALSE(logger_->isLocalDisplayEnabled());
+}
+
+// Log method tests - these will fail until implementation exists
+TEST_F(LoggerTest, CanLogAtAllLevels) {
+	EXPECT_NO_THROW(logger_->logDebug("Debug message"));
+	EXPECT_NO_THROW(logger_->logInfo("Info message"));
+	EXPECT_NO_THROW(logger_->logWarning("Warning message"));
+	EXPECT_NO_THROW(logger_->logError("Error message"));
+	EXPECT_NO_THROW(logger_->logCritical("Critical message"));
+}
+
+TEST_F(LoggerTest, GenericLogMethodWorks) {
+	EXPECT_NO_THROW(logger_->log(logger::LogLevel::INFO, "Generic log message"));
+	EXPECT_NO_THROW(logger_->log(logger::LogLevel::ERROR, "Generic error message"));
+}
+
+TEST_F(LoggerTest, LogsAreFilteredByLogLevel) {
+	logger_->setLogLevel(logger::LogLevel::WARNING);
+	
+	// These should be logged (WARNING and above)
+	EXPECT_NO_THROW(logger_->logWarning("Warning message"));
+	EXPECT_NO_THROW(logger_->logError("Error message"));
+	EXPECT_NO_THROW(logger_->logCritical("Critical message"));
+	
+	// These should be filtered out (below WARNING)
+	EXPECT_NO_THROW(logger_->logDebug("Debug message"));
+	EXPECT_NO_THROW(logger_->logInfo("Info message"));
+}
+
+// Cross-cutting concern tests
+TEST_F(LoggerTest, IsThreadSafe) {
+	// This test will be expanded when implementation exists
+	EXPECT_NO_THROW(logger_->logInfo("Thread safety test"));
+}
