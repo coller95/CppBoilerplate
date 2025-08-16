@@ -6,6 +6,9 @@
 #include <thread>
 #include <chrono>
 #include <Logger/ILogger.h>
+#include <Logger/CompositeLogger.h>
+#include <Logger/ConsoleLogger.h>
+#include <Logger/NetworkLogger.h>
 #include <IocContainer/IocContainer.h>
 #include <WebServer/WebServer.h>
 #include <ApiRouter/ApiRouter.h>
@@ -56,10 +59,11 @@ class Application
 		// Initialize IoC container and register core services through interface
 		auto& container = ioccontainer::IIocContainer::getInstance();
 		
-		// Create and register logger service
-		auto logger = std::make_shared<logger::Logger>(_config.loggerIp, _config.loggerPort);
-		logger->setLocalDisplay(true);
-		container.registerInstance<logger::ILogger>(logger);
+		// Create dual logger service (console + network)
+		auto composite = std::make_shared<logger::CompositeLogger>();
+		composite->addLogger(std::make_shared<logger::ConsoleLogger>());
+		composite->addLogger(std::make_shared<logger::NetworkLogger>(_config.loggerIp, _config.loggerPort));
+		container.registerInstance<logger::ILogger>(composite);
 		
 		// Log application startup
 		auto globalLogger = container.resolve<logger::ILogger>();

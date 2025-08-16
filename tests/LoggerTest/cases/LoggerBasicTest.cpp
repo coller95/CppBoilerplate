@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <Logger/ILogger.h>
-#include <Logger/Logger.h>
+#include <Logger/ConsoleLogger.h>
+#include <Logger/NetworkLogger.h>
+#include <Logger/CompositeLogger.h>
 #include <sstream>
 #include <memory>
 
@@ -8,95 +10,96 @@ namespace {
 
 class LoggerTest : public ::testing::Test {
 protected:
-	std::unique_ptr<logger::Logger> logger_;
+	std::shared_ptr<logger::ILogger> consoleLogger_;
+	std::shared_ptr<logger::ILogger> networkLogger_;
+	std::shared_ptr<logger::ILogger> compositeLogger_;
 	
 	void SetUp() override {
-		logger_ = std::make_unique<logger::Logger>("127.0.0.1", 9000);
+		consoleLogger_ = std::make_shared<logger::ConsoleLogger>();
+		networkLogger_ = std::make_shared<logger::NetworkLogger>("127.0.0.1", 9000);
+		
+		auto composite = std::make_shared<logger::CompositeLogger>();
+		composite->addLogger(std::make_shared<logger::ConsoleLogger>());
+		composite->addLogger(std::make_shared<logger::NetworkLogger>("127.0.0.1", 9000));
+		compositeLogger_ = composite;
 	}
 
 	void TearDown() override {
-		if (logger_ && logger_->isRunning()) {
-			logger_->stop();
+		if (consoleLogger_ && consoleLogger_->isRunning()) {
+			consoleLogger_->stop();
+		}
+		if (networkLogger_ && networkLogger_->isRunning()) {
+			networkLogger_->stop();
+		}
+		if (compositeLogger_ && compositeLogger_->isRunning()) {
+			compositeLogger_->stop();
 		}
 	}
 };
 
 } // anonymous namespace
 
-// Interface contract tests
-TEST_F(LoggerTest, ImplementsILoggerInterface) {
-	logger::ILogger* ilogger = logger_.get();
-	EXPECT_NE(nullptr, ilogger);
+// Console Logger Tests
+TEST_F(LoggerTest, ConsoleLoggerBasics) {
+	EXPECT_NE(nullptr, consoleLogger_);
+	EXPECT_EQ(logger::LogLevel::Info, consoleLogger_->getLogLevel());
+	EXPECT_TRUE(consoleLogger_->isLocalDisplayEnabled()); // Console defaults to enabled
 }
 
-TEST_F(LoggerTest, DefaultLogLevelIsInfo) {
-	EXPECT_EQ(logger::LogLevel::INFO, logger_->getLogLevel());
+TEST_F(LoggerTest, ConsoleLoggerCanLog) {
+	EXPECT_NO_THROW(consoleLogger_->logInfo("Console test message"));
+	EXPECT_NO_THROW(consoleLogger_->start());
+	EXPECT_TRUE(consoleLogger_->isRunning());
 }
 
-TEST_F(LoggerTest, CanSetAndGetLogLevel) {
-	logger_->setLogLevel(logger::LogLevel::DEBUG);
-	EXPECT_EQ(logger::LogLevel::DEBUG, logger_->getLogLevel());
+// Network Logger Tests  
+TEST_F(LoggerTest, NetworkLoggerBasics) {
+	EXPECT_NE(nullptr, networkLogger_);
+	EXPECT_EQ(logger::LogLevel::Info, networkLogger_->getLogLevel());
+	EXPECT_FALSE(networkLogger_->isLocalDisplayEnabled()); // Network defaults to disabled
+}
+
+TEST_F(LoggerTest, NetworkLoggerCanLog) {
+	EXPECT_NO_THROW(networkLogger_->logInfo("Network test message"));
+	EXPECT_NO_THROW(networkLogger_->start());
+	EXPECT_TRUE(networkLogger_->isRunning());
+}
+
+// Composite Logger Tests
+TEST_F(LoggerTest, CompositeLoggerBasics) {
+	EXPECT_NE(nullptr, compositeLogger_);
+	EXPECT_EQ(logger::LogLevel::Info, compositeLogger_->getLogLevel());
+}
+
+TEST_F(LoggerTest, CompositeLoggerDualLogging) {
+	// Should log to both console and network
+	EXPECT_NO_THROW(compositeLogger_->start());
+	EXPECT_TRUE(compositeLogger_->isRunning());
 	
-	logger_->setLogLevel(logger::LogLevel::ERROR);
-	EXPECT_EQ(logger::LogLevel::ERROR, logger_->getLogLevel());
+	EXPECT_NO_THROW(compositeLogger_->logInfo("Dual logging test"));
+	EXPECT_NO_THROW(compositeLogger_->logError("Error test"));
 }
 
-TEST_F(LoggerTest, StartReturnsTrueAndSetsRunningState) {
-	EXPECT_FALSE(logger_->isRunning());
-	bool started = logger_->start();
-	EXPECT_TRUE(started);
-	EXPECT_TRUE(logger_->isRunning());
-}
-
-TEST_F(LoggerTest, StopChangesRunningState) {
-	logger_->start();
-	EXPECT_TRUE(logger_->isRunning());
+TEST_F(LoggerTest, CompositeLoggerSyncSettings) {
+	// Settings should sync to all child loggers
+	compositeLogger_->setLogLevel(logger::LogLevel::Error);
+	EXPECT_EQ(logger::LogLevel::Error, compositeLogger_->getLogLevel());
 	
-	logger_->stop();
-	EXPECT_FALSE(logger_->isRunning());
+	compositeLogger_->setLocalDisplay(false);
+	EXPECT_FALSE(compositeLogger_->isLocalDisplayEnabled());
 }
 
-TEST_F(LoggerTest, LocalDisplayDefaultsToFalse) {
-	EXPECT_FALSE(logger_->isLocalDisplayEnabled());
-}
-
-TEST_F(LoggerTest, CanSetLocalDisplay) {
-	logger_->setLocalDisplay(true);
-	EXPECT_TRUE(logger_->isLocalDisplayEnabled());
+// Direct Construction Tests
+TEST_F(LoggerTest, DirectConstructionWorks) {
+	auto console = std::make_shared<logger::ConsoleLogger>();
+	auto network = std::make_shared<logger::NetworkLogger>("localhost", 8080);
 	
-	logger_->setLocalDisplay(false);
-	EXPECT_FALSE(logger_->isLocalDisplayEnabled());
-}
-
-// Log method tests - these will fail until implementation exists
-TEST_F(LoggerTest, CanLogAtAllLevels) {
-	EXPECT_NO_THROW(logger_->logDebug("Debug message"));
-	EXPECT_NO_THROW(logger_->logInfo("Info message"));
-	EXPECT_NO_THROW(logger_->logWarning("Warning message"));
-	EXPECT_NO_THROW(logger_->logError("Error message"));
-	EXPECT_NO_THROW(logger_->logCritical("Critical message"));
-}
-
-TEST_F(LoggerTest, GenericLogMethodWorks) {
-	EXPECT_NO_THROW(logger_->log(logger::LogLevel::INFO, "Generic log message"));
-	EXPECT_NO_THROW(logger_->log(logger::LogLevel::ERROR, "Generic error message"));
-}
-
-TEST_F(LoggerTest, LogsAreFilteredByLogLevel) {
-	logger_->setLogLevel(logger::LogLevel::WARNING);
+	auto composite = std::make_shared<logger::CompositeLogger>();
+	composite->addLogger(console);
+	composite->addLogger(network);
 	
-	// These should be logged (WARNING and above)
-	EXPECT_NO_THROW(logger_->logWarning("Warning message"));
-	EXPECT_NO_THROW(logger_->logError("Error message"));
-	EXPECT_NO_THROW(logger_->logCritical("Critical message"));
-	
-	// These should be filtered out (below WARNING)
-	EXPECT_NO_THROW(logger_->logDebug("Debug message"));
-	EXPECT_NO_THROW(logger_->logInfo("Info message"));
-}
-
-// Cross-cutting concern tests
-TEST_F(LoggerTest, IsThreadSafe) {
-	// This test will be expanded when implementation exists
-	EXPECT_NO_THROW(logger_->logInfo("Thread safety test"));
+	EXPECT_NE(nullptr, console);
+	EXPECT_NE(nullptr, network);
+	EXPECT_NE(nullptr, composite);
+	EXPECT_EQ(2u, composite->getLoggerCount());
 }

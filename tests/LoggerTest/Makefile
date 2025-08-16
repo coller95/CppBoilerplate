@@ -13,12 +13,12 @@ ROOTDIR = ../..
 MODULE_NAME = Logger
 
 # Primary module being tested (automatically included)
-PRIMARY_MODULE = $(MODULE_NAME)
+PRIMARY_MODULE = # No primary module, using dependencies only
 
 # Additional dependencies - add any services, modules, or utilities needed
 # Format: ModuleName:FolderName (if folder differs from module name, otherwise just ModuleName)
 # Examples: Logger IoCContainer ServiceA ApiModule:ApiModule
-DEPENDENCIES = 
+DEPENDENCIES = ConsoleLogger:Logger NetworkLogger:Logger CompositeLogger:Logger 
 
 # External dependencies - flexible configuration for any external library
 # Add external source files that need to be compiled with your tests
@@ -69,9 +69,9 @@ DEP_FOLDERS = $(foreach dep,$(DEPENDENCIES),$(if $(findstring :,$(dep)),$(word 2
 EXT_OBJECTS = $(foreach src,$(EXTERNAL_SOURCES),$(OBJDIR)/external/$(notdir $(basename $(src))).o)
 
 # Complete source and object lists (organized by source origin)
-ALL_SOURCES = cases/*.cpp TestMain.cpp $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp $(DEP_SOURCES) $(EXTERNAL_SOURCES)
-TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.o $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).o $(DEP_OBJECTS) $(EXT_OBJECTS)
-TEST_DEPS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.d,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.d $(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).d $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).d)
+ALL_SOURCES = cases/*.cpp TestMain.cpp $(DEP_SOURCES) $(EXTERNAL_SOURCES)
+TEST_OBJS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.o,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.o $(DEP_OBJECTS) $(EXT_OBJECTS)
+TEST_DEPS = $(patsubst cases/%.cpp,$(OBJDIR)/test/cases/%.d,$(wildcard cases/*.cpp)) $(OBJDIR)/test/TestMain.d $(foreach dep,$(DEPENDENCIES),$(OBJDIR)/src/$(if $(findstring :,$(dep)),$(word 2,$(subst :, ,$(dep))),$(dep))/$(if $(findstring :,$(dep)),$(word 1,$(subst :, ,$(dep))),$(dep)).d)
 TEST_BIN = $(BINDIR)/$(MODULE_NAME)Test
 
 all: $(OBJDIR) $(BINDIR) $(TEST_BIN)
@@ -98,10 +98,7 @@ $(OBJDIR)/test/TestMain.o: TestMain.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Source files: obj/src/
-# Rule for primary module source
-$(OBJDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).o: $(ROOTDIR)/src/$(PRIMARY_MODULE)/$(PRIMARY_MODULE).cpp | $(OBJDIR)
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# No primary module compilation needed
 
 # Generic rule for dependency modules (single % in target per GNU Make requirements)
 $(OBJDIR)/src/%.o: $(ROOTDIR)/src/%.cpp | $(OBJDIR)

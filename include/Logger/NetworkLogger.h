@@ -10,22 +10,22 @@
 namespace logger {
 
 /**
- * Logger - Cross-cutting concern implementation
+ * NetworkLogger - Network/remote logging implementation
  * 
- * Provides thread-safe logging with configurable levels and output destinations.
+ * Provides thread-safe logging to remote server with configurable levels.
  * Implements ILogger interface for dependency injection and testability.
  */
-class Logger : public ILogger {
+class NetworkLogger : public ILogger {
 public:
 	/**
 	 * Constructor with remote logging configuration
 	 */
-	Logger(const std::string& remoteHost, int remotePort);
+	NetworkLogger(const std::string& remoteHost, int remotePort);
 
 	/**
 	 * Destructor - ensures proper cleanup
 	 */
-	~Logger() override;
+	~NetworkLogger() override;
 
 	// ILogger interface implementation
 	void logDebug(std::string_view message) override;
@@ -47,12 +47,12 @@ public:
 	bool isLocalDisplayEnabled() const override;
 
 	// Delete copy constructor and assignment operator (RAII best practice)
-	Logger(const Logger&) = delete;
-	Logger& operator=(const Logger&) = delete;
+	NetworkLogger(const NetworkLogger&) = delete;
+	NetworkLogger& operator=(const NetworkLogger&) = delete;
 	
 	// Allow move constructor and assignment
-	Logger(Logger&&) noexcept;
-	Logger& operator=(Logger&&) noexcept;
+	NetworkLogger(NetworkLogger&&) noexcept;
+	NetworkLogger& operator=(NetworkLogger&&) noexcept;
 
 private:
 	std::string remoteHost_;
@@ -60,12 +60,16 @@ private:
 	std::atomic<LogLevel> logLevel_;
 	std::atomic<bool> running_;
 	std::atomic<bool> localDisplayEnabled_;
+	std::atomic<bool> connected_;
 	mutable std::mutex logMutex_;
 	
 	void logMessage(LogLevel level, std::string_view message);
 	std::string formatMessage(LogLevel level, std::string_view message) const;
 	std::string logLevelToString(LogLevel level) const;
 	bool shouldLog(LogLevel level) const;
+	bool connectToRemote();
+	void disconnectFromRemote();
+	bool sendToRemote(const std::string& message);
 };
 
 } // namespace logger
