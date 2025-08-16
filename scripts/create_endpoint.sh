@@ -12,11 +12,11 @@ cd "$PROJECT_ROOT"
 
 # Check if action and endpoint name are provided
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <create|remove> <EndpointName>"
-    echo "Examples:"
-    echo "  $0 create EndpointUser    # Create a new endpoint"
-    echo "  $0 remove EndpointUser    # Remove an existing endpoint"
-    exit 1
+	echo "Usage: $0 <create|remove> <EndpointName>"
+	echo "Examples:"
+	echo "  $0 create EndpointUser    # Create a new endpoint"
+	echo "  $0 remove EndpointUser    # Remove an existing endpoint"
+	exit 1
 fi
 
 ACTION="$1"
@@ -24,15 +24,15 @@ ENDPOINT_NAME="$2"
 
 # Validate action
 if [[ "$ACTION" != "create" && "$ACTION" != "remove" ]]; then
-    echo "Error: Action must be 'create' or 'remove'"
-    exit 1
+	echo "Error: Action must be 'create' or 'remove'"
+	exit 1
 fi
 
 # Validate endpoint name format (should start with "Endpoint")
 if [[ ! "$ENDPOINT_NAME" =~ ^Endpoint[A-Z][a-zA-Z0-9]*$ ]]; then
-    echo "Error: Endpoint name must start with 'Endpoint' followed by a capitalized name"
-    echo "Examples: EndpointUser, EndpointAuth, EndpointProduct"
-    exit 1
+	echo "Error: Endpoint name must start with 'Endpoint' followed by a capitalized name"
+	echo "Examples: EndpointUser, EndpointAuth, EndpointProduct"
+	exit 1
 fi
 
 # Extract the endpoint part (e.g., "User" from "EndpointUser")
@@ -41,20 +41,20 @@ NAMESPACE_NAME="endpoint${ENDPOINT_PART,,}"  # Convert to lowercase
 
 # Function to create endpoint
 create_endpoint() {
-    echo "Creating endpoint module: $ENDPOINT_NAME"
-    echo "Namespace: $NAMESPACE_NAME"
+	echo "Creating endpoint module: $ENDPOINT_NAME"
+	echo "Namespace: $NAMESPACE_NAME"
 
-    # Check if endpoint already exists
-    if [ -d "include/$ENDPOINT_NAME" ] || [ -d "src/$ENDPOINT_NAME" ] || [ -d "tests/${ENDPOINT_NAME}Test" ]; then
-        echo "Error: Endpoint '$ENDPOINT_NAME' already exists!"
-        echo "Use 'remove' action first if you want to recreate it."
-        exit 1
-    fi
+	# Check if endpoint already exists
+	if [ -d "include/$ENDPOINT_NAME" ] || [ -d "src/$ENDPOINT_NAME" ] || [ -d "tests/${ENDPOINT_NAME}Test" ]; then
+		echo "Error: Endpoint '$ENDPOINT_NAME' already exists!"
+		echo "Use 'remove' action first if you want to recreate it."
+		exit 1
+	fi
 
-    # Create directories
-    mkdir -p "include/$ENDPOINT_NAME"
-    mkdir -p "src/$ENDPOINT_NAME"
-    mkdir -p "tests/${ENDPOINT_NAME}Test/cases"
+	# Create directories
+	mkdir -p "include/$ENDPOINT_NAME"
+	mkdir -p "src/$ENDPOINT_NAME"
+	mkdir -p "tests/${ENDPOINT_NAME}Test/cases"
 
 # Create header file
 cat > "include/$ENDPOINT_NAME/$ENDPOINT_NAME.h" << EOF
@@ -72,20 +72,20 @@ namespace $NAMESPACE_NAME {
  */
 class $ENDPOINT_NAME : public apirouter::IApiModule {
 public:
-    void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
+	void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
 
 protected:
-    // HTTP handler methods (testable protected methods - accessible to unit tests)
-    void handleGet${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-                                 const std::string& requestBody, std::string& responseBody, int& statusCode);
-    
-    // TODO: Add more HTTP handler methods as needed
-    // void handlePost${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-    //                                const std::string& requestBody, std::string& responseBody, int& statusCode);
-    // void handlePut${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-    //                               const std::string& requestBody, std::string& responseBody, int& statusCode);
-    // void handleDelete${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-    //                                  const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// HTTP handler methods (testable protected methods - accessible to unit tests)
+	void handleGet${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+								 const std::string& requestBody, std::string& responseBody, int& statusCode);
+	
+	// TODO: Add more HTTP handler methods as needed
+	// void handlePost${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+	//                                const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handlePut${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+	//                               const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handleDelete${ENDPOINT_PART}(std::string_view path, std::string_view method, 
+	//                                  const std::string& requestBody, std::string& responseBody, int& statusCode);
 };
 
 }
@@ -102,36 +102,36 @@ cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 namespace $NAMESPACE_NAME {
 
 void $ENDPOINT_NAME::registerEndpoints(apirouter::IEndpointRegistrar& registrar) {
-    // Register GET /${ENDPOINT_PART,,} handler using lambda that calls private method
-    registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
-        [this](std::string_view path, std::string_view method, const std::string& requestBody, 
-                std::string& responseBody, int& statusCode) {
-            handleGet${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
-        });
-    
-    // TODO: Register additional endpoints as needed
-    // registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "POST",
-    //     [this](std::string_view path, std::string_view method, const std::string& requestBody, 
-    //             std::string& responseBody, int& statusCode) {
-    //         handlePost${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
-    //     });
+	// Register GET /${ENDPOINT_PART,,} handler using lambda that calls private method
+	registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
+		[this](std::string_view path, std::string_view method, const std::string& requestBody, 
+				std::string& responseBody, int& statusCode) {
+			handleGet${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
+		});
+	
+	// TODO: Register additional endpoints as needed
+	// registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "POST",
+	//     [this](std::string_view path, std::string_view method, const std::string& requestBody, 
+	//             std::string& responseBody, int& statusCode) {
+	//         handlePost${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
+	//     });
 }
 
 void $ENDPOINT_NAME::handleGet${ENDPOINT_PART}(std::string_view /*path*/, std::string_view /*method*/,
-                                             const std::string& /*requestBody*/, std::string& responseBody, int& statusCode) {
-    // TODO: Implement your GET /${ENDPOINT_PART,,} logic here
-    statusCode = 200;
-    responseBody = "Hello from $ENDPOINT_NAME! This is the GET /${ENDPOINT_PART,,} endpoint.\\n";
-    
-    // Example of JSON response:
-    // responseBody = R"({"message": "Hello from ${ENDPOINT_PART}", "status": "success"})";
-    
-    // Example of error handling:
-    // if (some_error_condition) {
-    //     statusCode = 400;
-    //     responseBody = R"({"error": "Bad request", "message": "Invalid ${ENDPOINT_PART} data"})";
-    //     return;
-    // }
+											 const std::string& /*requestBody*/, std::string& responseBody, int& statusCode) {
+	// TODO: Implement your GET /${ENDPOINT_PART,,} logic here
+	statusCode = 200;
+	responseBody = "Hello from $ENDPOINT_NAME! This is the GET /${ENDPOINT_PART,,} endpoint.\\n";
+	
+	// Example of JSON response:
+	// responseBody = R"({"message": "Hello from ${ENDPOINT_PART}", "status": "success"})";
+	
+	// Example of error handling:
+	// if (some_error_condition) {
+	//     statusCode = 400;
+	//     responseBody = R"({"error": "Bad request", "message": "Invalid ${ENDPOINT_PART} data"})";
+	//     return;
+	// }
 }
 
 // TODO: Implement additional handler methods
@@ -144,14 +144,14 @@ void $ENDPOINT_NAME::handleGet${ENDPOINT_PART}(std::string_view /*path*/, std::s
 
 // Auto-registration: Register this endpoint module with ApiRouter
 namespace {
-    struct ${ENDPOINT_NAME}Registration {
-        ${ENDPOINT_NAME}Registration() {
-            apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
-                return std::make_unique<$ENDPOINT_NAME>();
-            });
-        }
-    };
-    static ${ENDPOINT_NAME}Registration _registration;
+	struct ${ENDPOINT_NAME}Registration {
+		${ENDPOINT_NAME}Registration() {
+			apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
+				return std::make_unique<$ENDPOINT_NAME>();
+			});
+		}
+	};
+	static ${ENDPOINT_NAME}Registration _registration;
 }
 
 } // namespace $NAMESPACE_NAME
@@ -167,20 +167,20 @@ cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp" << EOF
 
 class MockEndpointRegistrar : public apirouter::IEndpointRegistrar {
 public:
-    std::vector<std::string> registeredPaths;
-    void registerHttpHandler(std::string_view path, std::string_view method, apirouter::HttpHandler /*handler*/) override {
-        registeredPaths.push_back(std::string(path) + ":" + std::string(method));
-    }
+	std::vector<std::string> registeredPaths;
+	void registerHttpHandler(std::string_view path, std::string_view method, apirouter::HttpHandler /*handler*/) override {
+		registeredPaths.push_back(std::string(path) + ":" + std::string(method));
+	}
 };
 
 TEST(${ENDPOINT_NAME}Test, RegisterEndpointsCanBeRegistered) {
-    MockEndpointRegistrar registrar;
-    $NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
-    endpoint.registerEndpoints(registrar);
-    
-    // Verify that the endpoint registered its handler
-    ASSERT_EQ(registrar.registeredPaths.size(), 1U);
-    EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
+	MockEndpointRegistrar registrar;
+	$NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
+	endpoint.registerEndpoints(registrar);
+	
+	// Verify that the endpoint registered its handler
+	ASSERT_EQ(registrar.registeredPaths.size(), 1U);
+	EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
 }
 EOF
 
@@ -192,33 +192,33 @@ cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp" << EOF
 
 class ${ENDPOINT_NAME}HandlerTest : public ::testing::Test, protected $NAMESPACE_NAME::$ENDPOINT_NAME {
 protected:
-    // Test class inherits from $ENDPOINT_NAME to access protected handler methods
+	// Test class inherits from $ENDPOINT_NAME to access protected handler methods
 };
 
 TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}ReturnsSuccessResponse) {
-    std::string responseBody;
-    int statusCode = 0;
-    
-    // Test the extracted handler method directly
-    handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
-    
-    // Verify response
-    EXPECT_EQ(statusCode, 200);
-    EXPECT_FALSE(responseBody.empty());
-    EXPECT_NE(responseBody.find("$ENDPOINT_NAME"), std::string::npos);
+	std::string responseBody;
+	int statusCode = 0;
+	
+	// Test the extracted handler method directly
+	handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
+	
+	// Verify response
+	EXPECT_EQ(statusCode, 200);
+	EXPECT_FALSE(responseBody.empty());
+	EXPECT_NE(responseBody.find("$ENDPOINT_NAME"), std::string::npos);
 }
 
 TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}AcceptsParameters) {
-    std::string responseBody;
-    int statusCode = 0;
-    std::string requestBody = R"({"test": "data"})";
-    
-    // Test with request body
-    handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
-    
-    // Should still return success (parameters are ignored in this simple implementation)
-    EXPECT_EQ(statusCode, 200);
-    EXPECT_FALSE(responseBody.empty());
+	std::string responseBody;
+	int statusCode = 0;
+	std::string requestBody = R"({"test": "data"})";
+	
+	// Test with request body
+	handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
+	
+	// Should still return success (parameters are ignored in this simple implementation)
+	EXPECT_EQ(statusCode, 200);
+	EXPECT_FALSE(responseBody.empty());
 }
 
 // TODO: Add tests for additional handler methods when implemented
@@ -246,64 +246,64 @@ cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp
 
 class MockEndpointRegistrar : public apirouter::IEndpointRegistrar {
 public:
-    std::vector<std::string> registeredPaths;
-    void registerHttpHandler(std::string_view path, std::string_view method, apirouter::HttpHandler /*handler*/) override {
-        registeredPaths.push_back(std::string(path) + ":" + std::string(method));
-    }
+	std::vector<std::string> registeredPaths;
+	void registerHttpHandler(std::string_view path, std::string_view method, apirouter::HttpHandler /*handler*/) override {
+		registeredPaths.push_back(std::string(path) + ":" + std::string(method));
+	}
 };
 
 TEST(${ENDPOINT_NAME}AutoRegistrationTest, ${ENDPOINT_NAME}IsAutoRegisteredWithApiRouter) {
-    // Check that at least one module factory is registered
-    size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
-    ASSERT_GE(moduleCount, 1U) << "No endpoint modules were auto-registered";
-    
-    // Create instances of all registered modules
-    auto modules = apirouter::ApiRouter::createAllModulesGlobal();
-    ASSERT_EQ(modules.size(), moduleCount) << "Module creation count mismatch";
-    
-    // Check if any of the modules is $ENDPOINT_NAME
-    bool found${ENDPOINT_NAME} = false;
-    for (const auto& module : modules) {
-        ASSERT_NE(module, nullptr) << "Module instance is null";
-        
-        // Try to dynamic_cast to $ENDPOINT_NAME to verify the type
-        auto ${ENDPOINT_PART,,}Endpoint = dynamic_cast<$NAMESPACE_NAME::$ENDPOINT_NAME*>(module.get());
-        if (${ENDPOINT_PART,,}Endpoint != nullptr) {
-            found${ENDPOINT_NAME} = true;
-            
-            // Verify the module can register endpoints
-            MockEndpointRegistrar registrar;
-            ${ENDPOINT_PART,,}Endpoint->registerEndpoints(registrar);
-            
-            // Verify that the endpoint registered its handler correctly
-            ASSERT_EQ(registrar.registeredPaths.size(), 1U) << "$ENDPOINT_NAME should register exactly one endpoint";
-            EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET") << "$ENDPOINT_NAME should register /${ENDPOINT_PART,,}:GET endpoint";
-            
-            break;
-        }
-    }
-    
-    ASSERT_TRUE(found${ENDPOINT_NAME}) << "$ENDPOINT_NAME was not found in auto-registered modules";
+	// Check that at least one module factory is registered
+	size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
+	ASSERT_GE(moduleCount, 1U) << "No endpoint modules were auto-registered";
+	
+	// Create instances of all registered modules
+	auto modules = apirouter::ApiRouter::createAllModulesGlobal();
+	ASSERT_EQ(modules.size(), moduleCount) << "Module creation count mismatch";
+	
+	// Check if any of the modules is $ENDPOINT_NAME
+	bool found${ENDPOINT_NAME} = false;
+	for (const auto& module : modules) {
+		ASSERT_NE(module, nullptr) << "Module instance is null";
+		
+		// Try to dynamic_cast to $ENDPOINT_NAME to verify the type
+		auto ${ENDPOINT_PART,,}Endpoint = dynamic_cast<$NAMESPACE_NAME::$ENDPOINT_NAME*>(module.get());
+		if (${ENDPOINT_PART,,}Endpoint != nullptr) {
+			found${ENDPOINT_NAME} = true;
+			
+			// Verify the module can register endpoints
+			MockEndpointRegistrar registrar;
+			${ENDPOINT_PART,,}Endpoint->registerEndpoints(registrar);
+			
+			// Verify that the endpoint registered its handler correctly
+			ASSERT_EQ(registrar.registeredPaths.size(), 1U) << "$ENDPOINT_NAME should register exactly one endpoint";
+			EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET") << "$ENDPOINT_NAME should register /${ENDPOINT_PART,,}:GET endpoint";
+			
+			break;
+		}
+	}
+	
+	ASSERT_TRUE(found${ENDPOINT_NAME}) << "$ENDPOINT_NAME was not found in auto-registered modules";
 }
 
 TEST(${ENDPOINT_NAME}AutoRegistrationTest, ApiRouterCanInstantiateAllRegisteredModules) {
-    // Get count of registered module factories
-    size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
+	// Get count of registered module factories
+	size_t moduleCount = apirouter::ApiRouter::getRegisteredModuleCountGlobal();
 
-    // Create instances of all registered modules
-    auto modules = apirouter::ApiRouter::createAllModulesGlobal();
-    ASSERT_EQ(modules.size(), moduleCount) << "Not all modules could be instantiated";
-    
-    // Verify each module can be used to register endpoints
-    for (const auto& module : modules) {
-        ASSERT_NE(module, nullptr) << "Module instance is null";
-        
-        MockEndpointRegistrar registrar;
-        module->registerEndpoints(registrar);
-        
-        // The test passes if no exceptions are thrown
-        SUCCEED();
-    }
+	// Create instances of all registered modules
+	auto modules = apirouter::ApiRouter::createAllModulesGlobal();
+	ASSERT_EQ(modules.size(), moduleCount) << "Not all modules could be instantiated";
+	
+	// Verify each module can be used to register endpoints
+	for (const auto& module : modules) {
+		ASSERT_NE(module, nullptr) << "Module instance is null";
+		
+		MockEndpointRegistrar registrar;
+		module->registerEndpoints(registrar);
+		
+		// The test passes if no exceptions are thrown
+		SUCCEED();
+	}
 }
 EOF
 
@@ -312,8 +312,8 @@ cat > "tests/${ENDPOINT_NAME}Test/TestMain.cpp" << EOF
 #include <gtest/gtest.h>
 
 int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
 }
 EOF
 
@@ -487,98 +487,98 @@ clean:
 .PHONY: all clean debug-config run
 EOF
 
-    # Replace MODULE_NAME_PLACEHOLDER in the Makefile
-    sed -i "s/MODULE_NAME_PLACEHOLDER/$ENDPOINT_NAME/g" "tests/${ENDPOINT_NAME}Test/Makefile"
+	# Replace MODULE_NAME_PLACEHOLDER in the Makefile
+	sed -i "s/MODULE_NAME_PLACEHOLDER/$ENDPOINT_NAME/g" "tests/${ENDPOINT_NAME}Test/Makefile"
 
-    echo ""
-    echo "✅ Endpoint module '$ENDPOINT_NAME' created successfully!"
-    echo ""
-    echo "📁 Created files:"
-    echo "  📄 include/$ENDPOINT_NAME/$ENDPOINT_NAME.h (header with testable protected methods)"
-    echo "  📄 src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp (implementation + auto-registration)"
-    echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp (registration tests)"
-    echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp (handler method tests)"
-    echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp (auto-registration tests)"
-    echo "  📄 tests/${ENDPOINT_NAME}Test/TestMain.cpp"
-    echo "  📄 tests/${ENDPOINT_NAME}Test/Makefile"
-    echo ""
-    echo "📋 Next steps:"
-    echo "1. 🔧 Implement handleGet${ENDPOINT_PART}() method in src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
-    echo "2. 🔧 Add additional handler methods (handlePost${ENDPOINT_PART}, etc.) as needed"
-    echo "3. 🧪 Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp with comprehensive handler tests"
-    echo "4. 🧪 Add tests for additional handler methods as you implement them"
-    echo "5. 📦 Add service dependencies in tests/${ENDPOINT_NAME}Test/Makefile if needed"
-    echo "   Examples: DEPENDENCIES = ServiceUser ServiceAuth Logger"
-    echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
-    echo "6. 🧪 Test your endpoint:"
-    echo "   make test-run-${ENDPOINT_NAME}Test"
-    echo ""
-    echo "🚀 Architecture benefits:"
-    echo "  • Handler logic extracted to testable protected methods"
-    echo "  • Lambdas are thin wrappers that call handler methods"
-    echo "  • Each HTTP method has its own dedicated handler method"
-    echo "  • Auto-registration with ApiRouter for plugin-like behavior"
-    echo ""
-    echo "💡 Tips:"
-    echo "  • Test handler methods directly for better test coverage"
-    echo "  • Use meaningful HTTP status codes (200, 201, 400, 404, 500)"
-    echo "  • Return JSON responses for API consistency"
-    echo "  • Inject services via IoC container for business logic"
-    echo ""
+	echo ""
+	echo "✅ Endpoint module '$ENDPOINT_NAME' created successfully!"
+	echo ""
+	echo "📁 Created files:"
+	echo "  📄 include/$ENDPOINT_NAME/$ENDPOINT_NAME.h (header with testable protected methods)"
+	echo "  📄 src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp (implementation + auto-registration)"
+	echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp (registration tests)"
+	echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp (handler method tests)"
+	echo "  📄 tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}AutoRegistrationTest.cpp (auto-registration tests)"
+	echo "  📄 tests/${ENDPOINT_NAME}Test/TestMain.cpp"
+	echo "  📄 tests/${ENDPOINT_NAME}Test/Makefile"
+	echo ""
+	echo "📋 Next steps:"
+	echo "1. 🔧 Implement handleGet${ENDPOINT_PART}() method in src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
+	echo "2. 🔧 Add additional handler methods (handlePost${ENDPOINT_PART}, etc.) as needed"
+	echo "3. 🧪 Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp with comprehensive handler tests"
+	echo "4. 🧪 Add tests for additional handler methods as you implement them"
+	echo "5. 📦 Add service dependencies in tests/${ENDPOINT_NAME}Test/Makefile if needed"
+	echo "   Examples: DEPENDENCIES = ServiceUser ServiceAuth Logger"
+	echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
+	echo "6. 🧪 Test your endpoint:"
+	echo "   make test-run-${ENDPOINT_NAME}Test"
+	echo ""
+	echo "🚀 Architecture benefits:"
+	echo "  • Handler logic extracted to testable protected methods"
+	echo "  • Lambdas are thin wrappers that call handler methods"
+	echo "  • Each HTTP method has its own dedicated handler method"
+	echo "  • Auto-registration with ApiRouter for plugin-like behavior"
+	echo ""
+	echo "💡 Tips:"
+	echo "  • Test handler methods directly for better test coverage"
+	echo "  • Use meaningful HTTP status codes (200, 201, 400, 404, 500)"
+	echo "  • Return JSON responses for API consistency"
+	echo "  • Inject services via IoC container for business logic"
+	echo ""
 }
 
 # Function to remove endpoint
 remove_endpoint() {
-    echo "Removing endpoint module: $ENDPOINT_NAME"
-    
-    # Check if endpoint exists
-    ENDPOINT_EXISTS=false
-    if [ -d "include/$ENDPOINT_NAME" ] || [ -d "src/$ENDPOINT_NAME" ] || [ -d "tests/${ENDPOINT_NAME}Test" ]; then
-        ENDPOINT_EXISTS=true
-    fi
-    
-    if [ "$ENDPOINT_EXISTS" = false ]; then
-        echo "Warning: Endpoint '$ENDPOINT_NAME' does not exist or is already removed."
-        exit 0
-    fi
-    
-    # Confirm removal
-    echo "This will permanently delete the following:"
-    [ -d "include/$ENDPOINT_NAME" ] && echo "  📁 include/$ENDPOINT_NAME/"
-    [ -d "src/$ENDPOINT_NAME" ] && echo "  📁 src/$ENDPOINT_NAME/"
-    [ -d "tests/${ENDPOINT_NAME}Test" ] && echo "  📁 tests/${ENDPOINT_NAME}Test/"
-    echo ""
-    read -p "Are you sure you want to remove '$ENDPOINT_NAME'? (y/N): " -r
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Removal cancelled."
-        exit 0
-    fi
-    
-    # Remove directories and files
-    [ -d "include/$ENDPOINT_NAME" ] && rm -rf "include/$ENDPOINT_NAME"
-    [ -d "src/$ENDPOINT_NAME" ] && rm -rf "src/$ENDPOINT_NAME"
-    [ -d "tests/${ENDPOINT_NAME}Test" ] && rm -rf "tests/${ENDPOINT_NAME}Test"
-    
-    echo ""
-    echo "✅ Endpoint module '$ENDPOINT_NAME' removed successfully!"
-    echo ""
-    echo "Don't forget to:"
-    echo "1. The endpoint was auto-registered, so no manual removal from ApiRouter.cpp needed"
-    echo "2. Clean any build artifacts:"
-    echo "   make clean && make test-clean"
-    echo ""
+	echo "Removing endpoint module: $ENDPOINT_NAME"
+	
+	# Check if endpoint exists
+	ENDPOINT_EXISTS=false
+	if [ -d "include/$ENDPOINT_NAME" ] || [ -d "src/$ENDPOINT_NAME" ] || [ -d "tests/${ENDPOINT_NAME}Test" ]; then
+		ENDPOINT_EXISTS=true
+	fi
+	
+	if [ "$ENDPOINT_EXISTS" = false ]; then
+		echo "Warning: Endpoint '$ENDPOINT_NAME' does not exist or is already removed."
+		exit 0
+	fi
+	
+	# Confirm removal
+	echo "This will permanently delete the following:"
+	[ -d "include/$ENDPOINT_NAME" ] && echo "  📁 include/$ENDPOINT_NAME/"
+	[ -d "src/$ENDPOINT_NAME" ] && echo "  📁 src/$ENDPOINT_NAME/"
+	[ -d "tests/${ENDPOINT_NAME}Test" ] && echo "  📁 tests/${ENDPOINT_NAME}Test/"
+	echo ""
+	read -p "Are you sure you want to remove '$ENDPOINT_NAME'? (y/N): " -r
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		echo "Removal cancelled."
+		exit 0
+	fi
+	
+	# Remove directories and files
+	[ -d "include/$ENDPOINT_NAME" ] && rm -rf "include/$ENDPOINT_NAME"
+	[ -d "src/$ENDPOINT_NAME" ] && rm -rf "src/$ENDPOINT_NAME"
+	[ -d "tests/${ENDPOINT_NAME}Test" ] && rm -rf "tests/${ENDPOINT_NAME}Test"
+	
+	echo ""
+	echo "✅ Endpoint module '$ENDPOINT_NAME' removed successfully!"
+	echo ""
+	echo "Don't forget to:"
+	echo "1. The endpoint was auto-registered, so no manual removal from ApiRouter.cpp needed"
+	echo "2. Clean any build artifacts:"
+	echo "   make clean && make test-clean"
+	echo ""
 }
 
 # Execute based on action
 case "$ACTION" in
-    "create")
-        create_endpoint
-        ;;
-    "remove")
-        remove_endpoint
-        ;;
-    *)
-        echo "Error: Unknown action '$ACTION'"
-        exit 1
-        ;;
+	"create")
+		create_endpoint
+		;;
+	"remove")
+		remove_endpoint
+		;;
+	*)
+		echo "Error: Unknown action '$ACTION'"
+		exit 1
+		;;
 esac
