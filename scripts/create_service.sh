@@ -66,27 +66,15 @@ cat > "include/$SERVICE_NAME/$SERVICE_NAME.h" << EOF
 namespace $NAMESPACE_NAME {
 
 /**
- * Interface for $SERVICE_NAME
- * Define the service contract for dependency injection and testing
- */
-class I$SERVICE_NAME {
-public:
-	virtual ~I$SERVICE_NAME() = default;
-	
-	// TODO: Define your service interface methods here
-	virtual std::string process${SERVICE_PART}Data() const = 0;
-};
-
-/**
  * $SERVICE_NAME - Business logic service
  * Automatically registers with IoC container for dependency injection
  */
-class $SERVICE_NAME : public I$SERVICE_NAME {
+class $SERVICE_NAME {
 public:
 	$SERVICE_NAME();
 	
 	// Service interface implementation
-	std::string process${SERVICE_PART}Data() const override;
+	std::string process${SERVICE_PART}Data() const;
 	
 	// TODO: Add additional service methods here
 	// Example: void update${SERVICE_PART}(const ${SERVICE_PART}& data);
@@ -112,12 +100,8 @@ std::string $SERVICE_NAME::process${SERVICE_PART}Data() const {
 namespace {
 	struct ${SERVICE_NAME}Registration {
 		${SERVICE_NAME}Registration() {
-			// Create a single shared instance
-			auto instance = std::make_shared<$SERVICE_NAME>();
-			
-			// Register the same instance for both interface and concrete class
-			ioccontainer::IIocContainer::registerGlobal<I$SERVICE_NAME>(instance);
-			ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(instance);
+			// Register the instance for concrete class
+			ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(std::make_shared<$SERVICE_NAME>());
 		}
 	};
 	static ${SERVICE_NAME}Registration _registration;
