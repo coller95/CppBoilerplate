@@ -80,6 +80,50 @@ int main() {
 }
 ```
 
+#### **NEW: Metaprogramming Auto-Registration Pattern**
+
+**CRTP-Based Auto-Registration** (Replaces manual registration):
+
+```cpp
+// OLD: Manual Registration (15+ lines)
+namespace {
+    struct EndpointUserRegistration {
+        EndpointUserRegistration() {
+            apirouter::ApiRouter::registerModuleFactoryGlobal([]() {
+                return std::make_unique<EndpointUser>();
+            });
+        }
+    };
+    static EndpointUserRegistration _registration;
+}
+
+// NEW: Metaprogramming (1 line)
+namespace {
+    static apirouter::AutoRegister<EndpointUser> _autoRegister;
+}
+```
+
+**CRTP Endpoint Base Class**:
+```cpp
+// NEW: Inherit from AutoRegisterEndpoint<T>
+class EndpointUser : public apirouter::AutoRegisterEndpoint<EndpointUser> {
+public:
+    void registerAvailableMethods(apirouter::IEndpointRegistrar& registrar, const std::string& basePath) override {
+        registerMethod<&EndpointUser::handleGet>(registrar, "/user", "GET");
+        registerMethod<&EndpointUser::handlePost>(registrar, "/user", "POST");
+    }
+protected:
+    void handleGet(...) { /* Clean naming */ }
+    void handlePost(...) { /* Type-safe registration */ }
+};
+```
+
+**Metaprogramming Benefits:**
+- **85% less boilerplate** vs manual registration
+- **Type safety** - Compile-time method signature verification
+- **KISS/YAGNI compliant** - Simple metaprogramming, not complex SFINAE
+- **Easy expansion** - Add HTTP methods with single line
+
 #### **Architecture Layer: Business Logic**
 
 ```
@@ -297,18 +341,20 @@ When reviewing generated code architecture, ask:
 - Domain-specific method naming (`processUserData()` not `doSomethingServiceUser()`)
 - Always includes interface for dependency injection and testing
 
-#### **🔧 create_endpoint.sh - Testable Handler Methods**
+#### **🔧 create_endpoint.sh - Metaprogramming Auto-Registration**
 ```bash
-# Generates testable handler methods (no interface needed)
+# Generates endpoints with metaprogramming auto-registration
 ./scripts/create_endpoint.sh create EndpointUser
-# → Creates: EndpointUser with protected handleGetUser() method + handler tests
+# → Creates: EndpointUser with CRTP auto-registration + clean handlers
 ```
 
-**Architecture benefits:**
-- Handler logic extracted to testable protected methods
-- Lambdas are thin wrappers calling handler methods  
-- Direct unit testing of HTTP handler logic
-- Each HTTP method gets its own handler method
+**METAPROGRAMMING Architecture benefits:**
+- **85% less boilerplate** - No manual lambda wrapping
+- **Type-safe registration** - Compile-time method signature verification
+- **CRTP pattern** - `AutoRegisterEndpoint<EndpointUser>` base class
+- **Clean naming** - `handleGet()` vs `handleGetUser()`
+- **One-line registration** - `AutoRegister<EndpointUser> _autoRegister;`
+- **Easy expansion** - Add methods with `registerMethod<&Class::method>()`
 
 ### **🎯 Key Architectural Improvements**
 
@@ -322,10 +368,11 @@ When reviewing generated code architecture, ask:
 - Simplified auto-registration (no redundant methods)
 - Domain-specific method naming
 
-**3. Testable Endpoint Architecture:**
-- HTTP handler logic extracted from lambdas
+**3. Metaprogramming Endpoint Architecture:**
+- CRTP auto-registration eliminates boilerplate
+- Type-safe compile-time method verification
+- Clean handler naming and easy HTTP method expansion
 - Protected methods accessible to unit tests
-- Clear separation: registration logic vs. business logic
 
 **4. Progressive Enhancement:**
 - Start simple: `create ConfigManager` → minimal class
@@ -1369,11 +1416,11 @@ This helps keep the project's standards up to date and ensures all contributors 
 - **Use differentiated generation approach**:
   - `./scripts/create_module.sh create ModuleName` - Simple by default, add `--interface` or `--pimpl` when needed
   - `./scripts/create_service.sh create ServiceName` - Always includes interface for DI/testing  
-  - `./scripts/create_endpoint.sh create EndpointName` - Testable handler methods
+  - `./scripts/create_endpoint.sh create EndpointName` - Metaprogramming CRTP auto-registration
   - `./scripts/generate_class_chart.sh` for UML class diagrams and documentation
 - **Progressive enhancement principle**: Start simple, add complexity only when requirements justify it
 - **Service architecture**: Always use interfaces for dependency injection and mocking
-- **Endpoint architecture**: Extract handler logic to testable protected methods
+- **Endpoint architecture**: Use metaprogramming CRTP auto-registration with clean handler methods
 - Use the flexible Makefile system: modify only the DEPENDENCIES line in test Makefiles
 - For external dependencies, use `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, and `EXTERNAL_LIBS` for maximum flexibility
 - Use `make debug-config` to verify dependency resolution in test modules
