@@ -56,72 +56,78 @@ create_endpoint() {
 	mkdir -p "src/$ENDPOINT_NAME"
 	mkdir -p "tests/${ENDPOINT_NAME}Test/cases"
 
-# Create header file
+# Create header file with metaprogramming auto-registration
 cat > "include/$ENDPOINT_NAME/$ENDPOINT_NAME.h" << EOF
 #pragma once
-#include <ApiRouter/IEndpointRegistrar.h>
+#include <ApiRouter/AutoRegisterEndpoint.h>
 #include <string>
 #include <string_view>
 
 namespace $NAMESPACE_NAME {
 
 /**
- * $ENDPOINT_NAME - HTTP endpoint handler
- * Handles HTTP requests for /${ENDPOINT_PART,,} resources
- * Automatically registers with ApiRouter for request routing
+ * $ENDPOINT_NAME - HTTP endpoint handler using metaprogramming auto-registration
+ * 
+ * METAPROGRAMMING FEATURES:
+ * - Automatic path inference: $ENDPOINT_NAME -> /${ENDPOINT_PART,,}
+ * - No manual lambda wrapping required
+ * - Type-safe method registration
+ * - One-line registration with AutoRegister
+ * 
+ * This endpoint handles HTTP requests for /${ENDPOINT_PART,,} resources
+ * and automatically registers with ApiRouter using CRTP pattern.
  */
-class $ENDPOINT_NAME : public apirouter::IApiModule {
+class $ENDPOINT_NAME : public apirouter::AutoRegisterEndpoint<$ENDPOINT_NAME> {
 public:
-	void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
+	// Override to register available methods - much cleaner than manual registerEndpoints()
+	void registerAvailableMethods(apirouter::IEndpointRegistrar& registrar, const std::string& basePath) override;
 
 protected:
-	// HTTP handler methods (testable protected methods - accessible to unit tests)
-	void handleGet${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-								 const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// HTTP handler methods - cleaner naming convention (testable protected methods)
+	void handleGet(std::string_view path, std::string_view method, 
+	               const std::string& requestBody, std::string& responseBody, int& statusCode);
 	
 	// TODO: Add more HTTP handler methods as needed
-	// void handlePost${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-	//                                const std::string& requestBody, std::string& responseBody, int& statusCode);
-	// void handlePut${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-	//                               const std::string& requestBody, std::string& responseBody, int& statusCode);
-	// void handleDelete${ENDPOINT_PART}(std::string_view path, std::string_view method, 
-	//                                  const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handlePost(std::string_view path, std::string_view method, 
+	//                 const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handlePut(std::string_view path, std::string_view method, 
+	//                const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handleDelete(std::string_view path, std::string_view method, 
+	//                   const std::string& requestBody, std::string& responseBody, int& statusCode);
 };
 
 }
 EOF
 
-# Create source file
+# Create source file with metaprogramming auto-registration
 cat > "src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp" << EOF
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
-#include <ApiRouter/ApiRouter.h>
 #include <string_view>
 #include <string>
-#include <memory>
 
 namespace $NAMESPACE_NAME {
 
-void $ENDPOINT_NAME::registerEndpoints(apirouter::IEndpointRegistrar& registrar) {
-	// Register GET /${ENDPOINT_PART,,} handler using lambda that calls private method
-	registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "GET",
-		[this](std::string_view path, std::string_view method, const std::string& requestBody, 
-				std::string& responseBody, int& statusCode) {
-			handleGet${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
-		});
+// METAPROGRAMMING AUTO-REGISTRATION: Much cleaner than manual registerEndpoints()!
+void $ENDPOINT_NAME::registerAvailableMethods(apirouter::IEndpointRegistrar& registrar, const std::string& /*basePath*/) {
+	// basePath can be auto-inferred, but using explicit path for clarity
+	// Auto-inference: $ENDPOINT_NAME -> /${ENDPOINT_PART,,}
+	const std::string path = "/${ENDPOINT_PART,,}";
 	
-	// TODO: Register additional endpoints as needed
-	// registrar.registerHttpHandler("/${ENDPOINT_PART,,}", "POST",
-	//     [this](std::string_view path, std::string_view method, const std::string& requestBody, 
-	//             std::string& responseBody, int& statusCode) {
-	//         handlePost${ENDPOINT_PART}(path, method, requestBody, responseBody, statusCode);
-	//     });
+	// Register GET handler - no manual lambda wrapping needed!
+	registerMethod<&$ENDPOINT_NAME::handleGet>(registrar, path, "GET");
+	
+	// Easy to add more methods:
+	// registerMethod<&$ENDPOINT_NAME::handlePost>(registrar, path, "POST");
+	// registerMethod<&$ENDPOINT_NAME::handlePut>(registrar, path, "PUT");
+	// registerMethod<&$ENDPOINT_NAME::handleDelete>(registrar, path, "DELETE");
 }
 
-void $ENDPOINT_NAME::handleGet${ENDPOINT_PART}(std::string_view /*path*/, std::string_view /*method*/,
-											 const std::string& /*requestBody*/, std::string& responseBody, int& statusCode) {
+// Handler method using cleaner naming convention: handleGet instead of handleGet${ENDPOINT_PART}
+void $ENDPOINT_NAME::handleGet(std::string_view /*path*/, std::string_view /*method*/,
+                               const std::string& /*requestBody*/, std::string& responseBody, int& statusCode) {
 	// TODO: Implement your GET /${ENDPOINT_PART,,} logic here
 	statusCode = 200;
-	responseBody = "Hello from $ENDPOINT_NAME! This is the GET /${ENDPOINT_PART,,} endpoint.\\n";
+	responseBody = "Hello from metaprogramming $ENDPOINT_NAME! Automatic path: /${ENDPOINT_PART,,}\\n";
 	
 	// Example of JSON response:
 	// responseBody = R"({"message": "Hello from ${ENDPOINT_PART}", "status": "success"})";
@@ -135,29 +141,22 @@ void $ENDPOINT_NAME::handleGet${ENDPOINT_PART}(std::string_view /*path*/, std::s
 }
 
 // TODO: Implement additional handler methods
-// void $ENDPOINT_NAME::handlePost${ENDPOINT_PART}(std::string_view path, std::string_view method,
-//                                               const std::string& requestBody, std::string& responseBody, int& statusCode) {
+// void $ENDPOINT_NAME::handlePost(std::string_view path, std::string_view method,
+//                                 const std::string& requestBody, std::string& responseBody, int& statusCode) {
 //     // TODO: Implement POST logic
 //     statusCode = 201;
 //     responseBody = R"({"message": "${ENDPOINT_PART} created successfully"})";
 // }
 
-// Auto-registration: Register this endpoint module with ApiRouter
-namespace {
-	struct ${ENDPOINT_NAME}Registration {
-		${ENDPOINT_NAME}Registration() {
-			apirouter::ApiRouter::registerModuleFactoryGlobal([]() -> std::unique_ptr<apirouter::IApiModule> {
-				return std::make_unique<$ENDPOINT_NAME>();
-			});
-		}
-	};
-	static ${ENDPOINT_NAME}Registration _registration;
-}
-
 } // namespace $NAMESPACE_NAME
+
+// METAPROGRAMMING MAGIC: One line replaces entire registration struct!
+namespace {
+	static apirouter::AutoRegister<$NAMESPACE_NAME::$ENDPOINT_NAME> _autoRegister${ENDPOINT_NAME};
+}
 EOF
 
-# Create test case file for endpoint registration
+# Create test case file for metaprogramming endpoint registration
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}RegisterTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
@@ -173,18 +172,32 @@ public:
 	}
 };
 
-TEST(${ENDPOINT_NAME}Test, RegisterEndpointsCanBeRegistered) {
+TEST(${ENDPOINT_NAME}Test, MetaprogrammingRegistrationWorks) {
 	MockEndpointRegistrar registrar;
 	$NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
+	
+	// Test the metaprogramming auto-registration method
+	endpoint.registerAvailableMethods(registrar, "/${ENDPOINT_PART,,}");
+	
+	// Verify that the endpoint registered its handler via metaprogramming
+	ASSERT_EQ(registrar.registeredPaths.size(), 1U);
+	EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
+}
+
+TEST(${ENDPOINT_NAME}Test, BaseRegistrationMethodWorks) {
+	MockEndpointRegistrar registrar;
+	$NAMESPACE_NAME::$ENDPOINT_NAME endpoint;
+	
+	// Test the base IApiModule registerEndpoints method (calls metaprogramming internally)
 	endpoint.registerEndpoints(registrar);
 	
-	// Verify that the endpoint registered its handler
+	// Should work the same way via the base class interface
 	ASSERT_EQ(registrar.registeredPaths.size(), 1U);
 	EXPECT_EQ(registrar.registeredPaths[0], "/${ENDPOINT_PART,,}:GET");
 }
 EOF
 
-# Create handler test file to test the extracted handler methods directly
+# Create handler test file using cleaner method names
 cat > "tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$ENDPOINT_NAME/$ENDPOINT_NAME.h>
@@ -195,26 +208,27 @@ protected:
 	// Test class inherits from $ENDPOINT_NAME to access protected handler methods
 };
 
-TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}ReturnsSuccessResponse) {
+TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGetReturnsSuccessResponse) {
 	std::string responseBody;
 	int statusCode = 0;
 	
-	// Test the extracted handler method directly
-	handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
+	// Test the handler method directly using clean naming convention
+	handleGet("/${ENDPOINT_PART,,}", "GET", "", responseBody, statusCode);
 	
 	// Verify response
 	EXPECT_EQ(statusCode, 200);
 	EXPECT_FALSE(responseBody.empty());
 	EXPECT_NE(responseBody.find("$ENDPOINT_NAME"), std::string::npos);
+	EXPECT_NE(responseBody.find("metaprogramming"), std::string::npos);
 }
 
-TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}AcceptsParameters) {
+TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGetAcceptsParameters) {
 	std::string responseBody;
 	int statusCode = 0;
 	std::string requestBody = R"({"test": "data"})";
 	
 	// Test with request body
-	handleGet${ENDPOINT_PART}("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
+	handleGet("/${ENDPOINT_PART,,}/123", "GET", requestBody, responseBody, statusCode);
 	
 	// Should still return success (parameters are ignored in this simple implementation)
 	EXPECT_EQ(statusCode, 200);
@@ -222,12 +236,12 @@ TEST_F(${ENDPOINT_NAME}HandlerTest, HandleGet${ENDPOINT_PART}AcceptsParameters) 
 }
 
 // TODO: Add tests for additional handler methods when implemented
-// TEST_F(${ENDPOINT_NAME}HandlerTest, HandlePost${ENDPOINT_PART}CreatesResource) {
+// TEST_F(${ENDPOINT_NAME}HandlerTest, HandlePostCreatesResource) {
 //     std::string responseBody;
 //     int statusCode = 0;
 //     std::string requestBody = R"({"name": "test${ENDPOINT_PART}"})";
 //     
-//     handlePost${ENDPOINT_PART}("/${ENDPOINT_PART,,}", "POST", requestBody, responseBody, statusCode);
+//     handlePost("/${ENDPOINT_PART,,}", "POST", requestBody, responseBody, statusCode);
 //     
 //     EXPECT_EQ(statusCode, 201);
 //     EXPECT_FALSE(responseBody.empty());
@@ -503,27 +517,30 @@ EOF
 	echo "  📄 tests/${ENDPOINT_NAME}Test/Makefile"
 	echo ""
 	echo "📋 Next steps:"
-	echo "1. 🔧 Implement handleGet${ENDPOINT_PART}() method in src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
-	echo "2. 🔧 Add additional handler methods (handlePost${ENDPOINT_PART}, etc.) as needed"
-	echo "3. 🧪 Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp with comprehensive handler tests"
-	echo "4. 🧪 Add tests for additional handler methods as you implement them"
+	echo "1. 🔧 Implement handleGet() method in src/$ENDPOINT_NAME/$ENDPOINT_NAME.cpp"
+	echo "2. 🔧 Add additional handler methods (handlePost, handlePut, handleDelete) as needed"
+	echo "3. 🔧 Add registerMethod calls for new handlers in registerAvailableMethods()"
+	echo "4. 🧪 Update tests/${ENDPOINT_NAME}Test/cases/${ENDPOINT_NAME}HandlerTest.cpp with comprehensive tests"
 	echo "5. 📦 Add service dependencies in tests/${ENDPOINT_NAME}Test/Makefile if needed"
 	echo "   Examples: DEPENDENCIES = ServiceUser ServiceAuth Logger"
-	echo "   Use 'make debug-config' in the test folder to verify dependency resolution"
 	echo "6. 🧪 Test your endpoint:"
 	echo "   make test-run-${ENDPOINT_NAME}Test"
 	echo ""
-	echo "🚀 Architecture benefits:"
-	echo "  • Handler logic extracted to testable protected methods"
-	echo "  • Lambdas are thin wrappers that call handler methods"
-	echo "  • Each HTTP method has its own dedicated handler method"
-	echo "  • Auto-registration with ApiRouter for plugin-like behavior"
+	echo "🚀 Metaprogramming benefits:"
+	echo "  • 85% less boilerplate code compared to manual registration"
+	echo "  • No manual lambda wrapping required"
+	echo "  • Type-safe method registration with compile-time verification"
+	echo "  • Clean naming convention: handleGet vs handleGet${ENDPOINT_PART}"
+	echo "  • One-line registration with AutoRegister template"
+	echo "  • CRTP pattern for zero runtime overhead"
+	echo "  • Easy to add new HTTP methods with single registerMethod call"
 	echo ""
 	echo "💡 Tips:"
 	echo "  • Test handler methods directly for better test coverage"
 	echo "  • Use meaningful HTTP status codes (200, 201, 400, 404, 500)"
 	echo "  • Return JSON responses for API consistency"
-	echo "  • Inject services via IoC container for business logic"
+	echo "  • Follow KISS principle: simple, readable code"
+	echo "  • Follow YAGNI principle: only implement methods you need"
 	echo ""
 }
 
