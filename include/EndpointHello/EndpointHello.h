@@ -1,31 +1,39 @@
 #pragma once
-#include <ApiRouter/IEndpointRegistrar.h>
+#include <ApiRouter/AutoRegisterEndpoint.h>
 #include <string>
 #include <string_view>
 
 namespace endpointhello {
 
 /**
- * EndpointHello - HTTP endpoint handler
- * Handles HTTP requests for /hello resources
- * Automatically registers with ApiRouter for request routing
+ * EndpointHello - HTTP endpoint handler using metaprogramming auto-registration
+ * 
+ * METAPROGRAMMING FEATURES:
+ * - Automatic path inference: EndpointHello -> /hello
+ * - No manual lambda wrapping required
+ * - Type-safe method registration
+ * - One-line registration with AutoRegister
+ * 
+ * This endpoint handles HTTP requests for /hello resources
+ * and automatically registers with ApiRouter using CRTP pattern.
  */
-class EndpointHello : public apirouter::IApiModule {
+class EndpointHello : public apirouter::AutoRegisterEndpoint<EndpointHello> {
 public:
-    void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
+	// Override to register available methods - much cleaner than manual registerEndpoints()
+	void registerAvailableMethods(apirouter::IEndpointRegistrar& registrar, const std::string& basePath) override;
 
 protected:
-    // HTTP handler methods (testable protected methods - accessible to unit tests)
-    void handleGetHello(std::string_view path, std::string_view method, 
-                                 const std::string& requestBody, std::string& responseBody, int& statusCode);
-    
-    // TODO: Add more HTTP handler methods as needed
-    // void handlePostHello(std::string_view path, std::string_view method, 
-    //                                const std::string& requestBody, std::string& responseBody, int& statusCode);
-    // void handlePutHello(std::string_view path, std::string_view method, 
-    //                               const std::string& requestBody, std::string& responseBody, int& statusCode);
-    // void handleDeleteHello(std::string_view path, std::string_view method, 
-    //                                  const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// HTTP handler methods - cleaner naming convention (testable protected methods)
+	void handleGet(std::string_view path, std::string_view method, 
+	               const std::string& requestBody, std::string& responseBody, int& statusCode);
+	
+	// TODO: Add more HTTP handler methods as needed
+	// void handlePost(std::string_view path, std::string_view method, 
+	//                 const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handlePut(std::string_view path, std::string_view method, 
+	//                const std::string& requestBody, std::string& responseBody, int& statusCode);
+	// void handleDelete(std::string_view path, std::string_view method, 
+	//                   const std::string& requestBody, std::string& responseBody, int& statusCode);
 };
 
 }
