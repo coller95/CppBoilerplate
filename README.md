@@ -862,7 +862,7 @@ The project includes extensive VS Code task integration with multithreaded build
 ### Key Features
 
 - **Multithreaded Builds**: All tasks use `make -j$(nproc)` for maximum performance
-- **Dual-Mode Output**: Human-friendly vs AI-agent optimized presentation
+- **Dual-Mode Output**: Human-friendly and AI-agent-optimized presentation
 - **Problem Matchers**: Integrated GCC error detection and navigation
 - **Interactive Inputs**: Prompted module creation with validation
 - **Pre-Launch Tasks**: Automatic builds before debugging
@@ -978,7 +978,11 @@ This will build and run all unit tests in all subfolders. Each test module's exe
 
 ## 📄 License
 
-This project is open source. See individual source files for specific licensing information.
+This project is licensed under the MIT License — see the root `LICENSE` file for full terms.
+
+Third-party components included in `external/` retain their original licenses; see each component's `LICENSE` file (for example `external/googletest/LICENSE`).
+
+For vulnerability disclosure and reporting procedures, see `SECURITY.md`.
 
 ---
 
