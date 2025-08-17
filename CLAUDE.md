@@ -31,10 +31,9 @@ make clean                       # Clean build artifacts
 ./scripts/create_module.sh create ModuleName --interface  # + Interface
 ./scripts/create_module.sh create ModuleName --interface --pimpl # + PIMPL
 
-# Services (always with interface)  
-./scripts/create_service.sh create ServiceName            # Create simple service (no interface)"
-./scripts/create_service.sh create ServiceName --simple   # Create simple service (explicit)"
-./scripts/create_service.sh create ServiceName --interface  # Create service with interface and mock"
+# Services (metaprogramming IoC auto-registration)  
+./scripts/create_service.sh create ServiceName             # Simple service (concrete only)
+./scripts/create_service.sh create ServiceName --interface # Interface + Implementation + Mock
 
 # Endpoints (metaprogramming auto-registration)
 ./scripts/create_endpoint.sh create EndpointName          # CRTP auto-registration + clean handlers
@@ -131,13 +130,23 @@ EXPECT_NO_THROW(webServer.start());
 - Auto-registration pattern for all modules
 - Self-contained components handle own threading
 
-**Metaprogramming Endpoints** (NEW):
+**Metaprogramming Auto-Registration** (NEW):
+
+**Endpoints (CRTP)**:
 - Use `AutoRegisterEndpoint<T>` CRTP base class
 - Automatic path inference: `EndpointUser` → `/user`
 - Clean method naming: `handleGet()` vs `handleGetUser()`
 - Type-safe registration: `registerMethod<&Class::method>()`
 - One-line registration: `AutoRegister<Class> _autoRegister;`
 - 85% less boilerplate than manual registration
+
+**Services (IoC)**:
+- Use `AutoRegister<Service, Interface...>` template
+- Automatic IoC container registration for dependency injection
+- Single shared instance for interface and concrete class
+- Progressive enhancement: Simple or interface-based services
+- One-line registration: `AutoRegister<ServiceUser, IServiceUser> _autoRegister;`
+- 90%+ less boilerplate than manual registration structs
 
 **Layer Testing**:
 - Infrastructure (WebServer, Logger): ISOLATE
@@ -149,11 +158,13 @@ EXPECT_NO_THROW(webServer.start());
 - One class per file enables surgical context targeting
 - Structured JSON analysis preferred over raw C++ reading
 
-## Metaprogramming Endpoints
+## Metaprogramming Auto-Registration
 
-**NEW PATTERN**: Auto-registration using CRTP (Curiously Recurring Template Pattern)
+**NEW PATTERNS**: CRTP endpoints + IoC services auto-registration
 
 ### Before (Manual Registration)
+
+#### **Endpoints: Manual Lambda Wrapping**
 ```cpp
 // Header: Verbose interface
 class EndpointUser : public apirouter::IApiModule {
@@ -186,7 +197,27 @@ namespace {
 }
 ```
 
+#### **Services: Manual IoC Registration Structs**
+```cpp
+// Implementation: Manual IoC registration (13+ lines)
+namespace {
+    struct ServiceUserRegistration {
+        ServiceUserRegistration() {
+            // Create a single shared instance
+            auto instance = std::make_shared<ServiceUser>();
+            
+            // Register the same instance for both interface and concrete class
+            ioccontainer::IIocContainer::registerGlobal<IServiceUser>(instance);
+            ioccontainer::IIocContainer::registerGlobal<ServiceUser>(instance);
+        }
+    };
+    static ServiceUserRegistration _registration;
+}
+```
+
 ### After (Metaprogramming Auto-Registration)
+
+#### **Endpoints: CRTP Pattern**
 ```cpp
 // Header: Clean CRTP inheritance
 class EndpointUser : public apirouter::AutoRegisterEndpoint<EndpointUser> {
@@ -209,23 +240,66 @@ namespace {
 }
 ```
 
+#### **Services: Template Auto-Registration**
+```cpp
+// Header: Interface + Implementation pattern (unchanged)
+class IServiceUser {
+public:
+    virtual ~IServiceUser() = default;
+    virtual std::string processUserData() const = 0;
+};
+
+class ServiceUser : public IServiceUser {
+public:
+    ServiceUser();
+    std::string processUserData() const override;
+};
+
+// Implementation: One-line registration!
+namespace {
+    static ioccontainer::AutoRegister<ServiceUser, IServiceUser> _autoRegister;
+}
+
+// Simple service (no interface):
+// static ioccontainer::AutoRegister<ServiceUser> _autoRegister;
+```
+
 ### Benefits
+
+#### **Endpoint Benefits:**
 - **85% less boilerplate** - No manual lambda wrapping
 - **Type safety** - Compile-time method signature verification  
 - **Clean naming** - `handleGet()` vs `handleGetUser()`
 - **Easy expansion** - Add new methods with one line
 - **CRTP pattern** - Zero runtime overhead
-- **KISS/YAGNI compliant** - Simple and minimal
+
+#### **Service Benefits:**
+- **90%+ less boilerplate** - No manual registration structs
+- **Automatic dependency injection** - No manual IoC registration
+- **Interface/Implementation pattern** - Clean separation for testing
+- **Single instance sharing** - Both interface and concrete use same instance
+- **Progressive enhancement** - Simple services or interface-based
+- **Type-safe registration** - Compile-time verification
+
+#### **Common Benefits:**
+- **KISS/YAGNI compliant** - Simple metaprogramming, not complex SFINAE
+- **Zero runtime overhead** - Static initialization only
+- **Consistent patterns** - Same approach for endpoints and services
+- **Easy to understand** - Clear, readable code
 
 ### Usage
 ```bash
 # Generate metaprogramming endpoint
 ./scripts/create_endpoint.sh create EndpointUser
 
+# Generate metaprogramming services
+./scripts/create_service.sh create ServiceUser --interface  # Interface + Implementation + Mock
+./scripts/create_service.sh create ServiceData             # Simple service (concrete only)
+
 # Implementation steps:
-# 1. Implement handleGet() method
-# 2. Add registerMethod<&Class::handlePost>() calls as needed  
-# 3. Test with: make test-run-EndpointUserTest
+# Endpoints: Implement handleGet() + add registerMethod calls
+# Services: Implement interface methods + business logic
+# Test with: make test-run-ModuleNameTest
 ```
 
 ## Memory Management

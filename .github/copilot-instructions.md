@@ -118,11 +118,32 @@ protected:
 };
 ```
 
-**Metaprogramming Benefits:**
-- **85% less boilerplate** vs manual registration
-- **Type safety** - Compile-time method signature verification
+**IoC Service Auto-Registration**:
+```cpp
+// OLD: Manual Registration (13+ lines)
+namespace {
+    struct ServiceUserRegistration {
+        ServiceUserRegistration() {
+            auto instance = std::make_shared<ServiceUser>();
+            ioccontainer::IIocContainer::registerGlobal<IServiceUser>(instance);
+            ioccontainer::IIocContainer::registerGlobal<ServiceUser>(instance);
+        }
+    };
+    static ServiceUserRegistration _registration;
+}
+
+// NEW: Metaprogramming (1 line)
+namespace {
+    static ioccontainer::AutoRegister<ServiceUser, IServiceUser> _autoRegister;
+}
+```
+
+**Combined Metaprogramming Benefits:**
+- **Endpoints**: 85% less boilerplate vs manual registration
+- **Services**: 90%+ less boilerplate vs manual registration structs
+- **Type safety** - Compile-time verification for both patterns
 - **KISS/YAGNI compliant** - Simple metaprogramming, not complex SFINAE
-- **Easy expansion** - Add HTTP methods with single line
+- **Consistent approach** - Same pattern philosophy for endpoints and services
 
 #### **Architecture Layer: Business Logic**
 
@@ -329,17 +350,20 @@ When reviewing generated code architecture, ask:
 - `--interface`: Multiple implementations, dependency injection, unit testing with mocks
 - `--pimpl`: Hide complex dependencies (Mongoose, OpenSSL), reduce compilation time
 
-#### **🔧 create_service.sh - Interface by Default**
+#### **🔧 create_service.sh - Metaprogramming IoC Auto-Registration**
 ```bash
-# Always generates interface (needed for DI and testing)
-./scripts/create_service.sh create ServiceUser
-# → Creates: IServiceUser + ServiceUser + MockServiceUser + auto-registration
+# Generate service with metaprogramming auto-registration
+./scripts/create_service.sh create ServiceUser --interface # Interface + Implementation + Mock
+./scripts/create_service.sh create ServiceUser             # Simple service (concrete only)
 ```
 
-**Key improvements:**
-- Simplified auto-registration (no redundant methods)
-- Domain-specific method naming (`processUserData()` not `doSomethingServiceUser()`)
-- Always includes interface for dependency injection and testing
+**METAPROGRAMMING Service benefits:**
+- **90%+ less boilerplate** - No manual registration structs
+- **Type-safe IoC registration** - Compile-time verification
+- **Template pattern** - `AutoRegister<Service, Interface...>`
+- **Single shared instance** - Both interface and concrete use same instance
+- **Progressive enhancement** - Simple services or interface-based
+- **Domain-specific naming** - `processUserData()` not `doSomethingServiceUser()`
 
 #### **🔧 create_endpoint.sh - Metaprogramming Auto-Registration**
 ```bash
@@ -363,9 +387,10 @@ When reviewing generated code architecture, ask:
 - No premature abstraction or unused patterns
 - Add complexity only when requirements justify it
 
-**2. Service-Oriented Design:**
-- Services always get interfaces (required for DI/testing)
-- Simplified auto-registration (no redundant methods)
+**2. Metaprogramming Service Auto-Registration:**
+- Template-based IoC registration with 90%+ boilerplate reduction
+- Progressive enhancement: Simple services or interface-based
+- Single shared instance for both interface and concrete class
 - Domain-specific method naming
 
 **3. Metaprogramming Endpoint Architecture:**
@@ -1415,11 +1440,11 @@ This helps keep the project's standards up to date and ensures all contributors 
 - **Strict adherence to TDD is mandatory** for all development tasks
 - **Use differentiated generation approach**:
   - `./scripts/create_module.sh create ModuleName` - Simple by default, add `--interface` or `--pimpl` when needed
-  - `./scripts/create_service.sh create ServiceName` - Always includes interface for DI/testing  
+  - `./scripts/create_service.sh create ServiceName` - Metaprogramming IoC auto-registration  
   - `./scripts/create_endpoint.sh create EndpointName` - Metaprogramming CRTP auto-registration
   - `./scripts/generate_class_chart.sh` for UML class diagrams and documentation
 - **Progressive enhancement principle**: Start simple, add complexity only when requirements justify it
-- **Service architecture**: Always use interfaces for dependency injection and mocking
+- **Service architecture**: Use metaprogramming IoC auto-registration with progressive enhancement
 - **Endpoint architecture**: Use metaprogramming CRTP auto-registration with clean handler methods
 - Use the flexible Makefile system: modify only the DEPENDENCIES line in test Makefiles
 - For external dependencies, use `EXTERNAL_SOURCES`, `EXTERNAL_INCLUDES`, and `EXTERNAL_LIBS` for maximum flexibility
