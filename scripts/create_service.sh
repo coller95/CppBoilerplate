@@ -12,20 +12,37 @@ cd "$PROJECT_ROOT"
 
 # Check if action and service name are provided
 if [ $# -lt 2 ]; then
-	echo "Usage: $0 <create|remove> <ServiceName>"
+	echo "Usage: $0 <create|remove> <ServiceName> [--interface|--simple]"
 	echo "Examples:"
-	echo "  $0 create ServiceUser    # Create a new service"
-	echo "  $0 remove ServiceUser    # Remove an existing service"
+	echo "  $0 create ServiceUser                # Create simple service (no interface)"
+	echo "  $0 create ServiceUser --simple      # Create simple service (explicit)"
+	echo "  $0 create ServiceDetection --interface  # Create service with interface and mock"
+	echo "  $0 remove ServiceUser                # Remove an existing service"
 	exit 1
 fi
 
 ACTION="$1"
 SERVICE_NAME="$2"
+SERVICE_TYPE="$3"
 
 # Validate action
 if [[ "$ACTION" != "create" && "$ACTION" != "remove" ]]; then
 	echo "Error: Action must be 'create' or 'remove'"
 	exit 1
+fi
+
+# Validate and set default service type for create action
+if [[ "$ACTION" == "create" ]]; then
+	if [[ -z "$SERVICE_TYPE" ]]; then
+		SERVICE_TYPE="--simple"  # Default to simple if not specified
+	elif [[ "$SERVICE_TYPE" != "--interface" && "$SERVICE_TYPE" != "--simple" ]]; then
+		echo "Error: Service type must be '--interface' or '--simple' (or omitted for simple)"
+		echo "Examples:"
+		echo "  $0 create ServiceUser                # Simple service (default)"
+		echo "  $0 create ServiceUser --simple      # Simple service (explicit)"
+		echo "  $0 create ServiceDetection --interface  # Service with interface and mock"
+		exit 1
+	fi
 fi
 
 # Validate service name format (should start with "Service")
@@ -43,6 +60,7 @@ NAMESPACE_NAME="service${SERVICE_PART,,}"  # Convert to lowercase
 create_service() {
 	echo "Creating service module: $SERVICE_NAME"
 	echo "Namespace: $NAMESPACE_NAME"
+	echo "Type: $([ "$SERVICE_TYPE" = "--interface" ] && echo "Interface + Implementation + Mock" || echo "Simple Service (no interface)")"
 
 	# Check if service already exists
 	if [ -d "include/$SERVICE_NAME" ] || [ -d "src/$SERVICE_NAME" ] || [ -d "tests/${SERVICE_NAME}Test" ]; then
@@ -56,7 +74,48 @@ create_service() {
 	mkdir -p "src/$SERVICE_NAME"
 	mkdir -p "tests/${SERVICE_NAME}Test/cases"
 
-# Create service header
+	# Generate service header based on type
+	if [ "$SERVICE_TYPE" = "--interface" ]; then
+		create_interface_service_header
+	else
+		create_simple_service_header
+	fi
+# Generate service header and implementation based on type
+	if [ "$SERVICE_TYPE" = "--interface" ]; then
+		create_interface_service_implementation
+	else
+		create_simple_service_implementation
+	fi
+
+	# Create test main (common for both types)
+	create_test_main
+
+	# Create Makefile (common for both types)
+	create_makefile
+
+	echo ""
+	echo "✅ Service module '$SERVICE_NAME' created successfully!"
+	echo ""
+	echo "📁 Created files:"
+	if [ "$SERVICE_TYPE" = "--interface" ]; then
+		echo "  📄 include/$SERVICE_NAME/$SERVICE_NAME.h (interface + implementation)"
+		echo "  📄 src/$SERVICE_NAME/$SERVICE_NAME.cpp (implementation + auto-registration)"
+		echo "  📄 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp"
+		echo "  📄 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp"
+		echo "  📄 tests/${SERVICE_NAME}Test/Mock$SERVICE_NAME.h (mock for testing)"
+		echo "  📄 tests/${SERVICE_NAME}Test/TestMain.cpp"
+		echo "  📄 tests/${SERVICE_NAME}Test/Makefile"
+	else
+		echo "  📄 include/$SERVICE_NAME/$SERVICE_NAME.h (simple service)"
+		echo "  📄 src/$SERVICE_NAME/$SERVICE_NAME.cpp (implementation + auto-registration)"
+		echo "  📄 tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp"
+		echo "  📄 tests/${SERVICE_NAME}Test/TestMain.cpp"
+		echo "  📄 tests/${SERVICE_NAME}Test/Makefile"
+	fi
+}
+
+# Function to create simple service header (no interface)
+create_simple_service_header() {
 cat > "include/$SERVICE_NAME/$SERVICE_NAME.h" << EOF
 #pragma once
 #include <string>
@@ -73,7 +132,7 @@ class $SERVICE_NAME {
 public:
 	$SERVICE_NAME();
 	
-	// Service interface implementation
+	// Service methods
 	std::string process${SERVICE_PART}Data() const;
 	
 	// TODO: Add additional service methods here
@@ -82,8 +141,51 @@ public:
 
 }
 EOF
+}
 
-# Create service implementation
+# Function to create interface service header (with interface)
+create_interface_service_header() {
+cat > "include/$SERVICE_NAME/$SERVICE_NAME.h" << EOF
+#pragma once
+#include <string>
+#include <memory>
+#include <IocContainer/IocContainer.h>
+
+namespace $NAMESPACE_NAME {
+
+/**
+ * Interface for $SERVICE_NAME
+ * Define the service contract for dependency injection and testing
+ */
+class I$SERVICE_NAME {
+public:
+	virtual ~I$SERVICE_NAME() = default;
+	
+	// TODO: Define your service interface methods here
+	virtual std::string process${SERVICE_PART}Data() const = 0;
+};
+
+/**
+ * $SERVICE_NAME - Business logic service
+ * Automatically registers with IoC container for dependency injection
+ */
+class $SERVICE_NAME : public I$SERVICE_NAME {
+public:
+	$SERVICE_NAME();
+	
+	// Service interface implementation
+	std::string process${SERVICE_PART}Data() const override;
+	
+	// TODO: Add additional service methods here
+	// Example: void update${SERVICE_PART}(const ${SERVICE_PART}& data);
+};
+
+}
+EOF
+}
+
+# Function to create interface service implementation  
+create_interface_service_implementation() {
 cat > "src/$SERVICE_NAME/$SERVICE_NAME.cpp" << EOF
 #include <$SERVICE_NAME/$SERVICE_NAME.h>
 
@@ -100,8 +202,12 @@ std::string $SERVICE_NAME::process${SERVICE_PART}Data() const {
 namespace {
 	struct ${SERVICE_NAME}Registration {
 		${SERVICE_NAME}Registration() {
-			// Register the instance for concrete class
-			ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(std::make_shared<$SERVICE_NAME>());
+			// Create a single shared instance
+			auto instance = std::make_shared<$SERVICE_NAME>();
+			
+			// Register the same instance for both interface and concrete class
+			ioccontainer::IIocContainer::registerGlobal<I$SERVICE_NAME>(instance);
+			ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(instance);
 		}
 	};
 	static ${SERVICE_NAME}Registration _registration;
@@ -110,17 +216,7 @@ namespace {
 } // namespace $NAMESPACE_NAME
 EOF
 
-# Create test main
-cat > "tests/${SERVICE_NAME}Test/TestMain.cpp" << EOF
-#include <gtest/gtest.h>
-
-int main(int argc, char **argv) {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}
-EOF
-
-# Create mock header for testing
+	# Create mock header for interface services
 cat > "tests/${SERVICE_NAME}Test/Mock$SERVICE_NAME.h" << EOF
 #pragma once
 
@@ -144,7 +240,7 @@ public:
 } // namespace $NAMESPACE_NAME
 EOF
 
-# Create basic test case
+	# Create interface test cases
 cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <$SERVICE_NAME/$SERVICE_NAME.h>
@@ -164,7 +260,6 @@ TEST(${SERVICE_NAME}Test, ImplementsInterface) {
 }
 EOF
 
-# Create registration test
 cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}RegistrationTest.cpp" << EOF
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -230,6 +325,77 @@ TEST(${SERVICE_NAME}RegistrationTest, DependencyInjectionWorkflow) {
 	EXPECT_EQ(resolved.get(), mockService.get());
 }
 EOF
+}
+
+# Function to create simple service implementation
+create_simple_service_implementation() {
+cat > "src/$SERVICE_NAME/$SERVICE_NAME.cpp" << EOF
+#include <$SERVICE_NAME/$SERVICE_NAME.h>
+
+namespace $NAMESPACE_NAME {
+
+$SERVICE_NAME::$SERVICE_NAME() = default;
+
+std::string $SERVICE_NAME::process${SERVICE_PART}Data() const {
+	// TODO: Implement your business logic here
+	return "$SERVICE_PART data processed successfully";
+}
+
+// Auto-registration: Register concrete class with IoC container
+namespace {
+	struct ${SERVICE_NAME}Registration {
+		${SERVICE_NAME}Registration() {
+			// Register the instance for concrete class
+			ioccontainer::IIocContainer::registerGlobal<$SERVICE_NAME>(std::make_shared<$SERVICE_NAME>());
+		}
+	};
+	static ${SERVICE_NAME}Registration _registration;
+}
+
+} // namespace $NAMESPACE_NAME
+EOF
+
+	# Create simple basic test case
+cat > "tests/${SERVICE_NAME}Test/cases/${SERVICE_NAME}BasicTest.cpp" << EOF
+#include <gtest/gtest.h>
+#include <$SERVICE_NAME/$SERVICE_NAME.h>
+
+TEST(${SERVICE_NAME}Test, Process${SERVICE_PART}DataReturnsExpected) {
+	$NAMESPACE_NAME::$SERVICE_NAME service;
+	std::string result = service.process${SERVICE_PART}Data();
+	EXPECT_FALSE(result.empty());
+	EXPECT_NE(result.find("$SERVICE_PART"), std::string::npos);
+}
+
+TEST(${SERVICE_NAME}Test, ServiceRegistration) {
+	// Verify the service is automatically registered in the global container
+	EXPECT_TRUE(ioccontainer::IIocContainer::isRegisteredGlobal<$NAMESPACE_NAME::$SERVICE_NAME>());
+	
+	// Verify we can resolve the service globally
+	EXPECT_NO_THROW({
+		auto ptr = ioccontainer::IIocContainer::resolveGlobal<$NAMESPACE_NAME::$SERVICE_NAME>();
+		EXPECT_NE(ptr, nullptr);
+		std::string result = ptr->process${SERVICE_PART}Data();
+		EXPECT_FALSE(result.empty());
+	});
+}
+EOF
+}
+
+# Function to create test main (common for both types)
+create_test_main() {
+cat > "tests/${SERVICE_NAME}Test/TestMain.cpp" << EOF
+#include <gtest/gtest.h>
+
+int main(int argc, char **argv) {
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+}
+EOF
+}
+
+# Function to create Makefile (common for both types)
+create_makefile() {
 
 # Create Makefile for tests using the flexible template
 cat << 'EOF' > "tests/${SERVICE_NAME}Test/Makefile"
