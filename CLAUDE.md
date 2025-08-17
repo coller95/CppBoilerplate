@@ -19,7 +19,7 @@ make clean                       # Clean build artifacts
 ```
 
 ### Modes
-- **Default**: LLM-optimized (90% token reduction)
+- **Default**: LLM-optimized (minimal output mode)
 - **human**: Human-friendly output
 - **debug**: Full verbose output
 - Use `VERBOSE=minimal|human|debug` for individual commands
@@ -44,12 +44,12 @@ make clean                       # Clean build artifacts
 ./scripts/create_endpoint.sh remove EndpointName
 ```
 
-### LLM Tools  
+### Project Tools  
 ```bash
-# Analysis (90%+ token reduction)
-./scripts/lexer.sh analyze src/                   # Structured JSON summary
-./scripts/llm_analysis.sh analyze file.json type # Standardized analysis
-./scripts/refactor.sh extract-class file Class   # Safe refactoring
+# Analysis and metrics
+./scripts/stats.sh                                # Project statistics and metrics
+./scripts/test_formatting.sh                      # Code style validation
+./scripts/generate_class_chart.sh                 # UML class diagrams
 ```
 
 ## ⚠️ TDD MANDATORY
@@ -154,9 +154,9 @@ EXPECT_NO_THROW(webServer.start());
 - Integration: Separate test modules
 
 **LLM Optimization**:
-- Minimal mode default (90-95% token reduction)
+- Minimal mode default (concise output for efficiency)
 - One class per file enables surgical context targeting
-- Structured JSON analysis preferred over raw C++ reading
+- Direct file access with granular context control
 
 ## Metaprogramming Auto-Registration
 
@@ -318,6 +318,6 @@ namespace {
 ## Essential Rules
 
 ⚠️ **TDD MANDATORY**: Write failing test FIRST, then implement
-⚠️ **LLM OPTIMIZATION**: Always use minimal mode (90-95% token reduction)  
+⚠️ **LLM OPTIMIZATION**: Always use minimal mode for concise output  
 ⚠️ **ONE CLASS PER FILE**: Mandatory for context efficiency
 ⚠️ **TEST ISOLATION**: Zero external module dependencies

@@ -51,7 +51,7 @@ make -j$(nproc)
 
 - 🚀 **Auto-Registration Patterns**: CRTP endpoints + IoC services (90%+ boilerplate reduction)
 - ⚠️ **TDD Mandatory**: Failing tests first, one class per file, test isolation enforced
-- 🤖 **LLM Optimization**: 90-95% token reduction tools (lexer.sh, llm_analysis.sh)
+- 🤖 **LLM Optimization**: Direct file access with surgical context targeting
 - 🎯 **Dual-Mode Output**: Human-friendly vs AI agent-optimized (minimal/human/debug)
 - 🔄 **Modular Monolithic**: Auto-registering modules, high cohesion, zero coupling
 - 🧪 **Test Isolation**: Zero external dependencies, mock business logic only
@@ -106,9 +106,8 @@ CppBoilerplate/
 │   ├── create_endpoint.sh # Generate CRTP auto-registering endpoints
 │   ├── create_service.sh  # Generate auto-registering IoC services
 │   ├── create_module.sh   # Generate modules (simple/interface/PIMPL)
-│   ├── lexer.sh          # LLM-optimized code analysis (90% token reduction)
-│   ├── llm_analysis.sh   # Standardized LLM analysis tools
-│   ├── refactor.sh       # Safe refactoring tools
+│   ├── stats.sh          # Project statistics and metrics
+│   ├── test_formatting.sh # Code style validation
 │   └── debug.sh          # Quick dev cycle: test + build + run
 ├── external/             # External libraries with source
 │   ├── googletest/       # Google Test framework
@@ -170,11 +169,11 @@ make test-run-ModuleName    # Test specific module (TDD cycle)
 make run_debug              # Build and run debug version
 ```
 
-**LLM tools:**
+**Project tools:**
 ```bash
-./scripts/lexer.sh analyze src/                    # 90% token reduction analysis
-./scripts/llm_analysis.sh analyze file.json type  # Standardized analysis
-./scripts/refactor.sh extract-class file Class    # Safe refactoring
+./scripts/stats.sh                                 # Project statistics and metrics
+./scripts/test_formatting.sh                       # Code style validation
+./scripts/generate_class_chart.sh                  # UML class diagrams
 ```
 
 **Module generation:**
@@ -189,7 +188,7 @@ make run_debug              # Build and run debug version
 Three output modes optimized for different consumers:
 
 #### Minimal Mode (default for LLM agents)
-- 🤖 **90-95% token reduction** for LLM context efficiency
+- 🤖 **Surgical context targeting** for efficient LLM interaction
 - 📋 Ultra-concise: `TEST=OK BUILD=OK RUN=OK TIME=42s`
 - ⚡ Essential status only, perfect for AI processing
 - 🔇 Silent compilation, errors/warnings visible

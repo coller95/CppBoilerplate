@@ -164,7 +164,7 @@ class Application
 			if (typeName.find("Logger") != std::string::npos || typeName.find("ILogger") != std::string::npos) {
 				serviceName = "Logger";
 				category = "logging";
-			} else if (typeName.find("WebServer") != std::string::npos || typeName.find("IWebServer") != std::string::npos) {
+			} else if (typeName.find("WebServer") != std::string::npos) {
 				serviceName = "WebServer";
 				category = "infrastructure";
 			} else if (typeName.find("ApiRouter") != std::string::npos || typeName.find("IApiRouter") != std::string::npos) {
@@ -304,7 +304,7 @@ void Application::setupWebServerRoutes() {
 					serviceName = "Logger";
 					category = "logging";
 					description = "Application logging service with remote and local display capabilities";
-				} else if (typeName.find("WebServer") != std::string::npos || typeName.find("IWebServer") != std::string::npos) {
+				} else if (typeName.find("WebServer") != std::string::npos) {
 					serviceName = "WebServer";
 					category = "infrastructure";
 					description = "HTTP web server with Mongoose backend";

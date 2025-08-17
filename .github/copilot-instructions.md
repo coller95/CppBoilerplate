@@ -112,9 +112,10 @@ make test-run-ModuleTest
 ./scripts/create_module.sh create Logger --interface  
 # → Creates: ILogger.h, Logger.h, Logger.cpp, MockLogger.h
 
-# Add PIMPL when hiding complex dependencies
-./scripts/create_module.sh create WebServer --interface --pimpl
-# → Creates: IWebServer.h, WebServer.h (with PIMPL), WebServer.cpp (with Impl class)
+# Add PIMPL when hiding complex dependencies  
+./scripts/create_module.sh create WebServer --pimpl
+# → Creates: WebServer.h (with PIMPL), WebServer.cpp (with Impl class)
+# Note: WebServer is implemented as concrete class (YAGNI - single HTTP backend)
 ```
 
 **When to use flags:**
