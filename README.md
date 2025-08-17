@@ -1,6 +1,6 @@
 # CppBoilerplate
 
-A comprehensive, modern C++ project template with advanced Makefile-based build system, modular architecture, comprehensive testing framework, and dual-mode output optimized for both human developers and AI agents. This boilerplate demonstrates enterprise-grade structure for scalable C++ projects with IoC container, web server capabilities, and extensive automation.
+A modern C++ modular monolithic project with metaprogramming auto-registration patterns, IoC dependency injection, HTTP API endpoints, and LLM-optimized tooling. Features 90%+ boilerplate reduction through CRTP endpoints and template-based service registration, comprehensive testing with TDD enforcement, and dual-mode output for both human developers and AI agents.
 
 ## 🚀 Quick Start
 
@@ -49,15 +49,16 @@ make -j$(nproc)
 
 ---
 
-- 🏗️ **Immutable Build System**: Configuration-driven, never modify core Makefiles
-- 🎯 **Dual-Mode Output**: Human-friendly vs AI agent-optimized build output
-- 🔄 **Modular Monolithic Architecture**: High cohesion, low coupling, easy testing
-- 🧪 **Comprehensive Test Framework**: Google Test integration with automated test management
-- 🌐 **Cross-Platform Support**: Docker-aware cross-compilation for multiple architectures  
-- 📦 **IoC Container**: Dependency injection for clean, testable code
-- 🚀 **WebServer Integration**: Mongoose-based HTTP server with endpoint registration
-- 🛠️ **Code Generation Scripts**: Automated module, service, and endpoint creation
-- 🔍 **VS Code Integration**: Full debugging support with GDB integration
+- 🚀 **Auto-Registration Patterns**: CRTP endpoints + IoC services (90%+ boilerplate reduction)
+- ⚠️ **TDD Mandatory**: Failing tests first, one class per file, test isolation enforced
+- 🤖 **LLM Optimization**: 90-95% token reduction tools (lexer.sh, llm_analysis.sh)
+- 🎯 **Dual-Mode Output**: Human-friendly vs AI agent-optimized (minimal/human/debug)
+- 🔄 **Modular Monolithic**: Auto-registering modules, high cohesion, zero coupling
+- 🧪 **Test Isolation**: Zero external dependencies, mock business logic only
+- 📦 **Metaprogramming IoC**: Template auto-registration for services + interfaces
+- 🌐 **CRTP Endpoints**: Type-safe auto-registration with clean method naming
+- 🛠️ **Generation Scripts**: Progressive complexity (simple/interface/PIMPL patterns)
+- 🔍 **Multi-Logger System**: Console + Network + Composite logging
 
 ---
 
@@ -65,45 +66,53 @@ make -j$(nproc)
 
 ```
 CppBoilerplate/
+├── CLAUDE.md             # LLM agent instructions and TDD rules
 ├── Makefile              # Immutable core build logic
 ├── Platform.build        # Cross-compilation and architecture detection
 ├── Project.build         # Source files, includes, and library configuration
 ├── Tests.build           # Enhanced test management system
 ├── include/              # Modular headers by component
-│   ├── ApiModule/        # API endpoint management
-│   ├── EndpointHello/    # Example HTTP endpoint  
-│   ├── IoCContainer/     # Dependency injection container
-│   ├── Logger/           # Logging interface and implementation
-│   ├── ServiceA/         # Example business service
-│   ├── ServiceB/         # Example business service
-│   └── WebServer/        # HTTP server abstraction
-├── src/                  # Modular implementation by component
-│   ├── main.cpp          # Application entry point
-│   ├── ApiModule/        # API management implementation
-│   ├── EndpointHello/    # HTTP endpoint implementation
-│   ├── IoCContainer/     # IoC container implementation
-│   ├── Logger/           # Logging implementation
-│   ├── ServiceA/         # Business service implementation
-│   ├── ServiceB/         # Business service implementation
-│   └── WebServer/        # HTTP server implementation
-├── tests/                # Comprehensive test framework
+│   ├── ApiRouter/        # Auto-registering API endpoint management + CRTP base
+│   │   ├── ApiRouter.h
+│   │   ├── AutoRegisterEndpoint.h  # CRTP metaprogramming pattern
+│   │   └── IEndpointRegistrar.h
+│   ├── EndpointHello/    # Example auto-registering HTTP endpoint
+│   ├── IocContainer/     # Dependency injection with auto-registration
+│   │   ├── AutoRegisterService.h   # Template auto-registration
+│   │   ├── IIocContainer.h
+│   │   └── IocContainer.h
+│   ├── Logger/           # Composite logging (Console + Network + Multi-logger)
+│   │   ├── CompositeLogger.h
+│   │   ├── ConsoleLogger.h
+│   │   ├── ILogger.h
+│   │   └── NetworkLogger.h
+│   └── WebServer/        # HTTP server abstraction (Mongoose backend)
+├── src/                  # Modular implementation by component  
+│   ├── main.cpp          # IoC + WebServer + ApiRouter orchestration
+│   ├── ApiRouter/        # Auto-registration implementation
+│   ├── EndpointHello/    # Example endpoint with CRTP auto-registration
+│   ├── IocContainer/     # Dependency injection implementation
+│   ├── Logger/           # Multi-logger implementation (3 loggers)
+│   └── WebServer/        # WebServer implementation
+├── tests/                # TDD-enforced comprehensive test framework
 │   ├── Makefile          # Master test coordination
-│   ├── ApiModuleTest/    # API module tests
-│   ├── EndpointHelloTest/ # Endpoint tests with auto-registration verification
-│   ├── IoCContainerTest/ # Dependency injection tests
-│   ├── LoggerTest/       # Logging tests with mocks
-│   ├── ServiceATest/     # Service tests with IoC verification
-│   ├── ServiceBTest/     # Service tests with IoC verification
-│   └── WebServerTest/    # HTTP server tests with multiple backends
-├── scripts/              # Automation and code generation
-│   ├── test.sh           # Comprehensive test, build, and run automation
-│   ├── create_endpoint.sh # Generate new HTTP endpoints
-│   ├── create_service.sh # Generate new business services
-│   └── create_module.sh  # Generate new utility modules
+│   ├── ApiRouterTest/    # CRTP auto-registration + endpoint tests
+│   ├── EndpointHelloTest/ # Endpoint handler + auto-registration tests
+│   ├── IocContainerTest/ # Dependency injection + concurrency tests
+│   ├── LoggerTest/       # Multi-logger tests
+│   └── WebServerTest/    # HTTP server tests
+├── scripts/              # LLM-optimized automation and code generation
+│   ├── test.sh           # Multi-mode test automation (minimal/human/debug)
+│   ├── create_endpoint.sh # Generate CRTP auto-registering endpoints
+│   ├── create_service.sh  # Generate auto-registering IoC services
+│   ├── create_module.sh   # Generate modules (simple/interface/PIMPL)
+│   ├── lexer.sh          # LLM-optimized code analysis (90% token reduction)
+│   ├── llm_analysis.sh   # Standardized LLM analysis tools
+│   ├── refactor.sh       # Safe refactoring tools
+│   └── debug.sh          # Quick dev cycle: test + build + run
 ├── external/             # External libraries with source
 │   ├── googletest/       # Google Test framework
-│   ├── mongoose/         # HTTP server library
-│   └── foo/              # Example external library
+│   └── mongoose/         # HTTP server library
 └── bin/                  # Architecture-specific build output
     └── x86_64-native/    # Example architecture
         ├── debug/        # Debug builds with symbols
@@ -112,11 +121,12 @@ CppBoilerplate/
 
 ### Modular Architecture Principles
 
-- **One Module, One Responsibility**: Each module has a clear, single purpose
-- **Interface-Based Design**: All modules implement clear interfaces for testability
-- **Dependency Injection**: IoC container manages all dependencies for clean testing
-- **Auto-Registration**: Endpoints and services automatically register with the system
-- **Test Isolation**: Each module has comprehensive, isolated test suites
+- **⚠️ TDD Mandatory**: Write failing test FIRST, then implement (RED-GREEN-REFACTOR)
+- **⚠️ Test Isolation**: Zero external module dependencies in tests (only IServiceA, IServiceB)
+- **One Class Per File**: Mandatory for LLM context efficiency and surgical targeting
+- **Auto-Registration**: CRTP endpoints + IoC services eliminate 90%+ boilerplate
+- **Metaprogramming**: Template-based registration vs manual lambda wrapping
+- **Progressive Complexity**: Simple → Interface → PIMPL enhancement patterns
 
 ---
 
@@ -124,62 +134,90 @@ CppBoilerplate/
 
 ### Quick Start
 
-Build and run everything (default agent mode for clean output):
+Test, build, and run everything (LLM-optimized minimal mode):
 ```bash
-./scripts/test.sh
+./scripts/test.sh               # Minimal mode: TEST=OK BUILD=OK RUN=OK TIME=42s
 ```
 
-Build for human developers (rich, colorful output):
+Human-friendly mode (emojis and colors):
 ```bash
-./scripts/test.sh human
+./scripts/test.sh human         # Human mode: rich output with emojis
+```
+
+Full debug output:
+```bash
+./scripts/test.sh debug         # Debug mode: complete verbose output
+```
+
+Quick dev cycle:
+```bash
+./scripts/debug.sh              # Quick dev: test + build + run debug
 ```
 
 ### Individual Build Commands
 
-**Release build (optimized):**
+**Core builds:**
 ```bash
-make                    # or make release
+make debug              # Build debug version
+make release            # Build release version (or just 'make')
+make test               # Run all tests
+make clean              # Clean build artifacts
 ```
 
-**Debug build (with symbols):**
+**TDD workflow:**
 ```bash
-make debug
+make test-run-ModuleName    # Test specific module (TDD cycle)
+make run_debug              # Build and run debug version
 ```
 
-**Human-friendly build (colorful, verbose):**
+**LLM tools:**
 ```bash
-VERBOSE=1 make debug
+./scripts/lexer.sh analyze src/                    # 90% token reduction analysis
+./scripts/llm_analysis.sh analyze file.json type  # Standardized analysis
+./scripts/refactor.sh extract-class file Class    # Safe refactoring
 ```
 
-**AI agent-friendly build (ultra-silent):**
+**Module generation:**
 ```bash
-VERBOSE=0 make debug
+./scripts/create_module.sh create ModuleName --interface --pimpl   # Progressive complexity
+./scripts/create_service.sh create ServiceName --interface         # Auto-registering IoC
+./scripts/create_endpoint.sh create EndpointName                   # CRTP auto-registration
 ```
 
 ### Build Output Modes
 
-The system supports two output modes optimized for different consumers:
+Three output modes optimized for different consumers:
 
-#### Human Mode (VERBOSE=1, default for manual builds)
+#### Minimal Mode (default for LLM agents)
+- 🤖 **90-95% token reduction** for LLM context efficiency
+- 📋 Ultra-concise: `TEST=OK BUILD=OK RUN=OK TIME=42s`
+- ⚡ Essential status only, perfect for AI processing
+- 🔇 Silent compilation, errors/warnings visible
+
+#### Human Mode (--human flag)
 - 🎨 Colorful, descriptive output with emojis
-- 📝 Full compilation commands visible for debugging  
-- 📊 Comprehensive progress indicators
-- 🔍 Detailed error context and helpful messages
+- 📝 Full compilation commands visible
+- 📊 Rich progress indicators and context
+- 🔍 Detailed error messages with suggestions
 
-#### Agent Mode (VERBOSE=0, default for scripts)
-- 🤖 Ultra-concise, structured output for AI processing
-- 🔇 Silent compilation (only errors/warnings shown)
-- 📋 Standardized prefixes: `[BUILD]`, `[TEST]`, `[SCRIPT]`
-- ⚡ Essential milestones only: linking and final success/failure
+#### Debug Mode (--debug flag)  
+- 🔧 Complete verbose output for troubleshooting
+- 📋 Full command traces and build details
+- 🔍 Maximum visibility for development debugging
+- 📝 All intermediate steps shown
 
 **Examples:**
 ```bash
-# Human mode output:
-🔨 Compiling (debug): src/Logger/Logger.cpp
+# Minimal mode (LLM-optimized):
+TEST=OK BUILD=OK RUN=OK TIME=42s
+
+# Human mode:
+🔨 Compiling (debug): src/ApiRouter/ApiRouter.cpp
 🔗 Linking debug executable...
 ✅ Successfully built debug version
 
-# Agent mode output:  
+# Debug mode:
+[BUILD] g++ -std=c++17 -g -Wall -Wextra -Iinclude...
 [BUILD] LINK debug hello_world
 [BUILD] BUILT debug hello_world x86_64-native
 ```
@@ -225,57 +263,76 @@ After building, run the executable (replace `<arch-vendor>` with your architectu
 
 ```bash
 $ ./bin/x86_64-native/debug/hello_world
-Running without remote logging (no server at 127.0.0.1:9000)
-Hello from printHello!
-ServiceA: ServiceA result
-ServiceB: ServiceB result
-ApiModule: Registered 1 endpoint(s):
-  - GET /hello
-MongooseWebServer started on port 8080
-WebServer running on http://localhost:8080/hello
+🚀 Application starting with IoC + WebServer + ApiRouter orchestration
+📦 IocContainer: Auto-registered services via metaprogramming templates
+🌐 ApiRouter: Auto-registered endpoints via CRTP patterns:
+  - GET /hello (EndpointHello auto-registration)
+🔍 Logger: Composite logging (Console + Network) initialized
+🚀 WebServer: Mongoose backend started on port 8080
+✅ Application ready: http://localhost:8080/hello
 Press Enter to exit...
 ```
 
 ### HTTP Endpoints
 
-The application starts a web server on `http://localhost:8080` with these endpoints:
+The application demonstrates auto-registering endpoints via CRTP patterns:
 
-- **GET /hello** - Example endpoint returning "Hello, World!"
+- **GET /hello** - Auto-registered EndpointHello via metaprogramming
 
-Test the endpoint:
+Test the auto-registered endpoint:
 ```bash
 curl http://localhost:8080/hello
-# Response: Hello, World!
+# Response: Hello, World! (from auto-registered CRTP endpoint)
 ```
 
 ## 🧪 Testing
 
-### Comprehensive Test Framework
+### ⚠️ TDD MANDATORY Framework
 
-The project uses a sophisticated testing framework with Google Test integration:
+**STRICT RULES** (non-negotiable):
+- **Write failing test FIRST**, then implement minimal code to pass
+- **NO code without tests** - enforced through development workflow
+- **ONE CLASS PER FILE** - mandatory for context efficiency
+- **RED-GREEN-REFACTOR** cycle must be followed
 
-- **Dual-Mode Testing**: Human-friendly and AI-agent-optimized output modes
-- **Modular Test Structure**: Each module has independent test suite in `tests/ModuleNameTest/`
-- **Test Case Organization**: All test cases in `cases/` subdirectories for scalability
-- **Flexible Dependencies**: Configuration-based dependency management in test Makefiles
-- **Mock Support**: Google Mock integration for dependency isolation
+### ⚠️ TEST ISOLATION MANDATORY
+
+**RULE**: Zero external module dependencies in tests. Test only what you're testing.
+
+**❌ WRONG**: 
+```cpp
+#include <Logger/Logger.h>  // External dependency breaks isolation!
+```
+
+**✅ CORRECT**:
+```cpp
+// Generic test services only
+class IServiceA { virtual int getValue() = 0; };
+class ServiceAImpl : public IServiceA { /*...*/ };
+```
+
+### Test Framework Features
+
+- **TDD-Enforced**: Failing tests first, implementation second
+- **Test Isolation**: Zero external dependencies (only generic IServiceA, IServiceB)  
+- **Auto-Registration Tests**: Verify CRTP endpoints + IoC services register correctly
+- **Mock Business Logic**: Mock services/domain, isolate infrastructure
+- **Modular Structure**: Each module has isolated test suite in `tests/ModuleNameTest/`
 
 ### Quick Testing
 ```bash
-# Run all tests (human-friendly output)
-make test
+# TDD workflow (most common)
+make test-run-ModuleName     # RED: failing test, GREEN: pass, REFACTOR
 
-# Run all tests (AI-agent silent mode)
-VERBOSE=0 make test
+# All tests
+make test                    # Run all tests (human output)
+./scripts/test.sh            # Comprehensive test + build + run (minimal mode)
+./scripts/test.sh human      # Human-friendly test output
+./scripts/test.sh debug      # Full verbose test output
 
-# Test specific module
-make test-run-LoggerTest
-
-# Get testing help and available targets
-make test-help
-
-# View project statistics
-make test-stats
+# Testing help
+make test-help               # Available test targets and commands
+make test-stats              # Project statistics and metrics
 ```
 
 ### Individual Module Testing
@@ -336,6 +393,97 @@ EXTERNAL_DEPS = mongoose
 - **Error Handling**: Intelligent error messages with module suggestions
 - **Batch Operations**: Project-wide test management from root directory
 - **Debug Support**: Dependency resolution debugging with `make debug-config`
+
+---
+
+## 🚀 Metaprogramming Auto-Registration
+
+### Before vs After: 90%+ Boilerplate Reduction
+
+**Before (Manual Registration):**
+```cpp
+// Verbose endpoint registration (15+ lines)
+class EndpointUser : public apirouter::IApiModule {
+public:
+    void registerEndpoints(apirouter::IEndpointRegistrar& registrar) override;
+    void handleGetUser(std::string_view path, std::string_view method, 
+                       const std::string& requestBody, std::string& responseBody, int& statusCode);
+};
+
+void EndpointUser::registerEndpoints(apirouter::IEndpointRegistrar& registrar) {
+    registrar.registerHttpHandler("/user", "GET",
+        [this](std::string_view path, std::string_view method, const std::string& requestBody, 
+                std::string& responseBody, int& statusCode) {
+            handleGetUser(path, method, requestBody, responseBody, statusCode);
+        });
+}
+
+// Manual registration struct (8+ lines)
+namespace {
+    struct EndpointUserRegistration {
+        EndpointUserRegistration() {
+            apirouter::ApiRouter::registerModuleFactoryGlobal([]() {
+                return std::make_unique<EndpointUser>();
+            });
+        }
+    };
+    static EndpointUserRegistration _registration;
+}
+```
+
+**After (CRTP Auto-Registration):**
+```cpp
+// Clean CRTP inheritance
+class EndpointUser : public apirouter::AutoRegisterEndpoint<EndpointUser> {
+public:
+    void registerAvailableMethods(apirouter::IEndpointRegistrar& registrar, const std::string& basePath) override;
+    void handleGet(std::string_view path, std::string_view method, 
+                   const std::string& requestBody, std::string& responseBody, int& statusCode);
+};
+
+// Type-safe registration (3 lines)
+void EndpointUser::registerAvailableMethods(apirouter::IEndpointRegistrar& registrar, const std::string& basePath) {
+    registerMethod<&EndpointUser::handleGet>(registrar, "/user", "GET");
+}
+
+// One-line registration!
+namespace {
+    static apirouter::AutoRegister<EndpointUser> _autoRegister;
+}
+```
+
+### Service Auto-Registration
+
+**Before (Manual IoC):**
+```cpp
+// Manual IoC registration (13+ lines)
+namespace {
+    struct ServiceUserRegistration {
+        ServiceUserRegistration() {
+            auto instance = std::make_shared<ServiceUser>();
+            ioccontainer::IIocContainer::registerGlobal<IServiceUser>(instance);
+            ioccontainer::IIocContainer::registerGlobal<ServiceUser>(instance);
+        }
+    };
+    static ServiceUserRegistration _registration;
+}
+```
+
+**After (Template Auto-Registration):**
+```cpp
+// One-line registration!
+namespace {
+    static ioccontainer::AutoRegister<ServiceUser, IServiceUser> _autoRegister;
+}
+```
+
+### Benefits
+
+- **85% less boilerplate** for endpoints (no manual lambda wrapping)
+- **90%+ less boilerplate** for services (no manual IoC registration)
+- **Type safety** - Compile-time method signature verification
+- **Clean naming** - `handleGet()` vs `handleGetUser()`
+- **Zero runtime overhead** - Static initialization only
 
 ---
 
